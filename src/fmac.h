@@ -1,3 +1,13 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+/* FMAC - File Monitoring and Access Control Kernel Module
+ * Copyright (C) 2025 Aqnya
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
 #ifndef _LINUX_FMAC_H
 #define _LINUX_FMAC_H
 
