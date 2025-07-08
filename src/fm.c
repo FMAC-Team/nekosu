@@ -6,7 +6,7 @@
 #include "fmac.h"
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Nyamiya");
+MODULE_AUTHOR("Aqnya");
 MODULE_DESCRIPTION("FMAC");
 
 DEFINE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
@@ -19,53 +19,50 @@ static void fmac_rule_free_rcu(struct rcu_head *head) {
   kfree(rule);
 }
 
-bool
-fmac_check_access(const char *path, uid_t uid)
-{
-  struct fmac_rule *rule;
-  bool deny = false;
-  u32 key;
+bool fmac_check_access(const char *path, uid_t uid, int op_type) {
+    struct fmac_rule *rule;
+    bool deny = false;
+    u32 key;
 
-  char norm_path[MAX_PATH_LEN];
-  size_t path_len = strlcpy(norm_path, path, MAX_PATH_LEN);
+    char norm_path[MAX_PATH_LEN];
+    size_t path_len = strlcpy(norm_path, path, MAX_PATH_LEN);
 
-  while (path_len > 1 && norm_path[path_len - 1] == '/')
-    norm_path[--path_len] = '\0';
+    while (path_len > 1 && norm_path[path_len - 1] == '/')
+        norm_path[--path_len] = '\0';
 
-  key = jhash(norm_path, path_len, 0);
+    key = jhash(norm_path, path_len, 0);
 
-  rcu_read_lock();
-  hash_for_each_possible_rcu(fmac_rule_ht, rule, node, key)
-  {
-    if (rule->uid == 0 || rule->uid == uid)
-    {
-      if (strncmp(norm_path, rule->path_prefix, rule->path_len) == 0)
-      {
-          deny = rule->deny;
-          break;
-        
-      }
+    rcu_read_lock();
+    hash_for_each_possible_rcu(fmac_rule_ht, rule, node, key) {
+        if (rule->uid == 0 || rule->uid == uid) {
+            if (strncmp(norm_path, rule->path_prefix, rule->path_len) == 0) {
+                if (rule->op_type == -1 || rule->op_type == op_type) {
+                    deny = rule->deny;
+                    break;
+                }
+            }
+        }
     }
-  }
-  rcu_read_unlock();
+    rcu_read_unlock();
 
-  return deny;
+    return deny;
 }
 
-void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny) {
+void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type) {
     struct fmac_rule *rule;
     u32 key;
 
     rule = kmalloc(sizeof(*rule), GFP_KERNEL);
     if (!rule) {
-      fmac_append_to_log("[FMAC] Failed to allocate rule\n");
-      return;
+        fmac_append_to_log("[FMAC] Failed to allocate rule\n");
+        return;
     }
 
     strlcpy(rule->path_prefix, path_prefix, MAX_PATH_LEN);
     rule->path_len = strlen(path_prefix);
     rule->uid = uid;
     rule->deny = deny;
+    rule->op_type = op_type;
 
     key = jhash(rule->path_prefix, rule->path_len, 0);
 
@@ -73,9 +70,9 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny) {
     hash_add_rcu(fmac_rule_ht, &rule->node, key);
     spin_unlock(&fmac_lock);
 
-    fmac_append_to_log("[FMAC] Added rule: path=%s, uid=%u, deny=%d\n",
-                       path_prefix, uid, deny);
-  }
+    fmac_append_to_log("[FMAC] Added rule: path=%s, uid=%u, deny=%d, op_type=%d\n",
+                       path_prefix, uid, deny, op_type);
+}
 
 void fmac_append_to_log(const char *fmt, ...) {
     va_list args;
@@ -100,22 +97,26 @@ void fmac_append_to_log(const char *fmt, ...) {
   }
   
   
-int fmac_check(const char __user *pathname){
-char fmac_path[MAX_PATH_LEN] = {0};
-  uid_t uid = current_euid().val;
+int fmac_check(const char __user *pathname, int op_type) {
+    char fmac_path[MAX_PATH_LEN] = {0};
+    uid_t uid = current_euid().val;
 
-  if (pathname && strncpy_from_user(fmac_path, pathname, MAX_PATH_LEN) >= 0) {
-    if (fmac_check_access(fmac_path, uid)) {
-      if (fmac_printk) {
-        fmac_append_to_log("[FMAC] Denied mkdirat: %s by UID %u (pid %d)\n",
-                           fmac_path, uid, current->pid);
-      }
-      return -EACCES;
+    if (pathname && strncpy_from_user(fmac_path, pathname, MAX_PATH_LEN) >= 0) {
+        if (fmac_check_access(fmac_path, uid, op_type)) {
+            if (fmac_printk) {
+                if (op_type == 0) {
+                    fmac_append_to_log("[FMAC] Denied mkdirat: %s by UID %u (pid %d)\n",
+                                       fmac_path, uid, current->pid);
+                } else if (op_type == 1) {
+                    fmac_append_to_log("[FMAC] Denied openat: %s by UID %u (pid %d)\n",
+                                       fmac_path, uid, current->pid);
+                }
+            }
+            return -EACCES;
+        }
     }
-  }
-return 0;
+    return 0;
 }
-  
 
   static int __init fmac_init(void) {
     int ret;

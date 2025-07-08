@@ -1,4 +1,3 @@
-// include/linux/fmac.h
 #ifndef _LINUX_FMAC_H
 #define _LINUX_FMAC_H
 
@@ -18,6 +17,7 @@ struct fmac_rule {
     size_t path_len;
     uid_t uid;
     bool deny;
+    int op_type; //type 0 is mkdirat,type 1 is openat.
     struct hlist_node node;
     struct rcu_head rcu;
 };
@@ -33,8 +33,8 @@ extern size_t fmac_log_len;
 extern spinlock_t fmac_log_lock;
 
 // 全局函数
-void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny);
-bool fmac_check_access(const char *path, uid_t uid);
+void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
+bool fmac_check_access(const char *path, uid_t uid, int op_type);
 void fmac_append_to_log(const char *fmt, ...);
 
 // procfs 初始化和清理函数
