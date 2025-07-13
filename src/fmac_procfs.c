@@ -92,7 +92,10 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer,
     } else if (strncmp(kbuf, "printk_off", 10) == 0) {
         fmac_printk = false;
         fmac_append_to_log("[FMAC] Printk disabled.\n");
-    } else {
+    }else if(strncpm(kbuf,"disable",7)==0){
+    work_module = 0;
+     fmac_append_to_log("[FMAC] has been disabled.\n")
+      } else {
         fmac_append_to_log("[FMAC] Invalid command. Use: 'add /path uid deny [op_type]' or "
                            "'printk_on/off'.\n");
         return -EINVAL;

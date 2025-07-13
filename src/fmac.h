@@ -36,6 +36,7 @@ struct fmac_rule {
 extern DECLARE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 extern spinlock_t fmac_lock;
 extern bool fmac_printk;
+extern int work_module;
 
 // 日志缓冲区（供 fmac_procfs.c 使用）
 extern char *fmac_log_buffer;

@@ -29,6 +29,7 @@ MODULE_DESCRIPTION("FMAC");
 DEFINE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 DEFINE_SPINLOCK(fmac_lock);
 bool fmac_printk = false;
+int work_module=1;
 
 // RCU 释放规则
 static void fmac_rule_free_rcu(struct rcu_head *head) {
@@ -115,6 +116,7 @@ void fmac_append_to_log(const char *fmt, ...) {
   
   
 int fmac_check(const char __user *pathname, int op_type) {
+if (work_module){
     char fmac_path[MAX_PATH_LEN] = {0};
     uid_t uid = current_euid().val;
 
@@ -132,6 +134,7 @@ int fmac_check(const char __user *pathname, int op_type) {
             return -EACCES;
         }
     }
+  }
     return 0;
 }
 
