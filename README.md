@@ -28,23 +28,23 @@ FMAC (File Monitoring and Access Control) is a Linux kernel module that provides
    such as
    ```diff
    diff --git a/fs/open.c b/fs/open.c
-index f2b82c462..285349ba0 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -1111,10 +1111,15 @@ SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, umode_t, mode)
+   index f2b82c462..285349ba0 100644
+   --- a/fs/open.c
+   +++ b/fs/open.c
+   @@ -1111,10 +1111,15 @@ SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, umode_t, mode)
  
  	return do_sys_open(AT_FDCWD, filename, flags, mode);
- }
--
-+int fmac_check(const char __user *pathname, int op_type);
- SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, flags,
+    }
+   -
+   +int fmac_check(const char __user *pathname, int op_type);
+    SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, flags,
  		umode_t, mode)
- {
-+int fmac_status;
-+   fmac_status = fmac_check(filename,1);
-+    if(fmac_status){
-+     return fmac_status;
-+   }
+    {
+   +int fmac_status;
+   +   fmac_status = fmac_check(filename,1);
+   +    if(fmac_status){
+   +     return fmac_status;
+   +   }
  	if (force_o_largefile())
  		flags |= O_LARGEFILE;
  
