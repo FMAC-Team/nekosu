@@ -26,7 +26,7 @@ FMAC (File Monitoring and Access Control) is a Linux kernel module that provides
 2. **Patch syscall**:
    You need to locate the syscall code and add the following to it
    such as
-   ```patch
+   ```diff
    diff --git a/fs/open.c b/fs/open.c
 index f2b82c462..285349ba0 100644
 --- a/fs/open.c
