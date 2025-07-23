@@ -25,17 +25,30 @@ FMAC (File Monitoring and Access Control) is a Linux kernel module that provides
 
 2. **Patch syscall**:
    You need to locate the syscall code and add the following to it
-   ```c
-   int fmac_check(const char __user *pathname, int op_type);
-   
-   //syscall define
-   
-   int fmac_status;
-   fmac_status = fmac_check(filename,$(op_type));
-    if(fmac_status){
-     return fmac_status;
-     }
-   //replace $(op_type) to number
+   such as
+   ```patch
+   diff --git a/fs/open.c b/fs/open.c
+index f2b82c462..285349ba0 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -1111,10 +1111,15 @@ SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, umode_t, mode)
+ 
+ 	return do_sys_open(AT_FDCWD, filename, flags, mode);
+ }
+-
++int fmac_check(const char __user *pathname, int op_type);
+ SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, flags,
+ 		umode_t, mode)
+ {
++int fmac_status;
++   fmac_status = fmac_check(filename,1);
++    if(fmac_status){
++     return fmac_status;
++   }
+ 	if (force_o_largefile())
+ 		flags |= O_LARGEFILE;
+ 
+
    ```
    Don't forget replace Kconfig and Makefile.
 
