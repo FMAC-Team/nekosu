@@ -1,9 +1,6 @@
 #!/bin/bash
 
 # FMAC Patch Script
-# Usage: ./drivers/fmac/scripts/patch.sh install|uninstall
-
-set -e
 
 MODULE_NAME="fmac"
 
