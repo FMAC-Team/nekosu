@@ -75,8 +75,8 @@ install_patch() {
     print_info "Installing FMAC into: $KERNEL_DIR"
 
     mkdir -p "$TARGET_DIR"
-    cp -a "$SRC_DIR/"* "$TARGET_DIR"
-    print_info "Copied FMAC source to $TARGET_DIR"
+    git clone https://github.com/aqnya/FMAC.git "$TARGET_DIR"
+    print_info "Clone FMAC source to $TARGET_DIR"
 
     if ! grep -q "source \"drivers/$MODULE_NAME/Kconfig\"" "$KCONFIG"; then
         echo "source \"drivers/$MODULE_NAME/Kconfig\"" >> "$KCONFIG"
