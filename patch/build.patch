@@ -6,7 +6,7 @@ index 9480d8465..43f9eaf5e 100644
  
  source "drivers/tee/Kconfig"
  
-+source "drivers/fm/Kconfig"
++source "drivers/FMAC/Kconfig"
 +
  endmenu
 diff --git a/drivers/Makefile b/drivers/Makefile
@@ -17,4 +17,4 @@ index 06e2bb462..692e3bdc2 100644
  obj-$(CONFIG_FPGA)		+= fpga/
  obj-$(CONFIG_SENSORS_SSC)		+= sensors/
  obj-$(CONFIG_TEE)		+= tee/
-+obj-$(CONFIG_FMAC)		+= fm/
++obj-$(CONFIG_FMAC)		+= FMAC/
