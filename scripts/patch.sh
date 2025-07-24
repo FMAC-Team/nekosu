@@ -7,8 +7,7 @@ MODULE_NAME="fmac"
 # Assume current directory is Linux source root
 KERNEL_DIR="$(pwd)"
 SCRIPT_PATH=$(realpath "$0")
-SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
-FMAC_ROOT_DIR=$(realpath "$SCRIPT_DIR/drivers/fmac")         # drivers/FMAC
+FMAC_ROOT_DIR="$KERNEL_DIR/drivers/fmac"
 SRC_DIR="$FMAC_ROOT_DIR/src"
 PATCH_DIR="$FMAC_ROOT_DIR/patch"
 TARGET_DIR="$KERNEL_DIR/drivers/fmac"
