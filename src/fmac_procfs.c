@@ -19,6 +19,7 @@
 
 static struct proc_dir_entry *fmac_proc_entry;
 static struct proc_dir_entry *fmac_log_entry;
+static struct proc_dir_entry *fmac_proc_dir;
 
 // 日志缓冲区定义
 char *fmac_log_buffer;
@@ -92,12 +93,12 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer,
     } else if (strncmp(kbuf, "printk_off", 10) == 0) {
         fmac_printk = false;
         fmac_append_to_log("[FMAC] Printk disabled.\n");
-    }else if(strncpm(kbuf,"disable",7)==0){
+    }else if(strncmp(kbuf,"disable",7)==0){
     work_module = 0;
-     fmac_append_to_log("[FMAC] has been disabled.\n")
+     fmac_append_to_log("[FMAC] has been disabled.\n");
       } else {
-        fmac_append_to_log("[FMAC] Invalid command. Use: 'add /path uid deny [op_type]' or "
-                           "'printk_on/off'.\n");
+        fmac_append_to_log("[FMAC] Invalid command. Use: 'add /path uid deny [op_type]', "
+                   "'printk_on/off', or 'disable'.\n");
         return -EINVAL;
     }
 
@@ -108,9 +109,7 @@ static const struct file_operations fmac_proc_ops = {
     .owner = THIS_MODULE,
     .open = fmac_proc_open,
     .read = seq_read,
-    .write зокрема
-
-System: .write = fmac_proc_write,
+    .write = fmac_proc_write,
     .llseek = seq_lseek,
     .release = single_release,
 };
@@ -130,15 +129,23 @@ int fmac_procfs_init(void) {
         return -ENOMEM;
     }
     fmac_log_len = 0;
+    
+    fmac_proc_dir = proc_mkdir("fmac", NULL);
+    if (!fmac_proc_dir) {
+        pr_err("[FMAC] Failed to create /proc/fmac directory\n");
+        vfree(fmac_log_buffer);
+        return -ENOMEM;
+    }
 
-    fmac_proc_entry = proc_create("fmac", 0666, NULL, &fmac_proc_ops);
+
+    fmac_proc_entry = proc_create("rules", 0666, fmac_proc_dir, &fmac_proc_ops);
     if (!fmac_proc_entry) {
         pr_err("[FMAC] Failed to create /proc/fmac\n");
         vfree(fmac_log_buffer);
         return -ENOMEM;
     }
 
-    fmac_log_entry = proc_create("fmac_log", 0444, NULL, &fmac_log_proc_ops);
+    fmac_log_entry = proc_create("log", 0444, fmac_proc_dir, &fmac_log_proc_ops);
     if (!fmac_log_entry) {
         pr_err("[FMAC] Failed to create /proc/fmac_log\n");
         proc_remove(fmac_proc_entry);
@@ -151,9 +158,8 @@ int fmac_procfs_init(void) {
 }
 
 void fmac_procfs_exit(void) {
-    proc_remove(fmac_proc_entry);
-    proc_remove(fmac_log_entry);
+    remove_proc_entry("rules", fmac_proc_dir);
+    remove_proc_entry("log", fmac_proc_dir);
+    remove_proc_entry("fmac", NULL);
     vfree(fmac_log_buffer);
-
-    fmac_append_to_log("[FMAC] Procfs exited.\n");
 }
