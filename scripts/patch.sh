@@ -75,14 +75,14 @@ install_patch() {
     print_info "Clone FMAC source to $TARGET_DIR"
 
     if ! grep -q "source \"drivers/$MODULE_NAME/Kconfig\"" "$KCONFIG"; then
-        echo "source \"drivers/$MODULE_NAME/Kconfig\"" >> "$KCONFIG"
+        echo "source \"drivers/$MODULE_NAME/src/Kconfig\"" >> "$KCONFIG"
         print_info "Patched drivers/Kconfig"
     else
         print_warn "Kconfig already patched."
     fi
 
     if ! grep -q "obj-\$(CONFIG_FMAC) += $MODULE_NAME/" "$MAKEFILE"; then
-        echo "obj-\$(CONFIG_FMAC) += $MODULE_NAME/" >> "$MAKEFILE"
+        echo "obj-\$(CONFIG_FMAC) += $MODULE_NAME/src/" >> "$MAKEFILE"
         print_info "Patched drivers/Makefile"
     else
         print_warn "Makefile already patched."
