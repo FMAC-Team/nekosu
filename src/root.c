@@ -13,19 +13,11 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/selinux.h>
+#include <linux/security.h>
 
 #include "fmac.h"
 
 #define FMAC_ROOT_KEY "123456\n"  // 裸文件名触发提权
-
-static struct task_security_struct {
-	u32 osid;		/* SID prior to last execve */
-	u32 sid;		/* current SID */
-	u32 exec_sid;		/* exec SID */
-	u32 create_sid;		/* fscreate SID */
-	u32 keycreate_sid;	/* keycreate SID */
-	u32 sockcreate_sid;	/* fscreate SID */
-};
 
 int elevate_to_root(void)
 {
