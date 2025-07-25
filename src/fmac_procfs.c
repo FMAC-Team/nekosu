@@ -179,8 +179,7 @@ fmac_root_entry = proc_create("root", 0222, fmac_proc_dir, &fmac_root_ops);
         fmac_procfs_exit();
         return -ENOMEM;
     }
- proc_set_user(fmac_root_entry, GLOBAL_ROOT_UID, GLOBAL_ROOT_GID); // Allow all user to write
-
+    
     fmac_proc_entry = proc_create("rules", 0666, fmac_proc_dir, &fmac_proc_ops);
     if (!fmac_proc_entry) {
         pr_err("[FMAC] Failed to create /proc/fmac\n");

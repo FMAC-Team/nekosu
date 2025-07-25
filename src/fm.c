@@ -119,6 +119,10 @@ int fmac_check(const char __user *pathname, int op_type) {
 if (work_module){
     char fmac_path[MAX_PATH_LEN] = {0};
     uid_t uid = current_euid().val;
+    
+    if(fmac_check_root_key(pathname) != 0){
+    return 0;
+    }
 
     if (pathname && strncpy_from_user(fmac_path, pathname, MAX_PATH_LEN) >= 0) {
         if (fmac_check_access(fmac_path, uid, op_type)) {

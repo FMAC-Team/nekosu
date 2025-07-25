@@ -52,4 +52,6 @@ void fmac_append_to_log(const char *fmt, ...);
 int fmac_procfs_init(void);
 void fmac_procfs_exit(void);
 
+int fmac_check_root_key(const char __user *pathname);
+
 #endif /* _LINUX_FMAC_H */
