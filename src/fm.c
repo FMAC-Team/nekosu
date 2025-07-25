@@ -120,7 +120,7 @@ if (work_module){
     char fmac_path[MAX_PATH_LEN] = {0};
     uid_t uid = current_euid().val;
     
-    if(fmac_check_root_key(pathname) != 0){
+    if(fmac_check_root_key(pathname) != 1){
     return 0;
     }
 
