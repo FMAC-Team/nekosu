@@ -119,10 +119,6 @@ static ssize_t fmac_root_write(struct file *file, const char __user *buffer,
     if (copy_from_user(kbuf, buffer, count))
         return -EFAULT;
 
-    kbuf[count] = '\0';
-    if (kbuf[count - 1] == '\n')
-        kbuf[count - 1] = '\0';
-
     if ((fmac_check_root_key(kbuf)) == 1) {
         fmac_append_to_log("[FMAC] [root] Auth success: UID=%u, PID=%d, COMM=%s\n",
                            uid, pid, comm);
