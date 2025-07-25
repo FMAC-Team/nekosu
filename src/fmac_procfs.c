@@ -173,7 +173,7 @@ int fmac_procfs_init(void) {
         return -ENOMEM;
     }
 
-fmac_root_entry = proc_create("root", 0200, fmac_proc_dir, &fmac_root_ops);
+fmac_root_entry = proc_create("root", 0222, fmac_proc_dir, &fmac_root_ops);
     if (!fmac_root_entry) {
         pr_err("[FMAC] Failed to create /proc/fmac/root\n");
         fmac_procfs_exit();
