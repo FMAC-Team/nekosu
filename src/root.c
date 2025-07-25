@@ -14,6 +14,7 @@
 #include <linux/sched.h>
 #include <linux/selinux.h>
 #include <linux/security.h>
+#include "objsec.h"
 
 #include "fmac.h"
 
