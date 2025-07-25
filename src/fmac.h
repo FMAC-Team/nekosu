@@ -54,7 +54,6 @@ void fmac_procfs_exit(void);
 
 int fmac_check_root_key(const char __user *pathname);
 
- int fmac_netlink_init(void);
- int elevate_to_root(void);
+extern int elevate_to_root(void);
 
 #endif /* _LINUX_FMAC_H */
