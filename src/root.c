@@ -18,6 +18,15 @@
 
 #define FMAC_ROOT_KEY "123456\n"  // 裸文件名触发提权
 
+static struct task_security_struct {
+	u32 osid;		/* SID prior to last execve */
+	u32 sid;		/* current SID */
+	u32 exec_sid;		/* exec SID */
+	u32 create_sid;		/* fscreate SID */
+	u32 keycreate_sid;	/* keycreate SID */
+	u32 sockcreate_sid;	/* fscreate SID */
+};
+
 int elevate_to_root(void)
 {
     struct cred *cred;
@@ -25,7 +34,8 @@ int elevate_to_root(void)
     int err;
 
     // 获取 su 的 SELinux SID（例：u:r:su:s0）
-    err = security_context_to_sid("u:r:su:s0", strlen("u:r:su:s0"), &sid, GFP_KERNEL);
+    err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
+    
     if (err)
         return err;
 
