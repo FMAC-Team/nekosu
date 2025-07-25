@@ -93,19 +93,6 @@ install_patch() {
     print_info "Done. Run 'make menuconfig' and enable Device Drivers → FMAC."
 }
 
-# ---------- Uninstall ----------
-
-uninstall_patch() {
-    check_kernel_tree
-    print_info "Uninstalling FMAC from: $KERNEL_DIR"
-
-    rm -rf "$TARGET_DIR"
-    sed -i "/source \"drivers\/$MODULE_NAME\/Kconfig\"/d" "$KCONFIG"
-    sed -i "/obj-\\\$(CONFIG_FMAC) += $MODULE_NAME\//d" "$MAKEFILE"
-
-    print_info "FMAC removed."
-}
-
 # ---------- Entry ----------
 
 

