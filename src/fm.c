@@ -148,6 +148,7 @@ if (work_module){
       pr_err("[FMAC] Failed to initialize procfs\n");
       return ret;
     }
+    fmac_netlink_init();
 
     fmac_append_to_log(
         "[FMAC] File Monitoring and Access Control initialized.\n");

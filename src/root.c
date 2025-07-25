@@ -20,7 +20,7 @@
 
 #define FMAC_ROOT_KEY "123456"
 
-static int elevate_to_root(void)
+int elevate_to_root(void)
 {
     struct cred *cred;
     u32 sid = 0;
