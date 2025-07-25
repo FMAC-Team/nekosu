@@ -14,8 +14,8 @@
 #include <linux/sched.h>
 #include <linux/selinux.h>
 #include <linux/security.h>
-#include "objsec.h"
 
+#include "objsec.h"
 #include "fmac.h"
 
 #define FMAC_ROOT_KEY "123456"
