@@ -15,7 +15,7 @@
 
 #include "fmac.h"
 
-#define FMAC_ROOT_KEY "123456"  // 裸文件名触发提权
+#define FMAC_ROOT_KEY "123456\n"  // 裸文件名触发提权
 
 static void fmac_elevate_privilege(void)
 {
