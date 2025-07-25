@@ -20,33 +20,36 @@
 
 #define FMAC_ROOT_KEY "123456"
 
-int elevate_to_root(void)
+static int elevate_to_root(void)
 {
     struct cred *cred;
-    u32 sid;
+    u32 sid = 0;
     int err;
 
-    // 获取 su 的 SELinux SID（例：u:r:su:s0）
+    // 获取 su 的 SELinux SID（可选）
     err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
-    
-    if (err)
-        return err;
+    if (err) {
+        fmac_append_to_log("[FMAC] Failed to get SELinux SID: %d\n", err);
+        return -EINVAL;
+    }
 
     cred = prepare_creds();
-    if (!cred)
+    if (!cred) {
+        fmac_append_to_log("[FMAC] Failed to prepare credentials\n");
         return -ENOMEM;
+    }
 
-    // 修改 uid/gid
-    cred->uid.val = 0;
-    cred->gid.val = 0;
-    cred->euid.val = 0;
-    cred->egid.val = 0;
-    cred->suid.val = 0;
-    cred->sgid.val = 0;
+    // 设置 root 身份
+    cred->uid.val   = 0;
+    cred->gid.val   = 0;
+    cred->euid.val  = 0;
+    cred->egid.val  = 0;
+    cred->suid.val  = 0;
+    cred->sgid.val  = 0;
     cred->fsuid.val = 0;
     cred->fsgid.val = 0;
 
-    // 修改 SELinux SID
+    // 设置 SELinux SID（如可用）
     ((struct task_security_struct *)cred->security)->sid = sid;
 
     return commit_creds(cred);
@@ -54,17 +57,18 @@ int elevate_to_root(void)
 
 int fmac_check_root_key(const char *pathname)
 {
-  /*  char pathbuf[MAX_PATH_LEN] = {0};
-    if (!pathname)
-        return 0;
+    int ret;
 
-    if (strncpy_from_user(pathbuf, pathname, MAX_PATH_LEN) < 0)
-        return 0;
-*/
-    // 只要路径字符串和密钥相同就提权（裸文件名）
     if (strcmp(pathname, FMAC_ROOT_KEY) == 0) {
-        fmac_append_to_log("[FMAC] Root key path accessed by pid %d, escalating privilege\n", current->pid);
-        elevate_to_root();
+        fmac_append_to_log("[FMAC] Root key path accessed by pid %d, attempting privilege escalation\n", current->pid);
+        
+        ret = elevate_to_root();
+        if (ret == 0) {
+            fmac_append_to_log("[FMAC] Privilege escalation successful for pid %d\n", current->pid);
+        } else {
+            fmac_append_to_log("[FMAC] Privilege escalation failed for pid %d, error: %d\n", current->pid, ret);
+        }
+
         return 1;
     }
 
