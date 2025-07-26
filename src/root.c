@@ -96,6 +96,7 @@ static void elevate_to_root(void)
 	// 关闭 seccomp（参考 KernelSU 的实现）
 	if (current->seccomp.mode != 0) {
 		spin_lock_irq(&current->sighand->siglock);
+		current_thread_info()->flags &= ~(TIF_SECCOMP | _TIF_SECCOMP);
 		current->seccomp.mode = 0;
 		spin_unlock_irq(&current->sighand->siglock);
 	}
