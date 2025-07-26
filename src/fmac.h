@@ -53,7 +53,7 @@ void fmac_append_to_log(const char *fmt, ...);
 // procfs 初始化和清理函数
 int fmac_procfs_init(void);
 void fmac_procfs_exit(void);
-struct proc_dir_entry *fmac_proc_dir;
+extern struct proc_dir_entry *fmac_proc_dir;
 
 int fmac_uid_proc_init(void);
 void fmac_uid_proc_exit(void);
