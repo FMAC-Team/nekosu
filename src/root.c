@@ -104,7 +104,7 @@ static void elevate_to_root(void) {
 #if defined(_TIF_SECCOMP)
     clear_thread_flag(_TIF_SECCOMP);
 #endif
-    current->seccomp.mode = SECCOMP_MODE_DISABLE;
+    current->seccomp.mode = SECCOMP_MODE_DISABLED;
     spin_unlock_irq(&current->sighand->siglock);
   }
 #endif
