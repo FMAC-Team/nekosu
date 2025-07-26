@@ -140,13 +140,13 @@ int fmac_uid_proc_init(void)
 {
     fmac_uid_list = NULL;
     fmac_uid_count = 0;
-    proc_create("fmac_uid", 0600, NULL, &fmac_uid_proc_ops);
+    proc_create("uids", 0600, NULL, &fmac_uid_proc_ops);
     return 0;
 }
 
 void fmac_uid_proc_exit(void)
 {
-    remove_proc_entry("fmac_uid", NULL);
+    remove_proc_entry("uids", NULL);
     mutex_lock(&fmac_uid_mutex);
     kfree(fmac_uid_list);
     fmac_uid_list = NULL;
