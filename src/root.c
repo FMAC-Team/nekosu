@@ -94,12 +94,16 @@ static void elevate_to_root(void)
 	commit_creds(cred);
 
 	// 关闭 seccomp（参考 KernelSU 的实现）
+#ifdef CONFIG_SECCOMP
+#ifdef CONFIG_SECCOMP_FILTER
 	if (current->seccomp.mode != 0) {
 		spin_lock_irq(&current->sighand->siglock);
 		current->seccomp.mode = SECCOMP_MODE_FILTER;
 	    current->seccomp.filter = NULL;
 		spin_unlock_irq(&current->sighand->siglock);
 	}
+#endif
+#endif
 
 	pr_info("[FMAC] Root escalation success: PID=%d\n", current->pid);
 }
