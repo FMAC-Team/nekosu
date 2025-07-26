@@ -23,13 +23,13 @@
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
 struct fmac_rule {
-    char path_prefix[MAX_PATH_LEN];
-    size_t path_len;
-    uid_t uid;
-    bool deny;
-    int op_type; //type 0 is mkdirat,type 1 is openat.
-    struct hlist_node node;
-    struct rcu_head rcu;
+  char path_prefix[MAX_PATH_LEN];
+  size_t path_len;
+  uid_t uid;
+  bool deny;
+  int op_type; // type 0 is mkdirat,type 1 is openat.
+  struct hlist_node node;
+  struct rcu_head rcu;
 };
 
 // 全局规则哈希表和锁
@@ -51,5 +51,9 @@ void fmac_append_to_log(const char *fmt, ...);
 // procfs 初始化和清理函数
 int fmac_procfs_init(void);
 void fmac_procfs_exit(void);
+
+int fmac_uid_proc_init(void);
+void fmac_uid_proc_exit(void);
+bool fmac_uid_allowed(void);
 
 #endif /* _LINUX_FMAC_H */

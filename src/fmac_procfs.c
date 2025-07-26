@@ -152,6 +152,8 @@ int fmac_procfs_init(void) {
         return -ENOMEM;
     }
 
+     fmac_uid_proc_init();
+
     fmac_append_to_log("[FMAC] Procfs initialized.\n");
     return 0;
 }
@@ -176,6 +178,6 @@ void fmac_procfs_exit(void) {
         fmac_log_buffer = NULL;
         fmac_log_len = 0;
     }
-
+    fmac_uid_proc_exit();
     pr_info("[FMAC] Procfs removed.\n");
 }

