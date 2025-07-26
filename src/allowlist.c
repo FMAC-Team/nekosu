@@ -117,7 +117,7 @@ static ssize_t proc_write(struct file *file, const char __user *buf,
     return count;
 }
 
-static const struct proc_ops fmac_uid_proc_ops = {
+static const struct file_operations fmac_uid_proc_ops = {
     .proc_read = proc_read,
     .proc_write = proc_write,
 };
