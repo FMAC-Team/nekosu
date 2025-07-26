@@ -19,7 +19,7 @@
 
 static struct proc_dir_entry *fmac_proc_entry;
 static struct proc_dir_entry *fmac_log_entry;
-static struct proc_dir_entry *fmac_proc_dir;
+struct proc_dir_entry *fmac_proc_dir;
 
 // 日志缓冲区定义
 char *fmac_log_buffer;

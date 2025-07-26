@@ -1,4 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+/* FMAC - File Monitoring and Access Control Kernel Module
+ * Copyright (C) 2025 Aqnya
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+ 
 #include <linux/mutex.h>
 #include <linux/proc_fs.h>
 #include <linux/slab.h>
@@ -138,15 +147,32 @@ static const struct file_operations fmac_uid_proc_ops = {
 
 int fmac_uid_proc_init(void)
 {
-    fmac_uid_list = NULL;
-    fmac_uid_count = 0;
-    proc_create("uids", 0600, NULL, &fmac_uid_proc_ops);
+    // 创建 /proc/fmac_uid 接口
+    proc_create("uids", 0600, fmac_proc_dir, &fmac_uid_proc_ops);
+
+    // 初始化允许 UID 列表
+    mutex_lock(&fmac_uid_mutex);
+
+    if (!fmac_uid_list) {
+        fmac_uid_list = kzalloc(sizeof(kuid_t) * MAX_UIDS, GFP_KERNEL);
+        if (!fmac_uid_list) {
+            mutex_unlock(&fmac_uid_mutex);
+            remove_proc_entry("uids", fmac_proc_dir);
+            return -ENOMEM;
+        }
+    }
+
+    fmac_uid_list[0] = make_kuid(&init_user_ns, 2000);
+    fmac_uid_count = 1;
+
+    mutex_unlock(&fmac_uid_mutex);
+
     return 0;
 }
 
 void fmac_uid_proc_exit(void)
 {
-    remove_proc_entry("uids", NULL);
+    remove_proc_entry("uids", fmac_proc_dir);
     mutex_lock(&fmac_uid_mutex);
     kfree(fmac_uid_list);
     fmac_uid_list = NULL;
