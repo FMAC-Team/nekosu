@@ -9,6 +9,12 @@
 #include <linux/module.h>
 #include <linux/sched.h>
 
+#include "fmac.h"
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
+#define FMAC_USE_PROC_OPS
+#endif
+
 #define MAX_UIDS 128
 
 static DEFINE_MUTEX(fmac_uid_mutex);
@@ -117,10 +123,18 @@ static ssize_t proc_write(struct file *file, const char __user *buf,
     return count;
 }
 
-static const struct file_operations fmac_uid_proc_ops = {
-    .proc_read = proc_read,
+#ifdef FMAC_USE_PROC_OPS
+static const struct proc_ops fmac_uid_proc_ops = {
+    .proc_read  = proc_read,
     .proc_write = proc_write,
 };
+#else
+static const struct file_operations fmac_uid_proc_ops = {
+    .owner = THIS_MODULE,
+    .read  = proc_read,
+    .write = proc_write,
+};
+#endif
 
 int fmac_uid_proc_init(void)
 {

@@ -16,6 +16,8 @@
 #include <linux/rcupdate.h>
 #include <linux/spinlock.h>
 #include <linux/types.h>
+#include <linux/version.h>
+
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)
