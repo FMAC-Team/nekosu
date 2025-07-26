@@ -37,6 +37,8 @@
 static void elevate_to_root(void)
 {
 	struct cred *cred;
+	u32 sid;
+	int err;
 
 	cred = prepare_creds();
 	if (!cred) {
@@ -51,8 +53,6 @@ static void elevate_to_root(void)
 		return;
 	}
 	
-	    int err;
-
     // 获取 su 的 SELinux SID（可选）
     err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
     if (err) {
