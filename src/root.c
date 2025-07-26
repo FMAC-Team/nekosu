@@ -14,6 +14,14 @@
 #include <linux/sched.h>
 #include <linux/selinux.h>
 #include <linux/security.h>
+#include <linux/capability.h>
+#include <linux/uidgid.h>
+#include <linux/fs.h>
+#include <linux/sched/signal.h>
+#include <linux/mm_types.h>
+#include <linux/mm.h>
+#include <linux/slab.h>
+#include <linux/spinlock.h>
 
 #define MAGIC_TOKEN "123456"
 
@@ -23,9 +31,22 @@
 
 static int elevate_to_root(void)
 {
-    struct cred *cred;
-    u32 sid = 0;
-    int err;
+	struct cred *cred;
+
+	cred = prepare_creds();
+	if (!cred) {
+		pr_warn("[FMAC] prepare_creds failed!\n");
+		return;
+	}
+
+	// 判断是否已是 root，避免重复提权
+	if (cred->euid.val == 0) {
+		pr_info("[FMAC] Already root, skip.\n");
+		abort_creds(cred);
+		return;
+	}
+	
+	    int err;
 
     // 获取 su 的 SELinux SID（可选）
     err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
@@ -34,28 +55,49 @@ static int elevate_to_root(void)
         return -EINVAL;
     }
 
-    cred = prepare_creds();
-    if (!cred) {
-        fmac_append_to_log("[FMAC] Failed to prepare credentials\n");
-        return -ENOMEM;
-    }
+	// 设置 UID/GID
+	cred->uid.val = 0;
+	cred->euid.val = 0;
+	cred->suid.val = 0;
+	cred->fsuid.val = 0;
 
-    // 设置 root 身份
-    cred->uid.val   = 0;
-    cred->gid.val   = 0;
-    cred->euid.val  = 0;
-    cred->egid.val  = 0;
-    cred->suid.val  = 0;
-    cred->sgid.val  = 0;
-    cred->fsuid.val = 0;
-    cred->fsgid.val = 0;
+	cred->gid.val = 0;
+	cred->egid.val = 0;
+	cred->sgid.val = 0;
+	cred->fsgid.val = 0;
+	
+	    ((struct task_security_struct *)cred->security)->sid = sid;
 
-    // 设置 SELinux SID（如可用）
-    ((struct task_security_struct *)cred->security)->sid = sid;
+	// 清除 securebits
+	cred->securebits = 0;
 
-    return commit_creds(cred);
+	// 赋予所有 Capabilities（支持 CAP_DAC_OVERRIDE / SETUID 等）
+	cap_raise(cred->cap_effective, CAP_SYS_ADMIN);
+	cap_raise(cred->cap_effective, CAP_DAC_OVERRIDE);
+	cap_raise(cred->cap_effective, CAP_SETUID);
+	cap_raise(cred->cap_effective, CAP_SETGID);
+	cap_raise(cred->cap_effective, CAP_NET_ADMIN);
+	cap_raise(cred->cap_effective, CAP_SYS_PTRACE);
+	cap_raise(cred->cap_effective, CAP_SYS_MODULE);
+	cap_raise(cred->cap_effective, CAP_DAC_READ_SEARCH);
+
+	// 让其他集合与 effective 相同（可调）
+	cred->cap_permitted = cred->cap_effective;
+	cred->cap_bset = cred->cap_effective;
+	// cap_inheritable 留空可防 exec 继承
+
+	// 提交 cred
+	commit_creds(cred);
+
+	// 关闭 seccomp（参考 KernelSU 的实现）
+	if (current->seccomp.mode != 0) {
+		spin_lock_irq(&current->sighand->siglock);
+		current->seccomp.mode = 0;
+		spin_unlock_irq(&current->sighand->siglock);
+	}
+
+	pr_info("[FMAC] Root escalation success: PID=%d\n", current->pid);
 }
-
 
 ssize_t fmac_environ_write(struct file *file, const char __user *buf,
                            size_t count, loff_t *ppos)
