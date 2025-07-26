@@ -57,7 +57,6 @@ static void elevate_to_root(void)
     err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
     if (err) {
         fmac_append_to_log("[FMAC] Failed to get SELinux SID: %d\n", err);
-        return -EINVAL;
     }
 
 	// 设置 UID/GID
