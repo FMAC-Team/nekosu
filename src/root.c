@@ -10,6 +10,7 @@
 
 #include <linux/cred.h>
 #include <linux/uaccess.h>
+#include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/selinux.h>
@@ -33,7 +34,7 @@
 #include "objsec.h"
 #include "fmac.h"
 
-static int elevate_to_root(void)
+static void elevate_to_root(void)
 {
 	struct cred *cred;
 
