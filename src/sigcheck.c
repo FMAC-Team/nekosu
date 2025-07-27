@@ -9,10 +9,11 @@
  */
 
 #include <linux/hash.h>
-#include <crypto/public_key.h>
 #include <linux/crypto.h>
-#include <linux/err.h>
+#include <crypto/hash.h>
 #include <crypto/sha.h>
+#include <crypto/public_key.h>
+#include <linux/err.h>
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/scatterlist.h>
