@@ -104,86 +104,81 @@ static int sigcheck_verify_signature(const u8 *digest, const u8 *sig, size_t sig
 
 
 bool sigcheck_verify_file(struct file *filp) {
-  loff_t file_size;
-  mm_segment_t old_fs;
-  u8 *file_content_buf = NULL;
-  u8 digest[SHA256_DIGEST_SIZE];
-  u8 magic_buffer[USERSPACE_SIGN_MAGIC_LEN];
-  u8 *signature_buffer = NULL;
-  loff_t content_len;
-  int ret = false;
+    loff_t file_size;
+    mm_segment_t old_fs;
+    u8 *file_content_buf = NULL;
+    u8 digest[SHA256_DIGEST_SIZE];
+    u8 magic_buffer[USERSPACE_SIGN_MAGIC_LEN];
+    u8 *signature_buffer = NULL;
+    loff_t content_len;
+    bool ret = false;
 
-  file_size = i_size_read(file_inode(filp));
+    file_size = i_size_read(file_inode(filp));
+    if (file_size < TOTAL_SIGN_TRAILER_SIZE) {
+        printk(KERN_DEBUG "FMAC: File too small (%lld bytes) for signature check (min %d bytes)\n",
+               file_size, TOTAL_SIGN_TRAILER_SIZE);
+        return false;
+    }
 
-  if (file_size < TOTAL_SIGN_TRAILER_SIZE) {
-    printk(
-        KERN_DEBUG
-        "FMAC: File too small (%lld bytes) for signature check, min %d bytes\n",
-        file_size, TOTAL_SIGN_TRAILER_SIZE);
-    return false;
-  }
+    content_len = file_size - TOTAL_SIGN_TRAILER_SIZE;
+    if (content_len <= 0) {
+        printk(KERN_DEBUG "FMAC: Content length is zero or negative.\n");
+        return false;
+    }
 
-  content_len = file_size - TOTAL_SIGN_TRAILER_SIZE;
+    old_fs = get_fs();
+    set_fs(KERNEL_DS);
 
-  if (content_len <= 0) {
-    printk(KERN_DEBUG "FMAC: Content length is zero or negative.\n");
-    return false;
-  }
+    if (kernel_read(filp, file_size - TOTAL_SIGN_TRAILER_SIZE, magic_buffer,
+                    USERSPACE_SIGN_MAGIC_LEN) != USERSPACE_SIGN_MAGIC_LEN) {
+        printk(KERN_ERR "FMAC: Failed to read magic.\n");
+        goto out;
+    }
 
-  old_fs = get_fs();
-  set_fs(KERNEL_DS);
+    if (memcmp(magic_buffer, USERSPACE_SIGN_MAGIC, USERSPACE_SIGN_MAGIC_LEN) != 0) {
+        printk(KERN_DEBUG "FMAC: Magic mismatch. Expected '%s', got '%*phN'\n",
+               USERSPACE_SIGN_MAGIC, USERSPACE_SIGN_MAGIC_LEN, magic_buffer);
+        goto out;
+    }
 
-  if (kernel_read(filp, file_size - USERSPACE_SIGN_MAGIC_LEN, magic_buffer,
-                  USERSPACE_SIGN_MAGIC_LEN) != USERSPACE_SIGN_MAGIC_LEN) {
-    printk(KERN_ERR "FMAC: Failed to read magic.\n");
-    goto out;
-  }
+    signature_buffer = vmalloc(USERSPACE_SIGN_LEN);
+    if (!signature_buffer) {
+        printk(KERN_ERR "FMAC: Failed to allocate memory for signature.\n");
+        goto out;
+    }
+    if (kernel_read(filp, file_size - USERSPACE_SIGN_LEN,
+                    signature_buffer, USERSPACE_SIGN_LEN) != USERSPACE_SIGN_LEN) {
+        printk(KERN_ERR "FMAC: Failed to read signature.\n");
+        goto out;
+    }
 
-  if (memcmp(magic_buffer, USERSPACE_SIGN_MAGIC, USERSPACE_SIGN_MAGIC_LEN) !=
-      0) {
-    printk(KERN_DEBUG "FMAC: Magic mismatch. Expected '%s', got '%.*s'\n",
-           USERSPACE_SIGN_MAGIC, USERSPACE_SIGN_MAGIC_LEN, magic_buffer);
-    goto out;
-  }
+    file_content_buf = vmalloc(content_len);
+    if (!file_content_buf) {
+        printk(KERN_ERR "FMAC: Failed to allocate memory for file content.\n");
+        goto out;
+    }
+    if (kernel_read(filp, 0, file_content_buf, content_len) != content_len) {
+        printk(KERN_ERR "FMAC: Failed to read file content.\n");
+        goto out;
+    }
 
-  signature_buffer = vmalloc(USERSPACE_SIGN_LEN);
-  if (!signature_buffer) {
-    printk(KERN_ERR "FMAC: Failed to allocate memory for signature.\n");
-    goto out;
-  }
-  if (kernel_read(filp, file_size - TOTAL_SIGN_TRAILER_SIZE, signature_buffer,
-                  USERSPACE_SIGN_LEN) != USERSPACE_SIGN_LEN) {
-    printk(KERN_ERR "FMAC: Failed to read signature.\n");
-    goto out;
-  }
+    if (calc_sha256(file_content_buf, content_len, digest) != 0) {
+        printk(KERN_ERR "FMAC: Failed to calculate SHA256.\n");
+        goto out;
+    }
 
-  file_content_buf = vmalloc(content_len);
-  if (!file_content_buf) {
-    printk(KERN_ERR "FMAC: Failed to allocate memory for file content.\n");
-    goto out;
-  }
-  if (kernel_read(filp, 0, file_content_buf, content_len) != content_len) {
-    printk(KERN_ERR "FMAC: Failed to read file content.\n");
-    goto out;
-  }
-
-  if (calc_sha256(file_content_buf, content_len, digest) != 0) {
-    printk(KERN_ERR "FMAC: Failed to calculate SHA256.\n");
-    goto out;
-  }
-
-  if (sigcheck_verify_signature(digest, signature_buffer, USERSPACE_SIGN_LEN) == 0) {
-    printk(KERN_INFO "FMAC: File signature VERIFIED successfully.\n");
-    ret = true;
-  } else {
-    printk(KERN_WARNING "FMAC: File signature VERIFICATION FAILED.\n");
-  }
+    if (sigcheck_verify_signature(digest, signature_buffer, USERSPACE_SIGN_LEN) == 0) {
+        printk(KERN_INFO "FMAC: File signature VERIFIED successfully.\n");
+        ret = true;
+    } else {
+        printk(KERN_WARNING "FMAC: File signature VERIFICATION FAILED.\n");
+    }
 
 out:
-  if (file_content_buf)
-    vfree(file_content_buf);
-  if (signature_buffer)
-    vfree(signature_buffer);
-  set_fs(old_fs);
-  return ret;
+    if (file_content_buf)
+        vfree(file_content_buf);
+    if (signature_buffer)
+        vfree(signature_buffer);
+    set_fs(old_fs);
+    return ret;
 }
