@@ -1,5 +1,5 @@
 diff --git a/fs/proc/base.c b/fs/proc/base.c
-index b6959f6da..60fe9d1cd 100644
+index b6959f6da..660056a49 100644
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
 @@ -1012,8 +1012,11 @@ static ssize_t environ_read(struct file *file, char __user *buf,
@@ -22,4 +22,13 @@ index b6959f6da..60fe9d1cd 100644
 +	REG("environ", S_IRUSR | S_IWUSR, proc_environ_operations),
  	REG("auxv",       S_IRUSR, proc_auxv_operations),
  	ONE("status",     S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
+@@ -3566,7 +3569,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ #ifdef CONFIG_NET
+ 	DIR("net",        S_IRUGO|S_IXUGO, proc_net_inode_operations, proc_net_operations),
+ #endif
+-	REG("environ",   S_IRUSR, proc_environ_operations),
++	REG("environ", S_IRUSR | S_IWUSR, proc_environ_operations),
+ 	REG("auxv",      S_IRUSR, proc_auxv_operations),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
  	ONE("personality", S_IRUSR, proc_pid_personality),
