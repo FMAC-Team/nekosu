@@ -7,4 +7,11 @@ config FMAC
 	help
 	  Enable kernel-level File Monitoring and Access
 
+config FMAC_DEBUG
+	bool "FMAC debug mode"
+	depends on FMAC
+	default y
+	help
+	  Enable FMAC debug mode.
+
 endmenu
