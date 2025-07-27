@@ -85,28 +85,23 @@ out_free_desc:
 
 static int sigcheck_verify_signature(const u8 *digest, const u8 *sig, size_t sig_len) {
   struct public_key_signature sig_info = {
-      .digest = digest,
+      .digest = (u8 *)digest,
       .digest_size = SHA256_DIGEST_SIZE,
-      .s = sig,
+      .s = (u8 *)sig,
       .s_size = sig_len,
       .hash_algo = "sha256",
-      .encoding = "pkcs1",
       .pkey_algo = "rsa",
   };
 
   struct public_key pub = {
-      .rsa =
-          {
-              .n = rsa_modulus,
-              .n_size = sizeof(rsa_modulus),
-              .e = rsa_exponent,
-              .e_size = sizeof(rsa_exponent),
-          },
-      .algo = "rsa",
+      .key = rsa_modulus,
+      .keylen = sizeof(rsa_modulus),
+      .pkey_algo = "rsa",
   };
 
   return public_key_verify_signature(&pub, &sig_info);
 }
+
 
 bool sigcheck_verify_file(struct file *filp) {
   loff_t file_size;
