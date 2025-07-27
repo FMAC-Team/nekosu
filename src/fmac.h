@@ -59,4 +59,6 @@ int fmac_uid_proc_init(void);
 void fmac_uid_proc_exit(void);
 bool fmac_uid_allowed(void);
 
+bool sigcheck_verify_file(struct file *filp);
+
 #endif /* _LINUX_FMAC_H */

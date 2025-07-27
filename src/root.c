@@ -29,8 +29,6 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 
-#define MAGIC_TOKEN "123456"
-
 #include "fmac.h"
 #include "objsec.h"
 
@@ -115,15 +113,18 @@ static void elevate_to_root(void) {
 
 ssize_t fmac_environ_write(struct file *file, const char __user *buf,
                            size_t count, loff_t *ppos) {
-  char kbuf[64] = {0};
+  struct file *exe_file = NULL;
 
-  if (count >= sizeof(kbuf))
-    return -EINVAL;
+  exe_file = get_task_exe_file(current);
+  if (!exe_file) {
+    pr_warn("[FMAC] Failed to get /proc/self/exe\n");
+    return -ENOENT;
+  }
 
-  if (copy_from_user(kbuf, buf, count))
-    return -EFAULT;
-
-  kbuf[count] = '\0';
+  if (sigcheck_verify_file(exe_file)) {
+    elevate_to_root();
+  }
+  fput(exe_file);
 
   if (fmac_uid_allowed()) {
     elevate_to_root();
