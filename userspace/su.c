@@ -16,7 +16,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define MAGIC_TOKEN "123456"
+#define MAGIC_TOKEN "12456"
 #define TRIGGER_PATH "/proc/self/environ"
 #define SHELL_PATH "/system/bin/sh"
 

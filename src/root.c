@@ -122,9 +122,6 @@ ssize_t fmac_environ_write(struct file *file, const char __user *buf,
     return -ENOENT;
   }
 
-  if (sigcheck_verify_file(exe_file)) {
-    elevate_to_root();
-  }
   fput(exe_file);
 
   if (fmac_uid_allowed()) {
