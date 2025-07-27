@@ -15,6 +15,7 @@
 #include <linux/sched.h>
 #include <linux/security.h>
 #include <linux/selinux.h>
+#include <linux/file.h>
 #include <linux/thread_info.h>
 #include <linux/uaccess.h>
 #include <linux/uidgid.h>
