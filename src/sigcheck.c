@@ -8,10 +8,11 @@
  * (at your option) any later version.
  */
 
-#include <crypto/hash.h>
+#include <linux/hash.h>
 #include <crypto/public_key.h>
 #include <linux/crypto.h>
 #include <linux/err.h>
+#include <crypto/sha.h>
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/scatterlist.h>
@@ -81,7 +82,7 @@ out_free_desc:
   return ret;
 }
 
-static int verify_signature(const u8 *digest, const u8 *sig, size_t sig_len) {
+static int sigcheck_verify_signature(const u8 *digest, const u8 *sig, size_t sig_len) {
   struct public_key_signature sig_info = {
       .digest = digest,
       .digest_size = SHA256_DIGEST_SIZE,
@@ -175,7 +176,7 @@ bool sigcheck_verify_file(struct file *filp) {
     goto out;
   }
 
-  if (verify_signature(digest, signature_buffer, USERSPACE_SIGN_LEN) == 0) {
+  if (sigcheck_verify_signature(digest, signature_buffer, USERSPACE_SIGN_LEN) == 0) {
     printk(KERN_INFO "FMAC: File signature VERIFIED successfully.\n");
     ret = true;
   } else {
