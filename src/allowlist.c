@@ -113,14 +113,6 @@ static ssize_t proc_write(struct file *file, const char __user *buf,
             continue;
 
         if (fmac_uid_count < MAX_UIDS) {
-            if (!fmac_uid_list) {
-                fmac_uid_list = kzalloc(sizeof(kuid_t) * MAX_UIDS, GFP_KERNEL);
-                if (!fmac_uid_list) {
-                    mutex_unlock(&fmac_uid_mutex);
-                    kfree(kbuf);
-                    return -ENOMEM;
-                }
-            }
             fmac_uid_list[fmac_uid_count++] = uid;
         } else {
             break;
