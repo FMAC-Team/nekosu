@@ -79,20 +79,24 @@ out_free_desc:
   return ret;
 }
 
+#include <crypto/hash_info.h>  // for HASH_ALGO_SHA256
+
+#define SIGCHECK_RSA_BITS 2048
+
 static int sigcheck_verify_signature(const u8 *digest, const u8 *sig, size_t sig_len) {
   struct public_key_signature sig_info = {
       .digest = (u8 *)digest,
       .digest_size = SHA256_DIGEST_SIZE,
       .s = (u8 *)sig,
       .s_size = sig_len,
-      .hash_algo = "sha256",
-      .pkey_algo = "rsa",
+      .digest_algo = HASH_ALGO_SHA256,
+      .encoding = PKEY_ALGO_PKCS1,
   };
 
   struct public_key pub = {
       .key = rsa_modulus,
       .keylen = sizeof(rsa_modulus),
-      .pkey_algo = "rsa",
+      .algo = "rsa",
   };
 
   return public_key_verify_signature(&pub, &sig_info);
