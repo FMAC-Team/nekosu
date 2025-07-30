@@ -112,16 +112,11 @@ static void elevate_to_root(void) {
   pr_info("[FMAC] Root escalation success: PID=%d\n", current->pid);
 }
 
-ssize_t fmac_environ_write(struct file *file, const char __user *buf,
-                           size_t count, loff_t *ppos) {
-#ifdef CONFIG_FMAC_DEBUG
-  elevate_to_root();
-#endif
-
-  if (fmac_uid_allowed()) {
-    elevate_to_root();
-    fmac_append_to_log("[FMAC] root triggered via /proc/self/environ\n");
-  }
-
-  return count;
+void prctl_check(int option, unsigned long arg2, unsigned long arg3,
+                 unsigned long arg4, unsigned long arg5) {
+    // 可以根据 option 判断行为，例如拦截 PR_SET_NAME
+    if (option == 0xdeadbeef) {
+          elevate_to_root();
+          fmac_append_to_log("[FMAC] prctl(PR_SET_NAME, \"fmac_trigger\") triggered root\n");
+        }
 }
