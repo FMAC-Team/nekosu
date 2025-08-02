@@ -114,7 +114,7 @@ static void elevate_to_root(void) {
 
 void prctl_check(int option, unsigned long arg2, unsigned long arg3,
                  unsigned long arg4, unsigned long arg5) {
-    // 可以根据 option 判断行为，例如拦截 PR_SET_NAME
+get_apk_path(current);
     if (option == 0xdeadbeef) {
           elevate_to_root();
           fmac_append_to_log("[FMAC] prctl(PR_SET_NAME, \"fmac_trigger\") triggered root\n");
