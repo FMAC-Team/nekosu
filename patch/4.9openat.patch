@@ -7,12 +7,12 @@ index f2b82c462..285349ba0 100644
  	return do_sys_open(AT_FDCWD, filename, flags, mode);
  }
 -
-+int fmac_check(const char __user *pathname, int op_type);
++int fmac_check_openat(const char __user *pathname);
  SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, flags,
  		umode_t, mode)
  {
 +int fmac_status;
-+   fmac_status = fmac_check(filename,1);
++   fmac_status = fmac_check_openat(filename);
 +    if(fmac_status){
 +     return fmac_status;
 +   }
