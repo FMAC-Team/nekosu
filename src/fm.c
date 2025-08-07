@@ -15,10 +15,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <linux/uaccess.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/uaccess.h>
 
 #include "fmac.h"
 
@@ -35,35 +35,6 @@ int work_module = 1;
 static void fmac_rule_free_rcu(struct rcu_head *head) {
   struct fmac_rule *rule = container_of(head, struct fmac_rule, rcu);
   kfree(rule);
-}
-
-bool fmac_check_access(const char *path, uid_t uid, int op_type) {
-  struct fmac_rule *rule;
-  bool deny = false;
-  u32 key;
-
-  char norm_path[MAX_PATH_LEN];
-  size_t path_len = strlcpy(norm_path, path, MAX_PATH_LEN);
-
-  while (path_len > 1 && norm_path[path_len - 1] == '/')
-    norm_path[--path_len] = '\0';
-
-  key = jhash(norm_path, path_len, 0);
-
-  rcu_read_lock();
-  hash_for_each_possible_rcu(fmac_rule_ht, rule, node, key) {
-    if (rule->uid == 0 || rule->uid == uid) {
-      if (strncmp(norm_path, rule->path_prefix, rule->path_len) == 0) {
-        if (rule->op_type == -1 || rule->op_type == op_type) {
-          deny = rule->deny;
-          break;
-        }
-      }
-    }
-  }
-  rcu_read_unlock();
-
-  return deny;
 }
 
 void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type) {
@@ -113,29 +84,6 @@ void fmac_append_to_log(const char *fmt, ...) {
     fmac_log_len = len;
   }
   spin_unlock_irqrestore(&fmac_log_lock, flags);
-}
-
-int fmac_check(const char __user *pathname, int op_type) {
-  if (work_module) {
-    char fmac_path[MAX_PATH_LEN] = {0};
-    uid_t uid = current_euid().val;
-
-    if (pathname && strncpy_from_user(fmac_path, pathname, MAX_PATH_LEN) >= 0) {
-      if (fmac_check_access(fmac_path, uid, op_type)) {
-        if (fmac_printk) {
-          if (op_type == 0) {
-            fmac_append_to_log("[FMAC] Denied mkdirat: %s by UID %u (pid %d)\n",
-                               fmac_path, uid, current->pid);
-          } else if (op_type == 1) {
-            fmac_append_to_log("[FMAC] Denied openat: %s by UID %u (pid %d)\n",
-                               fmac_path, uid, current->pid);
-          }
-        }
-        return -EACCES;
-      }
-    }
-  }
-  return 0;
 }
 
 static int __init fmac_init(void) {

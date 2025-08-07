@@ -50,7 +50,6 @@ extern spinlock_t fmac_log_lock;
 
 // 全局函数
 void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
-bool fmac_check_access(const char *path, uid_t uid, int op_type);
 void fmac_append_to_log(const char *fmt, ...);
 
 // procfs 初始化和清理函数

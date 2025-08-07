@@ -1,5 +1,6 @@
 fmac-objs := fm.o
 fmac-objs += fmac_procfs.o
+fmac-objs += fmac_check.o
 
 ifdef CONFIG_FMAC_ROOT
 fmac-objs += root.o

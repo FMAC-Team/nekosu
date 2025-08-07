@@ -104,7 +104,6 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer,
   return count;
 }
 
-
 #ifdef FMAC_USE_PROC_OPS
 static const struct proc_ops fmac_proc_ops = {
     .proc_open = fmac_proc_open,
@@ -194,8 +193,8 @@ void fmac_procfs_exit(void) {
     fmac_log_buffer = NULL;
     fmac_log_len = 0;
   }
-  #ifdef FMAC_ROOT
+#ifdef FMAC_ROOT
   fmac_uid_proc_exit();
-  #endif
+#endif
   pr_info("[FMAC] Procfs removed.\n");
 }
