@@ -110,14 +110,14 @@ static const struct proc_ops fmac_proc_ops = {
     .proc_open = fmac_proc_open,
     .proc_read = seq_read,
     .proc_write = fmac_proc_write,
-    .proc_llseek = seq_lseek,
+    .proc_lseek = seq_lseek,
     .proc_release = single_release,
 };
 
 static const struct proc_ops fmac_log_proc_ops = {
     .proc_open = fmac_log_open,
     .proc_read = seq_read,
-    .proc_llseek = seq_lseek,
+    .proc_lseek = seq_lseek,
     .proc_release = single_release,
 };
 #else
