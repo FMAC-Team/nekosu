@@ -15,7 +15,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/slab.h>
