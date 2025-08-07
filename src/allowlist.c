@@ -20,10 +20,6 @@
 
 #include "fmac.h"
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-#define FMAC_USE_PROC_OPS
-#endif
-
 #define MAX_UIDS 128
 
 static DEFINE_MUTEX(fmac_uid_mutex);

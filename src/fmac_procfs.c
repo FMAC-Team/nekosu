@@ -104,6 +104,23 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer,
   return count;
 }
 
+
+#ifdef FMAC_USE_PROC_OPS
+static const struct proc_ops fmac_proc_ops = {
+    .proc_open = fmac_proc_open,
+    .proc_read = seq_read,
+    .proc_write = fmac_proc_write,
+    .proc_llseek = seq_lseek,
+    .proc_release = single_release,
+};
+
+static const struct proc_ops fmac_log_proc_ops = {
+    .proc_open = fmac_log_open,
+    .proc_read = seq_read,
+    .proc_llseek = seq_lseek,
+    .proc_release = single_release,
+};
+#else
 static const struct file_operations fmac_proc_ops = {
     .owner = THIS_MODULE,
     .open = fmac_proc_open,
@@ -120,6 +137,7 @@ static const struct file_operations fmac_log_proc_ops = {
     .llseek = seq_lseek,
     .release = single_release,
 };
+#endif
 
 int fmac_procfs_init(void) {
   fmac_log_buffer = vmalloc(MAX_LOG_SIZE);

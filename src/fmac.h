@@ -18,6 +18,9 @@
 #include <linux/types.h>
 #include <linux/version.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#define FMAC_USE_PROC_OPS
+#endif
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)
