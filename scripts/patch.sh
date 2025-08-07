@@ -58,10 +58,6 @@ apply_version_patch() {
         print_warn "No openat patch for kernel $MAJOR.$MINOR"
     fi
 
-    if [[ -f "$PATCH_DIR/4.9prctl.patch" ]]; then
-        print_info "Applying 4.9prctl.patch..."
-        patch -p1 < "$PATCH_DIR/4.9prctl.patch" || print_warn "4.9prctl.patch may already be applied"
-    fi
 }
 
 # ---------- Install ----------
