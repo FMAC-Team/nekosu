@@ -1,8 +1,11 @@
 fmac-objs := fm.o
 fmac-objs += fmac_procfs.o
+
+ifdef CONFIG_FMAC_ROOT
 fmac-objs += root.o
 fmac-objs += allowlist.o
 fmac-objs += manager.o
+endif
 
 obj-$(CONFIG_FMAC) += fmac.o
 

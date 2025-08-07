@@ -13,5 +13,12 @@ config FMAC_DEBUG
 	default y
 	help
 	  Enable FMAC debug mode.
+	  
+config FMAC_ROOT
+	bool "FMAC ROOT feature"
+	depends on FMAC
+	default n
+	help
+	  Enable FMAC root feature.
 
 endmenu
