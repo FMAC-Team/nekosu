@@ -15,7 +15,6 @@ TARGET_DIR="$KERNEL_DIR/drivers/fmac"
 KCONFIG="$KERNEL_DIR/drivers/Kconfig"
 MAKEFILE="$KERNEL_DIR/drivers/Makefile"
 
-# ---------- Print helpers ----------
 
 print_info() {
     echo -e "\033[1;32m[INFO]\033[0m $*"
@@ -29,19 +28,16 @@ print_err() {
     echo -e "\033[1;31m[ERROR]\033[0m $*"
 }
 
-# ---------- Sanity check ----------
-
 check_kernel_tree() {
     [[ ! -f "$KERNEL_DIR/Makefile" || ! -d "$KERNEL_DIR/include" ]] && {
-        echo "Not a valid Linux kernel tree: $KERNEL_DIR"
+        print_err "Not a valid Linux kernel tree: $KERNEL_DIR"
         exit 1
     }
 }
 
-# ---------- Patch functions ----------
 
-apply_version_patch() {
-    local MAJOR MINOR PATCHFILE
+apply_version_patches() {
+    local MAJOR MINOR PATCHFILES
 
     MAJOR=$(grep '^VERSION =' "$KERNEL_DIR/Makefile" | awk '{print $3}')
     MINOR=$(grep '^PATCHLEVEL =' "$KERNEL_DIR/Makefile" | awk '{print $3}')
@@ -50,17 +46,26 @@ apply_version_patch() {
 
     print_info "Detected kernel version: $FULL_VER"
 
-    PATCHFILE="$PATCH_DIR/${MAJOR}.${MINOR}openat.patch"
-    if [[ -f "$PATCHFILE" ]]; then
-        print_info "Applying patch: $(basename "$PATCHFILE")"
-        patch -p1 < "$PATCHFILE" || print_warn "Failed to apply openat patch"
-    else
-        print_warn "No openat patch for kernel $MAJOR.$MINOR"
-    fi
+    # Find all matching patch files
+    PATCHFILES=()
+    while IFS= read -r -d $'\0' file; do
+        PATCHFILES+=("$file")
+    done < <(find "$PATCH_DIR" -maxdepth 1 -name "${MAJOR}.${MINOR}*.patch" -print0 | sort -z -V)
 
+    if [[ ${#PATCHFILES[@]} -gt 0 ]]; then
+        print_info "Found ${#PATCHFILES[@]} patch files for kernel $MAJOR.$MINOR"
+        for patchfile in "${PATCHFILES[@]}"; do
+            print_info "Applying patch: $(basename "$patchfile")"
+            patch -p1 --no-backup-if-mismatch -r - < "$patchfile" || {
+                print_warn "Patch application had issues: $(basename "$patchfile")"
+                # Continue to next patch even if this one fails
+            }
+        done
+    else
+        print_warn "No patches found for kernel $MAJOR.$MINOR in $PATCH_DIR"
+    fi
 }
 
-# ---------- Install ----------
 
 install_patch() {
     check_kernel_tree
@@ -84,12 +89,9 @@ install_patch() {
         print_warn "Makefile already patched."
     fi
 
-    apply_version_patch
+    apply_version_patches
 
     print_info "Done. Run 'make menuconfig' and enable Device Drivers → FMAC."
 }
 
-# ---------- Entry ----------
-
-
-        install_patch
+install_patch
