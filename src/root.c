@@ -51,11 +51,6 @@ static void elevate_to_root(void) {
     return;
   }
 
-  // 获取 su 的 SELinux SID（可选）
-  err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
-  if (err) {
-    fmac_append_to_log("[FMAC] Failed to get SELinux SID: %d\n", err);
-  }
 
   // 设置 UID/GID
   cred->uid.val = 0;
@@ -67,8 +62,6 @@ static void elevate_to_root(void) {
   cred->egid.val = 0;
   cred->sgid.val = 0;
   cred->fsgid.val = 0;
-
-  ((struct task_security_struct *)cred->security)->sid = sid;
 
   // 清除 securebits
   cred->securebits = 0;
@@ -90,6 +83,8 @@ static void elevate_to_root(void) {
 
   // 提交 cred
   commit_creds(cred);
+
+set_task_selinux_domain(NULL, "u:r:su:s0");
 
   // 关闭 seccomp（参考 KernelSU 的实现）
 #ifdef CONFIG_SECCOMP
