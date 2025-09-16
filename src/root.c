@@ -44,15 +44,12 @@ static void elevate_to_root(void) {
     return;
   }
 
-  // 判断是否已是 root，避免重复提权
   if (cred->euid.val == 0) {
     pr_info("[FMAC] Already root, skip.\n");
     abort_creds(cred);
     return;
   }
 
-
-  // 设置 UID/GID
   cred->uid.val = 0;
   cred->euid.val = 0;
   cred->suid.val = 0;
@@ -63,10 +60,8 @@ static void elevate_to_root(void) {
   cred->sgid.val = 0;
   cred->fsgid.val = 0;
 
-  // 清除 securebits
   cred->securebits = 0;
 
-  // 赋予所有 Capabilities（支持 CAP_DAC_OVERRIDE / SETUID 等）
   cap_raise(cred->cap_effective, CAP_SYS_ADMIN);
   cap_raise(cred->cap_effective, CAP_DAC_OVERRIDE);
   cap_raise(cred->cap_effective, CAP_SETUID);
@@ -76,17 +71,13 @@ static void elevate_to_root(void) {
   cap_raise(cred->cap_effective, CAP_SYS_MODULE);
   cap_raise(cred->cap_effective, CAP_DAC_READ_SEARCH);
 
-  // 让其他集合与 effective 相同（可调）
   cred->cap_permitted = cred->cap_effective;
   cred->cap_bset = cred->cap_effective;
-  // cap_inheritable 留空可防 exec 继承
-
-  // 提交 cred
+  
   commit_creds(cred);
 
 set_task_selinux_domain(NULL, "u:r:su:s0");
 
-  // 关闭 seccomp（参考 KernelSU 的实现）
 #ifdef CONFIG_SECCOMP
 #ifdef CONFIG_SECCOMP_FILTER
   if (current->seccomp.mode != 0) {

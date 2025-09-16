@@ -1,6 +1,6 @@
 fmac-objs := fm.o
-fmac-objs += fmac_procfs.o
-fmac-objs += fmac_check.o
+fmac-objs += procfs.o
+fmac-objs += check.o
 
 ifdef CONFIG_FMAC_ROOT
 fmac-objs += root.o
@@ -11,3 +11,4 @@ endif
 obj-$(CONFIG_FMAC) += fmac.o
 
 ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
+ccflags-y += -D__FILE_NAME__=\"$(notdir $(src))\"

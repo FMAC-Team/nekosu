@@ -131,10 +131,8 @@ static const struct file_operations fmac_uid_proc_ops = {
 #endif
 
 int fmac_uid_proc_init(void) {
-  // 创建 /proc/fmac_uid 接口
   proc_create("uids", 0600, fmac_proc_dir, &fmac_uid_proc_ops);
 
-  // 初始化允许 UID 列表
   mutex_lock(&fmac_uid_mutex);
 
   if (!fmac_uid_list) {
