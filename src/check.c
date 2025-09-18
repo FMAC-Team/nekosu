@@ -56,7 +56,7 @@ int fmac_check_mkdirat(const char __user *pathname) {
     return 0;
   }
 
-  if (fmac_check_access(path, uid, 0)) { // op_type = 0
+  if (fmac_check_access(path, uid, FMAC_OP_MKDIRAT)) {
     if (fmac_printk)
       fmac_append_to_log("[FMAC] Denied mkdirat: %s by UID %u (pid %d)\n", path,
                          uid, current->pid);
@@ -74,7 +74,7 @@ int fmac_check_openat(const char __user *pathname) {
     return 0;
   }
 
-  if (fmac_check_access(path, uid, 1)) { // op_type = 1
+  if (fmac_check_access(path, uid, FMAC_OP_OPENAT)) {
     if (fmac_printk)
       fmac_append_to_log("[FMAC] Denied openat: %s by UID %u (pid %d)\n", path,
                          uid, current->pid);

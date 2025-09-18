@@ -27,12 +27,19 @@
 #define FMAC_HASH_BITS 8
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
+enum fmac_op_type {
+    FMAC_OP_MKDIRAT = 0,
+    FMAC_OP_OPENAT  = 1,
+    FMAC_OP_UNLINK  = 2,
+    FMAC_OP_RENAME  = 3,
+};
+
 struct fmac_rule {
   char path_prefix[MAX_PATH_LEN];
   size_t path_len;
   uid_t uid;
   bool deny;
-  int op_type; // type 0 is mkdirat,type 1 is openat.
+  enum fmac_op_type op_type;
   struct hlist_node node;
   struct rcu_head rcu;
 };
