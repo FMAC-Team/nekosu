@@ -1,4 +1,4 @@
-# FMAC - File Monitoring and Access Control Kernel Module
+# Lris - File Monitoring and Access Control Kernel Module
 
 ## Overview
 FMAC (File Monitoring and Access Control) is a Linux kernel module that provides fine-grained file access control based on file paths, user IDs (UIDs), and operation types (e.g., `mkdirat`, `openat`). It uses a hash table to store access rules and provides a `/proc` interface for managing rules and viewing logs. The module leverages RCU (Read-Copy-Update) for efficient rule lookups and supports logging of access violations.
