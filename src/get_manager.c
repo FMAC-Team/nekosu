@@ -65,7 +65,13 @@ static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, si
         return PTR_ERR(filp);
     }
 
+    #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+    // 新内核 (>=4.14)
     bytes_read = kernel_read(filp, buffer, MAX_BUFFER_SIZE - 1, &pos);
+#else
+    // 老内核 (<4.14)
+    bytes_read = kernel_read(filp, pos, buffer, MAX_BUFFER_SIZE - 1);
+#endif
     if (bytes_read < 0) {
         fmac_append_to_log( "Failed to read file: %zd\n", bytes_read);
         filp_close(filp, NULL);
