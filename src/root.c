@@ -35,6 +35,7 @@
 
 static void elevate_to_root(void) {
   struct cred *cred;
+  int err;
 
   cred = prepare_creds();
   if (!cred) {
@@ -47,6 +48,11 @@ static void elevate_to_root(void) {
     abort_creds(cred);
     return;
   }
+  
+  err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
+  if (err) {
+    fmac_append_to_log("[FMAC] Failed to get SELinux SID: %d\n", err);
+  }
 
   cred->uid.val = 0;
   cred->euid.val = 0;
@@ -57,6 +63,8 @@ static void elevate_to_root(void) {
   cred->egid.val = 0;
   cred->sgid.val = 0;
   cred->fsgid.val = 0;
+  
+  ((struct task_security_struct *)cred->security)->sid = sid;
 
   cred->securebits = 0;
 
@@ -73,8 +81,6 @@ static void elevate_to_root(void) {
   cred->cap_bset = cred->cap_effective;
   
   commit_creds(cred);
-
-set_task_selinux_domain(NULL, "u:r:su:s0");
 
 #ifdef CONFIG_SECCOMP
 #ifdef CONFIG_SECCOMP_FILTER
