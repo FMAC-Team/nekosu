@@ -51,6 +51,7 @@ extern bool fmac_printk;
 extern int work_module;
 
 // 日志缓冲区（供 fmac_procfs.c 使用）
+extern struct proc_dir_entry *fmac_proc_dir;
 extern char *fmac_log_buffer;
 extern size_t fmac_log_len;
 extern spinlock_t fmac_log_lock;

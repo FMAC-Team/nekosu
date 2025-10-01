@@ -13,7 +13,7 @@
 // procfs 初始化和清理函数
 int fmac_procfs_init(void);
 void fmac_procfs_exit(void);
-extern struct proc_dir_entry *fmac_proc_dir;
+
 
 int fmac_uid_proc_init(void);
 void fmac_uid_proc_exit(void);
