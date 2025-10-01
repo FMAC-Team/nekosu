@@ -36,6 +36,7 @@
 static void elevate_to_root(void) {
   struct cred *cred;
   int err;
+  u32 sid;
 
   cred = prepare_creds();
   if (!cred) {
