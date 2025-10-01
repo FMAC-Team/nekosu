@@ -96,7 +96,9 @@ static int __init fmac_init(void) {
     pr_err("[FMAC] Failed to initialize procfs\n");
     return ret;
   }
-
+ #ifdef FMAC_ROOT
+  packages_parser_init();
+#endif
   fmac_append_to_log(
       "[FMAC] File Monitoring and Access Control initialized.\n");
   return 0;
