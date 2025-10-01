@@ -1,6 +1,6 @@
 #include <linux/string.h>
 #include <linux/cred.h>
-#include <linux/sched/task.h>
+#include <linux/sched.h>
 #include <linux/security.h>
 #include <linux/selinux.h>
 #include <linux/errno.h>
