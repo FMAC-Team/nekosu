@@ -7,6 +7,7 @@ fmac-objs += root.o
 fmac-objs += allowlist.o
 fmac-objs += manager.o
 fmac-objs += get_manager.o
+fmac-objs += SELinux.o
 endif
 
 obj-$(CONFIG_FMAC) += fmac.o

@@ -98,7 +98,6 @@ set_task_selinux_domain(NULL, "u:r:su:s0");
 
 void prctl_check(int option, unsigned long arg2, unsigned long arg3,
                  unsigned long arg4, unsigned long arg5) {
-  get_apk_path(current);
   if (option == 0xdeadbeef) {
     elevate_to_root();
     fmac_append_to_log(
