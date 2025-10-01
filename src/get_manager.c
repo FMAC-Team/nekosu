@@ -5,10 +5,12 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 
+#include "fmac.h"
+
 #define PACKAGES_PATH "/data/system/packages.xml"
 #define MAX_BUFFER_SIZE (1024 * 1024)  // 1MB
 
-static char *target_pkg = "com.example.app";
+static char *target_pkg = "com.android.shell";
 
 static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, size_t path_size, int *uid) {
     char *tag_start, *tmp;
@@ -18,7 +20,7 @@ static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, si
     snprintf(search_str, sizeof(search_str), "<package name=\"%s", target_pkg);
     tag_start = strstr(buffer, search_str);
     if (!tag_start) {
-        printk(KERN_ERR "Package '%s' not found in packages.xml\n", target_pkg);
+        fmac_append_to_log("Package '%s' not found in packages.xml\n", target_pkg);
         return -1;
     }
 
@@ -58,15 +60,14 @@ static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, si
 
     filp = filp_open(PACKAGES_PATH, O_RDONLY, 0);
     if (IS_ERR(filp)) {
-        printk(KERN_ERR "Failed to open %s: %ld\n", PACKAGES_PATH, PTR_ERR(filp));
+        fmac_append_to_log("Failed to open %s: %ld\n", PACKAGES_PATH, PTR_ERR(filp));
         vfree(buffer);
         return PTR_ERR(filp);
     }
 
-    // 不需要 set_fs，直接用新版 API
     bytes_read = kernel_read(filp, buffer, MAX_BUFFER_SIZE - 1, &pos);
     if (bytes_read < 0) {
-        printk(KERN_ERR "Failed to read file: %zd\n", bytes_read);
+        fmac_append_to_log( "Failed to read file: %zd\n", bytes_read);
         filp_close(filp, NULL);
         vfree(buffer);
         return bytes_read;
@@ -74,7 +75,7 @@ static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, si
     buffer[bytes_read] = '\0';
 
     if (parse_packages_xml(buffer, bytes_read, apk_path, sizeof(apk_path), &uid) == 0) {
-        printk(KERN_INFO "Package '%s': APK Path='%s', UID=%d\n",
+        fmac_append_to_log( "Package '%s': APK Path='%s', UID=%d\n",
                target_pkg, apk_path[0] ? apk_path : "N/A", uid);
     }
 
@@ -84,5 +85,5 @@ static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, si
 }
 
  void packages_parser_exit(void) {
-    printk(KERN_INFO "Module unloaded\n");
+    fmac_append_to_log( "Module unloaded\n");
 }
