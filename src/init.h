@@ -8,8 +8,8 @@
  * (at your option) any later version.
  */
  
- #ifndef _LINUX_INIT_H
-#define _LINUX_INIT_H
+ #ifndef _LINUX_FMAC_INIT_H
+#define _LINUX_FMAC_INIT_H
 // procfs 初始化和清理函数
 int fmac_procfs_init(void);
 void fmac_procfs_exit(void);
