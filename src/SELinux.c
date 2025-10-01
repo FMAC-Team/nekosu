@@ -41,30 +41,5 @@ int set_task_selinux_domain(struct task_struct *task, const char *ctx)
 
         commit_creds(new);
         return 0;
-    } else {
-    //Dangerous operations
-        err = security_secctx_to_secid(ctx, strlen(ctx), &sid);
-        if (err) {
-            fmac_append_to_log("[FMAC] secctx_to_secid failed for '%s': %d\n", ctx, err);
-            return err;
-        }
-
-        get_task_struct(task);
-        task_lock(task);
-
-        if (!task->security) {
-            fmac_append_to_log("[FMAC] target task (pid=%d) has no security struct\n", task->pid);
-            task_unlock(task);
-            put_task_struct(task);
-            return -EINVAL;
-        }
-
-        ((struct task_security_struct *)task->security)->sid = sid;
-
-        pr_info("[FMAC] set task(pid=%d) SELinux sid=%u for ctx='%s'\n", task->pid, sid, ctx);
-
-        task_unlock(task);
-        put_task_struct(task);
-        return 0;
     }
 }
