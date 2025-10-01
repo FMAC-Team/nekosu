@@ -5,6 +5,8 @@
 #include <linux/selinux.h>
 #include <linux/errno.h>
 
+#include "fmac.h"
+
 int set_task_selinux_domain(struct task_struct *task, const char *ctx)
 {
     u32 sid;
