@@ -13,7 +13,7 @@
 static char *target_pkg = "com.android.shell";
 
 static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, size_t path_size, int *uid) {
-    char *tag_start, *tmp;
+    char *tag_start, *tmp,*end;
 
     // prase <package name="com.example.app"
     char search_str[256];
@@ -28,7 +28,7 @@ static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, si
     tmp = strstr(tag_start, "codePath=\"");
     if (tmp) {
         tmp += strlen("codePath=\"");
-        char *end = strchr(tmp, '"');
+        end = strchr(tmp, '"');
         if (end) {
             size_t copy_len = min((size_t)(end - tmp), path_size - 1);
             strncpy(apk_path, tmp, copy_len);
