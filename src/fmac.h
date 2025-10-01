@@ -59,18 +59,4 @@ extern spinlock_t fmac_log_lock;
 void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
 void fmac_append_to_log(const char *fmt, ...);
 
-// procfs 初始化和清理函数
-int fmac_procfs_init(void);
-void fmac_procfs_exit(void);
-extern struct proc_dir_entry *fmac_proc_dir;
-
-int fmac_uid_proc_init(void);
-void fmac_uid_proc_exit(void);
-bool fmac_uid_allowed(void);
-
-void get_apk_path(struct task_struct *task);
-
-
-//SELinux.c
-int set_task_selinux_domain(struct task_struct *task, const char *ctx);
 #endif /* _LINUX_FMAC_H */

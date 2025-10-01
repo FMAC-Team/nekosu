@@ -21,6 +21,7 @@
 #include <linux/uaccess.h>
 
 #include "fmac.h"
+#include "init.h"
 
 MODULE_LICENSE("GPLv3");
 MODULE_AUTHOR("Aqnya");
