@@ -17,7 +17,7 @@ config FMAC_DEBUG
 config FMAC_ROOT
 	bool "FMAC ROOT feature"
 	depends on FMAC
-	default n
+	default y
 	help
 	  Enable FMAC root feature.
 
