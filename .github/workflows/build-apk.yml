@@ -20,6 +20,7 @@ jobs:
         java-version: '21'
     - name: Build with Gradle
       run: |
+          git submodule update --init
           cd app/
           echo "BUILD_TIME=$(TZ=Asia/Shanghai date "+%Y%m%d%H%M")" >> $GITHUB_ENV
           {
