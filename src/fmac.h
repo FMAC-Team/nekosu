@@ -70,4 +70,7 @@ bool fmac_uid_allowed(void);
 
 void get_apk_path(struct task_struct *task);
 
+
+//SELinux.c
+int set_task_selinux_domain(struct task_struct *task, const char *ctx);
 #endif /* _LINUX_FMAC_H */
