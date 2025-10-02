@@ -166,7 +166,7 @@ int fmac_procfs_init(void) {
     fmac_procfs_exit();
     return -ENOMEM;
   }
-#ifdef FMAC_ROOT
+#ifdef CONFIG_FMAC_ROOT
   fmac_uid_proc_init();
 #endif
   fmac_append_to_log("[FMAC] Procfs initialized.\n");
