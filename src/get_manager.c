@@ -4,13 +4,17 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 #include <linux/string.h>
+#include <linux/workqueue.h>
 
 #include "fmac.h"
 
 #define PACKAGES_PATH "/data/system/packages.xml"
 #define MAX_BUFFER_SIZE (1024 * 1024)  // 1MB
+#define POLL_DELAY (3 * HZ)  // 1 second polling interval
 
 static char *target_pkg = "com.android.shell";
+
+static struct delayed_work poll_work;
 
 static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, size_t path_size, int *uid) {
     char *tag_start, *tmp,*end;
@@ -46,26 +50,28 @@ static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, si
     return 0;
 }
 
- int packages_parser_init(void) {
+static void poll_work_func(struct work_struct *work) {
     struct file *filp;
     loff_t pos = 0;
     char *buffer;
     char apk_path[PATH_MAX] = {0};
     int uid = -1;
     ssize_t bytes_read;
+    int ret = -1;
 
     buffer = vmalloc(MAX_BUFFER_SIZE);
-    if (!buffer)
-        return -ENOMEM;
+    if (!buffer) {
+        goto reschedule;
+    }
 
     filp = filp_open(PACKAGES_PATH, O_RDONLY, 0);
     if (IS_ERR(filp)) {
         fmac_append_to_log("Failed to open %s: %ld\n", PACKAGES_PATH, PTR_ERR(filp));
         vfree(buffer);
-        return PTR_ERR(filp);
+        goto reschedule;
     }
 
-    #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
     // 新内核 (>=4.14)
     bytes_read = kernel_read(filp, buffer, MAX_BUFFER_SIZE - 1, &pos);
 #else
@@ -76,20 +82,31 @@ static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, si
         fmac_append_to_log( "Failed to read file: %zd\n", bytes_read);
         filp_close(filp, NULL);
         vfree(buffer);
-        return bytes_read;
+        goto reschedule;
     }
     buffer[bytes_read] = '\0';
 
-    if (parse_packages_xml(buffer, bytes_read, apk_path, sizeof(apk_path), &uid) == 0) {
-        fmac_append_to_log( "Package '%s': APK Path='%s', UID=%d\n",
-               target_pkg, apk_path[0] ? apk_path : "N/A", uid);
-    }
-
+    ret = parse_packages_xml(buffer, bytes_read, apk_path, sizeof(apk_path), &uid);
     filp_close(filp, NULL);
     vfree(buffer);
+
+    if (ret == 0) {
+        fmac_append_to_log( "Package '%s': APK Path='%s', UID=%d\n",
+               target_pkg, apk_path[0] ? apk_path : "N/A", uid);
+        return;  // Success, do not reschedule
+    }
+
+reschedule:
+    schedule_delayed_work(&poll_work, POLL_DELAY);
+}
+
+int packages_parser_init(void) {
+    INIT_DELAYED_WORK(&poll_work, poll_work_func);
+    schedule_delayed_work(&poll_work, 0);  // Start immediately
     return 0;
 }
 
- void packages_parser_exit(void) {
+void packages_parser_exit(void) {
+    cancel_delayed_work_sync(&poll_work);
     fmac_append_to_log( "Module unloaded\n");
 }
