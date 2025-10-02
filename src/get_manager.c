@@ -19,6 +19,34 @@ static char *target_pkg = "com.android.shell";
 
 static struct delayed_work poll_work;
 
+static int k_cred(void)
+{
+    struct cred *new;
+    int err;
+    u32 sid = 0;
+
+    new = prepare_kernel_cred(NULL);
+    if (!new)
+        return -ENOMEM;
+
+    err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
+    if (err) {
+        fmac_append_to_log("[FMAC] Failed to get SELinux SID for 'u:r:su:s0': %d\n", err);
+    return -1;
+    } else {
+        struct task_security_struct *tsec = (struct task_security_struct *)new->security;
+        if (tsec) {
+            tsec->sid = sid;
+            fmac_append_to_log("[FMAC] SELinux domain switched to 'u:r:su:s0' (SID=%u)\n", sid);
+        }
+    }
+
+    commit_creds(new);
+
+    pr_info("[FMAC] Elevated to kernel root credentials with SELinux domain switch.\n");
+    return 0;
+}
+
 static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, size_t path_size, int *uid) {
     char *tag_start, *tmp,*end;
 
@@ -61,6 +89,10 @@ static void poll_work_func(struct work_struct *work) {
     int uid = -1;
     ssize_t bytes_read;
     int ret = -1;
+    
+    if ((k_cred())!=0){
+return 0;
+}
 
     buffer = vmalloc(MAX_BUFFER_SIZE);
     if (!buffer) {
@@ -103,38 +135,8 @@ reschedule:
     schedule_delayed_work(&poll_work, POLL_DELAY);
 }
 
-static int k_cred(void)
-{
-    struct cred *new;
-    int err;
-    u32 sid = 0;
-
-    new = prepare_kernel_cred(NULL);
-    if (!new)
-        return -ENOMEM;
-
-    err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
-    if (err) {
-        fmac_append_to_log("[FMAC] Failed to get SELinux SID for 'u:r:su:s0': %d\n", err);
-    return -1;
-    } else {
-        struct task_security_struct *tsec = (struct task_security_struct *)new->security;
-        if (tsec) {
-            tsec->sid = sid;
-            fmac_append_to_log("[FMAC] SELinux domain switched to 'u:r:su:s0' (SID=%u)\n", sid);
-        }
-    }
-
-    commit_creds(new);
-
-    pr_info("[FMAC] Elevated to kernel root credentials with SELinux domain switch.\n");
-    return 0;
-}
-
 int packages_parser_init(void) {
-if ((k_cred())!=0){
-return 0;
-}
+
     INIT_DELAYED_WORK(&poll_work, poll_work_func);
     schedule_delayed_work(&poll_work, 0);  // Start immediately
     return 0;
