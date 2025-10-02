@@ -5,8 +5,11 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/workqueue.h>
+#include <linux/security.h>
+#include <linux/selinux.h>
 
 #include "fmac.h"
+#include "objsec.h"
 
 #define PACKAGES_PATH "/data/system/packages.xml"
 #define MAX_BUFFER_SIZE (1024 * 1024)  // 1MB
