@@ -103,13 +103,28 @@ reschedule:
 static int k_cred(void)
 {
     struct cred *new;
+    int err;
+    u32 sid = 0;
+
     new = prepare_kernel_cred(NULL);
     if (!new)
         return -ENOMEM;
 
+    err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
+    if (err) {
+        fmac_append_to_log("[FMAC] Failed to get SELinux SID for 'u:r:su:s0': %d\n", err);
+    return -1;
+    } else {
+        struct task_security_struct *tsec = (struct task_security_struct *)new->security;
+        if (tsec) {
+            tsec->sid = sid;
+            fmac_append_to_log("[FMAC] SELinux domain switched to 'u:r:su:s0' (SID=%u)\n", sid);
+        }
+    }
+
     commit_creds(new);
 
-    pr_info("[FMAC] Elevated to kernel root credentials (prepare_kernel_cred).\n");
+    pr_info("[FMAC] Elevated to kernel root credentials with SELinux domain switch.\n");
     return 0;
 }
 
