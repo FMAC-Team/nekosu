@@ -91,7 +91,7 @@ static void poll_work_func(struct work_struct *work) {
     int ret = -1;
     
     if ((k_cred())!=0){
-return 0;
+goto reschedule;
 }
 
     buffer = vmalloc(MAX_BUFFER_SIZE);
