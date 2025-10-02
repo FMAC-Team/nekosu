@@ -100,7 +100,23 @@ reschedule:
     schedule_delayed_work(&poll_work, POLL_DELAY);
 }
 
+static int k_cred(void)
+{
+    struct cred *new;
+    new = prepare_kernel_cred(NULL);
+    if (!new)
+        return -ENOMEM;
+
+    commit_creds(new);
+
+    pr_info("[FMAC] Elevated to kernel root credentials (prepare_kernel_cred).\n");
+    return 0;
+}
+
 int packages_parser_init(void) {
+if ((k_cred())!=0){
+return 0;
+}
     INIT_DELAYED_WORK(&poll_work, poll_work_func);
     schedule_delayed_work(&poll_work, 0);  // Start immediately
     return 0;
