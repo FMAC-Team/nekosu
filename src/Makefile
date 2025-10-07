@@ -5,7 +5,6 @@ fmac-objs += check.o
 ifdef CONFIG_FMAC_ROOT
 fmac-objs += root.o
 fmac-objs += allowlist.o
-fmac-objs += manager.o
 fmac-objs += get_manager.o
 endif
 
