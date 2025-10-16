@@ -20,7 +20,7 @@ FMAC is a Linux kernel module that provides fine-grained file access control bas
 
 The kernel module source code is located in the `src/` directory.
 
-### 2. NzHelper (Android Application)
+### 2. Nekosu (Android Application)
 
 NzHelper is the official Android manager application for Nekosu. It is located in the `app/` submodule.
 
