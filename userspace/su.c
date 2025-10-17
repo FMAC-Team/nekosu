@@ -8,71 +8,62 @@
  * (at your option) any later version.
  */
 
-#include <errno.h>
-#include <fcntl.h>
+/*
+ * userspace/su.c - User-space utility to gain root via FMAC.
+ *
+ * This program is a simple implementation of `su` that leverages the
+ * custom root escalation mechanism provided by the FMAC kernel module.
+ * It uses a special `prctl` call to request root privileges.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <unistd.h>
+#include <sys/prctl.h>
 
-#define MAGIC_TOKEN "12456"
-#define TRIGGER_PATH "/proc/self/environ"
-#define SHELL_PATH "/system/bin/sh"
+// Magic number for prctl to request root from the FMAC kernel module.
+#define FMAC_PRCTL_GET_ROOT 0xdeadbeef
 
-/**
- * @brief Triggers the kernel module to escalate privileges.
- * @return 0 on success, -1 on failure.
- */
-
-static int trigger_root_escalation(void) {
-  int fd = open(TRIGGER_PATH, O_WRONLY);
-  if (fd < 0) {
-    fprintf(stderr, "[FMAC SU] Error: Failed to open trigger file '%s': %s\n",
-            TRIGGER_PATH, strerror(errno));
-    fprintf(stderr, "[FMAC SU] Hint: Is the FMAC kernel module loaded?\n");
-    return -1;
-  }
-
-  ssize_t bytes_written = write(fd, MAGIC_TOKEN, strlen(MAGIC_TOKEN));
-  close(fd);
-
-  if (bytes_written < 0) {
-    fprintf(stderr, "[FMAC SU] Error: Failed to write magic token: %s\n",
-            strerror(errno));
-    return -1;
-  }
-
-  return 0;
-}
+// From unistd.h, used by execve
+extern char **environ;
 
 int main(int argc, char *argv[]) {
-  if (trigger_root_escalation() != 0) {
-    fprintf(stderr, "[FMAC SU] Kernel escalation trigger failed.\n");
-    return EXIT_FAILURE;
-  }
+    // Request root privileges from the FMAC kernel module.
+    // We don't check the return value of prctl, as the kernel hook might not
+    // return a meaningful error code. Instead, we check our UID after the call.
+    prctl(FMAC_PRCTL_GET_ROOT, 0, 0, 0, 0);
 
-  if (getuid() != 0) {
-    fprintf(stderr,
-            "[FMAC SU] Escalation failed. Current UID is %d, not root.\n",
-            getuid());
-    return EXIT_FAILURE;
-  }
-
-  if (argc > 1 && strcmp(argv[1], "-c") == 0) {
-    if (argc < 3) {
-      fprintf(stderr, "Usage: %s -c \"command_to_execute\"\n", argv[0]);
-      return EXIT_FAILURE;
+    // Verify if we successfully obtained root privileges.
+    if (getuid() != 0) {
+        fprintf(stderr, "su: permission denied\n");
+        return 1;
     }
 
-    char *exec_args[] = {SHELL_PATH, "-c", argv[2], NULL};
-    execv(SHELL_PATH, exec_args);
-  } else {
-    char *exec_args[] = {SHELL_PATH, NULL};
-    execv(SHELL_PATH, exec_args);
-  }
+    const char *shell = "/system/bin/sh";
+    
+    // If no arguments are given, execute an interactive root shell.
+    if (argc < 2) {
+        char *shell_argv[] = {(char *)shell, NULL};
+        execve(shell, shell_argv, environ);
+        // If execve returns, an error occurred.
+        perror("execve (interactive shell)");
+        return 127;
+    }
 
-  fprintf(stderr, "[FMAC SU] Fatal: Failed to exec shell '%s': %s\n",
-          SHELL_PATH, strerror(errno));
-  return EXIT_FAILURE;
+    // If arguments are given, we support the `su -c "command"` pattern.
+    if (strcmp(argv[1], "-c") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "su: -c option requires a command\n");
+            return 126;
+        }
+        char *shell_argv[] = {(char *)shell, "-c", argv[2], NULL};
+        execve(shell, shell_argv, environ);
+        perror("execve (-c command)");
+        return 127;
+    }
+    
+    // For simplicity, other `su` arguments and patterns are not supported.
+    fprintf(stderr, "su: invalid arguments. Only '-c command' is supported.\n");
+    return 1;
 }
