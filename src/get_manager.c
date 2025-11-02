@@ -12,12 +12,30 @@
 #include "objsec.h"
 
 #define PACKAGES_PATH "/data/system/packages.xml"
-#define MAX_BUFFER_SIZE (1024 * 1024)  // 1MB
-#define POLL_DELAY (3 * HZ)  // 1 second polling interval
+#define READ_CHUNK_SIZE (4096)  // 4KB chunks for streaming
+#define POLL_DELAY (3 * HZ)
 
 static char *target_pkg = "com.android.shell";
 
 static struct delayed_work poll_work;
+
+typedef enum {
+    STATE_SEARCHING, 
+    STATE_IN_TAG,   
+    STATE_FOUND,   
+    STATE_NOT_FOUND 
+} parse_state_t;
+
+typedef struct {
+    parse_state_t state;
+    char *residual;  
+    size_t residual_len;
+    char apk_path[PATH_MAX];
+    int uid;
+    bool found_name;
+    bool found_codepath;
+    bool found_uid;
+} xml_parser_ctx_t;
 
 static int k_cred(void)
 {
@@ -50,64 +68,217 @@ static int k_cred(void)
     return 0;
 }
 
-static int parse_packages_xml(const char *buffer, size_t len, char *apk_path, size_t path_size, int *uid) {
-    const char *p = buffer;
+static void init_parser_ctx(xml_parser_ctx_t *ctx)
+{
+    memset(ctx, 0, sizeof(xml_parser_ctx_t));
+    ctx->state = STATE_SEARCHING;
+    ctx->uid = -1;
+    ctx->residual = NULL;
+    ctx->residual_len = 0;
+}
 
-    while ((p = strstr(p, "<package")) != NULL) {
-        const char *tag_end = strchr(p, '>');
-        if (!tag_end) {
-            break; // Malformed XML
-        }
+static void cleanup_parser_ctx(xml_parser_ctx_t *ctx)
+{
+    if (ctx->residual) {
+        kfree(ctx->residual);
+        ctx->residual = NULL;
+    }
+}
 
-        // Check if this is the correct package by looking for name="<target_pkg>"
-        char name_attr_str[256];
-        snprintf(name_attr_str, sizeof(name_attr_str), "name=\"%s\"", target_pkg);
-        const char *name_ptr = strstr(p, name_attr_str);
+static bool extract_attribute(const char *data, size_t len, 
+                             const char *attr_name, 
+                             char *output, size_t output_size)
+{
+    char search_str[128];
+    const char *start, *end;
+    size_t attr_len;
 
-        if (name_ptr && name_ptr < tag_end) {
-            // We found the package name. Let's assume this is our package tag.
-            const char *tmp, *end;
+    snprintf(search_str, sizeof(search_str), "%s=\"", attr_name);
+    start = strnstr(data, search_str, len);
+    
+    if (!start)
+        return false;
 
-            // get codePath
-            tmp = strstr(p, "codePath=\"");
-            if (tmp && tmp < tag_end) {
-                tmp += strlen("codePath=\"");
-                end = strchr(tmp, '"');
-                if (end && end < tag_end) {
-                    size_t copy_len = min((size_t)(end - tmp), path_size - 1);
-                    strncpy(apk_path, tmp, copy_len);
-                    apk_path[copy_len] = '\0';
-                }
-            }
+    start += strlen(search_str);
+    end = strchr(start, '"');
+    
+    if (!end || (end - data) > len)
+        return false;
 
-            // get userId
-            tmp = strstr(p, "userId=\"");
-            if (tmp && tmp < tag_end) {
-                tmp += strlen("userId=\"");
-                *uid = simple_strtol(tmp, (char **)&end, 10);
-                if (end == tmp || (*end != '"')) {
-                    *uid = -1;
-                }
-            }
-            return 0;
-        }
+    attr_len = min((size_t)(end - start), output_size - 1);
+    strncpy(output, start, attr_len);
+    output[attr_len] = '\0';
+    
+    return true;
+}
 
-        p = tag_end;
+
+static int parse_chunk(xml_parser_ctx_t *ctx, const char *chunk, size_t chunk_len)
+{
+    char *work_buf = NULL;
+    char *data = NULL;
+    size_t data_len;
+    const char *p, *tag_start, *tag_end;
+    char name_buf[256];
+    char temp_buf[PATH_MAX];
+    int ret = 0;
+
+    if (ctx->residual_len > 0) {
+        data_len = ctx->residual_len + chunk_len;
+        work_buf = kmalloc(data_len + 1, GFP_KERNEL);
+        if (!work_buf)
+            return -ENOMEM;
+        
+        memcpy(work_buf, ctx->residual, ctx->residual_len);
+        memcpy(work_buf + ctx->residual_len, chunk, chunk_len);
+        work_buf[data_len] = '\0';
+        data = work_buf;
+        
+        kfree(ctx->residual);
+        ctx->residual = NULL;
+        ctx->residual_len = 0;
+    } else {
+        data = (char *)chunk;
+        data_len = chunk_len;
     }
 
-    fmac_append_to_log("Package '%s' not found in packages.xml\n", target_pkg);
-    return -1;
+    p = data;
+    
+    while (p < data + data_len) {
+        if (ctx->state == STATE_SEARCHING || ctx->state == STATE_IN_TAG) {
+            tag_start = strnstr(p, "<package", data + data_len - p);
+            
+            if (!tag_start) {
+                size_t tail_size = min((size_t)512, (size_t)(data + data_len - p));
+                if (tail_size > 0) {
+                    ctx->residual = kmalloc(tail_size, GFP_KERNEL);
+                    if (ctx->residual) {
+                        memcpy(ctx->residual, data + data_len - tail_size, tail_size);
+                        ctx->residual_len = tail_size;
+                    }
+                }
+                break;
+            }
+
+            tag_end = strchr(tag_start, '>');
+            
+            if (!tag_end || tag_end >= data + data_len) {
+                size_t incomplete_len = data + data_len - tag_start;
+                ctx->residual = kmalloc(incomplete_len, GFP_KERNEL);
+                if (ctx->residual) {
+                    memcpy(ctx->residual, tag_start, incomplete_len);
+                    ctx->residual_len = incomplete_len;
+                }
+                break;
+            }
+
+            if (extract_attribute(tag_start, tag_end - tag_start, 
+                                "name", name_buf, sizeof(name_buf))) {
+                
+                if (strcmp(name_buf, target_pkg) == 0) {
+                    ctx->found_name = true;
+                    ctx->state = STATE_IN_TAG;
+
+                    if (extract_attribute(tag_start, tag_end - tag_start,
+                                        "codePath", temp_buf, sizeof(temp_buf))) {
+                        strncpy(ctx->apk_path, temp_buf, sizeof(ctx->apk_path) - 1);
+                        ctx->found_codepath = true;
+                    }
+
+                    if (extract_attribute(tag_start, tag_end - tag_start,
+                                        "userId", temp_buf, sizeof(temp_buf))) {
+                        ctx->uid = simple_strtol(temp_buf, NULL, 10);
+                        ctx->found_uid = true;
+                    }
+
+                    if (ctx->found_codepath && ctx->found_uid) {
+                        ctx->state = STATE_FOUND;
+                        ret = 0;
+                        goto out;
+                    }
+                }
+            }
+
+            p = tag_end + 1;
+        } else {
+            break;
+        }
+    }
+
+out:
+    if (work_buf)
+        kfree(work_buf);
+    
+    return ret;
+}
+
+static int parse_packages_xml_streaming(struct file *filp, 
+                                       char *apk_path, 
+                                       size_t path_size, 
+                                       int *uid)
+{
+    xml_parser_ctx_t ctx;
+    char *chunk_buf = NULL;
+    loff_t pos = 0;
+    ssize_t bytes_read;
+    int ret = -1;
+
+    init_parser_ctx(&ctx);
+
+    chunk_buf = kmalloc(READ_CHUNK_SIZE, GFP_KERNEL);
+    if (!chunk_buf) {
+        fmac_append_to_log("[FMAC] Failed to allocate chunk buffer\n");
+        return -ENOMEM;
+    }
+
+    while (1) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+        bytes_read = kernel_read(filp, chunk_buf, READ_CHUNK_SIZE, &pos);
+#else
+        bytes_read = kernel_read(filp, pos, chunk_buf, READ_CHUNK_SIZE);
+        if (bytes_read > 0)
+            pos += bytes_read;
+#endif
+
+        if (bytes_read < 0) {
+            fmac_append_to_log("[FMAC] Failed to read file: %zd\n", bytes_read);
+            ret = bytes_read;
+            break;
+        }
+
+        if (bytes_read == 0) {
+            if (ctx.state == STATE_FOUND) {
+                ret = 0;
+            } else {
+                fmac_append_to_log("[FMAC] Package '%s' not found\n", target_pkg);
+                ret = -ENOENT;
+            }
+            break;
+        }
+
+        ret = parse_chunk(&ctx, chunk_buf, bytes_read);
+        
+        if (ctx.state == STATE_FOUND) {
+            strncpy(apk_path, ctx.apk_path, path_size - 1);
+            apk_path[path_size - 1] = '\0';
+            *uid = ctx.uid;
+            ret = 0;
+            break;
+        }
+    }
+
+    cleanup_parser_ctx(&ctx);
+    kfree(chunk_buf);
+
+    return ret;
 }
 
 static void poll_work_func(struct work_struct *work)
 {
     struct file *filp = NULL;
-    char *buffer = NULL;
     char apk_path[PATH_MAX] = {0};
     int uid = -1;
-    ssize_t bytes_read;
     int ret = -1;
-    loff_t pos = 0;
     struct cred *old_cred;
 
     old_cred = prepare_creds();
@@ -121,45 +292,23 @@ static void poll_work_func(struct work_struct *work)
         goto reschedule;
     }
 
-    buffer = vmalloc(MAX_BUFFER_SIZE);
-    if (!buffer) {
-        fmac_append_to_log("[FMAC] Failed to allocate buffer for packages.xml\n");
-        ret = -ENOMEM;
+    filp = filp_open(PACKAGES_PATH, O_RDONLY, 0);
+    if (IS_ERR(filp)) {
+        fmac_append_to_log("[FMAC] Failed to open %s: %ld\n", PACKAGES_PATH, PTR_ERR(filp));
+        ret = PTR_ERR(filp);
+        filp = NULL;
         goto revert_creds;
     }
 
-    filp = filp_open(PACKAGES_PATH, O_RDONLY, 0);
-    if (IS_ERR(filp)) {
-        fmac_append_to_log("Failed to open %s: %ld\n", PACKAGES_PATH, PTR_ERR(filp));
-        ret = PTR_ERR(filp);
-        filp = NULL; // Prevent filp_close on error pointer
-        goto free_buffer;
-    }
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
-    // New kernel (>=4.14)
-    bytes_read = kernel_read(filp, buffer, MAX_BUFFER_SIZE - 1, &pos);
-#else
-    // Old kernel (<4.14)
-    bytes_read = kernel_read(filp, pos, buffer, MAX_BUFFER_SIZE - 1);
-#endif
-    if (bytes_read < 0) {
-        fmac_append_to_log("Failed to read file: %zd\n", bytes_read);
-        ret = bytes_read;
-        goto close_file;
-    }
-    buffer[bytes_read] = '\0';
-
-    ret = parse_packages_xml(buffer, bytes_read, apk_path, sizeof(apk_path), &uid);
+    ret = parse_packages_xml_streaming(filp, apk_path, sizeof(apk_path), &uid);
+    
     if (ret == 0) {
-        fmac_append_to_log("Package '%s': APK Path='%s', UID=%d\n",
+        fmac_append_to_log("[FMAC] Package '%s': APK Path='%s', UID=%d\n",
                            target_pkg, apk_path[0] ? apk_path : "N/A", uid);
     }
 
-close_file:
     filp_close(filp, NULL);
-free_buffer:
-    vfree(buffer);
+
 revert_creds:
     commit_creds(old_cred);
 
@@ -171,14 +320,15 @@ reschedule:
     schedule_delayed_work(&poll_work, POLL_DELAY);
 }
 
-int packages_parser_init(void) {
-
+int packages_parser_init(void) 
+{
     INIT_DELAYED_WORK(&poll_work, poll_work_func);
-    schedule_delayed_work(&poll_work, 0);  // Start immediately
+    schedule_delayed_work(&poll_work, 0);
     return 0;
 }
 
-void packages_parser_exit(void) {
+void packages_parser_exit(void) 
+{
     cancel_delayed_work_sync(&poll_work);
-    fmac_append_to_log( "Module unloaded\n");
+    fmac_append_to_log("[FMAC] Module unloaded\n");
 }
