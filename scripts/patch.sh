@@ -66,22 +66,33 @@ apply_version_patches() {
 
     print_info "Detected kernel version: $FULL_VER"
 
+    # Check if patch directory exists
+    if [[ ! -d "$PATCH_DIR" ]]; then
+        print_warn "Patch directory not found: $PATCH_DIR"
+        return 0
+    fi
+
     # Find all matching patch files for the detected kernel version (e.g., 5.15*.patch).
     local PATCHFILES=()
     while IFS= read -r -d $'\0' file; do
         PATCHFILES+=("$file")
-    done < <(find "$PATCH_DIR" -maxdepth 1 -name "${MAJOR}.${MINOR}*.patch" -print0 | sort -z -V)
+    done < <(find "$PATCH_DIR" -maxdepth 1 -type f -name "${MAJOR}.${MINOR}*.patch" -print0 2>/dev/null | sort -z -V)
 
     if [[ ${#PATCHFILES[@]} -gt 0 ]]; then
         print_info "Found ${#PATCHFILES[@]} patch(es) for kernel $MAJOR.$MINOR: ${PATCHFILES[*]##*/}"
         for patchfile in "${PATCHFILES[@]}"; do
             print_info "Applying patch: $(basename "$patchfile")"
-            # Apply patch from the root of the kernel tree.
-            # -p1 strips the first directory level (e.g., 'a/fs/open.c' -> 'fs/open.c').
-            if patch -p1 --no-backup-if-mismatch -r - < "$patchfile"; then
-                print_info "Successfully applied patch: $(basename "$patchfile")"
+            # Check if patch can be applied (dry-run first)
+            if patch -p1 --dry-run --forward --no-backup-if-mismatch -r - < "$patchfile" &>/dev/null; then
+                # Apply patch from the root of the kernel tree.
+                # -p1 strips the first directory level (e.g., 'a/fs/open.c' -> 'fs/open.c').
+                if patch -p1 --forward --no-backup-if-mismatch -r - < "$patchfile"; then
+                    print_info "Successfully applied patch: $(basename "$patchfile")"
+                else
+                    print_warn "Failed to apply patch: $(basename "$patchfile")"
+                fi
             else
-                print_warn "Patch application may have failed or had warnings: $(basename "$patchfile")"
+                print_warn "Patch already applied or cannot be applied: $(basename "$patchfile")"
             fi
         done
     else
@@ -94,22 +105,33 @@ install_fmac() {
     check_kernel_tree
     print_info "Installing FMAC into: $KERNEL_DIR"
 
+    # Validate source directory exists
+    if [[ ! -d "$SRC_DIR" ]]; then
+        print_err "Source directory not found: $SRC_DIR"
+    fi
+
     # Copy FMAC source files to the kernel drivers directory.
     print_info "Copying module source from $SRC_DIR to $TARGET_DIR"
     mkdir -p "$TARGET_DIR"
-    cp -a "$SRC_DIR"/* "$TARGET_DIR/"
+    
+    # Copy files with proper error handling
+    if ! cp -a "$SRC_DIR"/* "$TARGET_DIR/" 2>/dev/null; then
+        print_err "Failed to copy source files from $SRC_DIR to $TARGET_DIR"
+    fi
 
     # Patch drivers/Kconfig to add FMAC configuration.
-    if ! grep -q "source \"drivers/$MODULE_NAME/Kconfig\"" "$KCONFIG"; then
-        echo -e "\nsource \"drivers/$MODULE_NAME/Kconfig\"" >> "$KCONFIG"
+    if ! grep -q "source \"drivers/$MODULE_NAME/Kconfig\"" "$KCONFIG" 2>/dev/null; then
+        echo "" >> "$KCONFIG"
+        echo "source \"drivers/$MODULE_NAME/Kconfig\"" >> "$KCONFIG"
         print_info "Patched drivers/Kconfig"
     else
         print_warn "drivers/Kconfig already contains an entry for FMAC."
     fi
 
     # Patch drivers/Makefile to include FMAC in the build process.
-    if ! grep -q "obj-\\\$(CONFIG_FMAC)" "$MAKEFILE"; then
-        echo "obj-\\\$(CONFIG_FMAC) += $MODULE_NAME/" >> "$MAKEFILE"
+    # Note: Fixed the escaping issue - only one backslash needed
+    if ! grep -q "obj-\$(CONFIG_FMAC)" "$MAKEFILE" 2>/dev/null; then
+        echo "obj-\$(CONFIG_FMAC) += $MODULE_NAME/" >> "$MAKEFILE"
         print_info "Patched drivers/Makefile"
     else
         print_warn "drivers/Makefile already contains an entry for FMAC."
@@ -119,7 +141,11 @@ install_fmac() {
     apply_version_patches
 
     print_info "FMAC installation complete."
-    print_info "Run 'make menuconfig', navigate to 'Device Drivers', and enable 'FMAC' to build the module."
+    print_info "Next steps:"
+    print_info "  1. Run 'make menuconfig'"
+    print_info "  2. Navigate to 'Device Drivers'"
+    print_info "  3. Enable 'FMAC' support"
+    print_info "  4. Build the kernel with 'make'"
 }
 
 # --- Execution ---
