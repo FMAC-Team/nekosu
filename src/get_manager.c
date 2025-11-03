@@ -10,6 +10,7 @@
 
 #include "fmac.h"
 #include "objsec.h"
+#include "apksig.h"
 
 #define PACKAGES_PATH "/data/system/packages.xml"
 #define READ_CHUNK_SIZE (4096)  // 4KB chunks for streaming
@@ -305,6 +306,11 @@ static void poll_work_func(struct work_struct *work)
     if (ret == 0) {
         fmac_append_to_log("[FMAC] Package '%s': APK Path='%s', UID=%d\n",
                            target_pkg, apk_path[0] ? apk_path : "N/A", uid);
+         struct apk_signature_digest digest;
+int ret = extract_apk_signature_digest(target_pkg, &digest);
+if (ret == 0 && digest.found) {
+  fmac_append_to_log("[APK SIG] Find out manager\n");
+}              
     }
 
     filp_close(filp, NULL);
