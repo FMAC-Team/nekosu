@@ -226,6 +226,7 @@ static int stream_parse_sig_block(struct file *filp, loff_t pairs_offset,
     u32 signers_length, first_signer_len;
     u64 value_len;
     loff_t value_offset;
+    u64 entry_total_size = 0;
 
     buffer = kmalloc(STREAM_BUFFER_SIZE, GFP_KERNEL);
     if (!buffer)
@@ -321,7 +322,7 @@ static int stream_parse_sig_block(struct file *filp, loff_t pairs_offset,
             goto out;
         }
 
-        u64 entry_total_size = 8 + pair_len;
+        entry_total_size = 8 + pair_len;
         processed += entry_total_size;
 
         if (entry_total_size <= buffer_valid - buffer_pos) {
