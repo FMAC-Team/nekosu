@@ -63,7 +63,7 @@ extern spinlock_t fmac_log_lock;
 
 // 全局函数
 void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
-void fmac_append_to_log(const char *fmt, ...);
+//void fmac_append_to_log(const char *fmt, ...);
 
 int switch_uid(kuid_t new_uid, kgid_t new_gid);
 
