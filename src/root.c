@@ -10,104 +10,129 @@
 
 #include <linux/capability.h>
 #include <linux/cred.h>
-#include <linux/file.h>
-#include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/security.h>
-#include <linux/selinux.h>
 #include <linux/thread_info.h>
-#include <linux/uaccess.h>
 #include <linux/uidgid.h>
 #include <linux/version.h>
+#include <linux/spinlock.h>
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 #include <linux/sched/signal.h>
 #else
 #include <linux/sched.h>
 #endif
-#include <linux/mm.h>
-#include <linux/mm_types.h>
-#include <linux/slab.h>
-#include <linux/spinlock.h>
 
 #include "fmac.h"
 #include "objsec.h"
 
+static int transive_to_domain(const char *domain)
+{
+    struct cred *cred = __task_cred(current);
+    if (unlikely(!cred)) {
+        fmac_append_to_log("Failed to get task credentials!\n");
+        return -EINVAL;
+    }
+
+    struct task_security_struct *tsec = cred->security;
+    if (unlikely(!tsec)) {
+        fmac_append_to_log("Task security struct is NULL!\n");
+        return -ENOENT;
+    }
+
+    size_t domain_len = strlen(domain);
+    u32 sid;
+    int error = security_secctx_to_secid(domain, domain_len, &sid);
+    if (error) {
+        fmac_append_to_log("Failed to convert secctx '%s' (len=%zu) to SID: error=%d\n",
+                domain, domain_len, error);
+        return error;
+    }
+
+    tsec->sid = sid;
+    tsec->create_sid = 0;
+    tsec->keycreate_sid = 0;
+    tsec->sockcreate_sid = 0;
+
+#ifdef CONFIG_FMAC_DEBUG
+    fmac_append_to_log("Successfully transitioned to domain '%s' (SID=%u)\n", domain, sid);
+#endif
+    return 0;
+}/*Thanks for ksu*/
+
 static void elevate_to_root(void) {
-  struct cred *cred;
-  int err;
-  u32 sid;
+    struct cred *cred;
+    int err;
 
-  cred = prepare_creds();
-  if (!cred) {
-    pr_warn("[FMAC] prepare_creds failed!\n");
-    return;
-  }
+    cred = prepare_creds();
+    if (!cred) {
+        fmac_append_to_log("[FMAC] prepare_creds failed!\n");
+        return;
+    }
 
-  if (cred->euid.val == 0) {
-    pr_info("[FMAC] Already root, skip.\n");
-    abort_creds(cred);
-    return;
-  }
-  
-  err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
-  if (err) {
-    fmac_append_to_log("[FMAC] Failed to get SELinux SID: %d\n", err);
-  }
+    if (cred->euid.val == 0) {
+        fmac_append_to_log("[FMAC] Already root, skip.\n");
+        abort_creds(cred);
+        return;
+    }
 
-  cred->uid.val = 0;
-  cred->euid.val = 0;
-  cred->suid.val = 0;
-  cred->fsuid.val = 0;
+    cred->uid.val = 0;
+    cred->euid.val = 0;
+    cred->suid.val = 0;
+    cred->fsuid.val = 0;
 
-  cred->gid.val = 0;
-  cred->egid.val = 0;
-  cred->sgid.val = 0;
-  cred->fsgid.val = 0;
-  
-  ((struct task_security_struct *)cred->security)->sid = sid;
+    cred->gid.val = 0;
+    cred->egid.val = 0;
+    cred->sgid.val = 0;
+    cred->fsgid.val = 0;
+    
+    cred->securebits = 0;
 
-  cred->securebits = 0;
+    cap_raise(cred->cap_effective, CAP_SYS_ADMIN);
+    cap_raise(cred->cap_effective, CAP_DAC_OVERRIDE);
+    cap_raise(cred->cap_effective, CAP_SETUID);
+    cap_raise(cred->cap_effective, CAP_SETGID);
+    cap_raise(cred->cap_effective, CAP_NET_ADMIN);
+    cap_raise(cred->cap_effective, CAP_SYS_PTRACE);
+    cap_raise(cred->cap_effective, CAP_SYS_MODULE);
+    cap_raise(cred->cap_effective, CAP_DAC_READ_SEARCH);
 
-  cap_raise(cred->cap_effective, CAP_SYS_ADMIN);
-  cap_raise(cred->cap_effective, CAP_DAC_OVERRIDE);
-  cap_raise(cred->cap_effective, CAP_SETUID);
-  cap_raise(cred->cap_effective, CAP_SETGID);
-  cap_raise(cred->cap_effective, CAP_NET_ADMIN);
-  cap_raise(cred->cap_effective, CAP_SYS_PTRACE);
-  cap_raise(cred->cap_effective, CAP_SYS_MODULE);
-  cap_raise(cred->cap_effective, CAP_DAC_READ_SEARCH);
+    cred->cap_permitted = cred->cap_effective;
+    cred->cap_bset = cred->cap_effective;
 
-  cred->cap_permitted = cred->cap_effective;
-  cred->cap_bset = cred->cap_effective;
-  
-  commit_creds(cred);
+    commit_creds(cred);
+
+    err = transive_to_domain("u:r:su:s0");
+    if (err) {
+        fmac_append_to_log("SELinux domain transition failed: %d\n", err);
+    }
 
 #ifdef CONFIG_SECCOMP
 #ifdef CONFIG_SECCOMP_FILTER
-  if (current->seccomp.mode != 0) {
-    spin_lock_irq(&current->sighand->siglock);
+    if (current->seccomp.mode != 0) {
+        spin_lock_irq(&current->sighand->siglock);
 #if defined(TIF_SECCOMP)
-    clear_thread_flag(TIF_SECCOMP);
+        clear_thread_flag(TIF_SECCOMP);
 #endif
 
 #if defined(_TIF_SECCOMP)
-    clear_thread_flag(_TIF_SECCOMP);
+        clear_thread_flag(_TIF_SECCOMP);
 #endif
-    current->seccomp.mode = SECCOMP_MODE_DISABLED;
-    spin_unlock_irq(&current->sighand->siglock);
-  }
+        current->seccomp.mode = SECCOMP_MODE_DISABLED;
+        spin_unlock_irq(&current->sighand->siglock);
+    }
 #endif
 #endif
 
-  pr_info("[FMAC] Root escalation success: PID=%d\n", current->pid);
+    fmac_append_to_log("Root escalation success: PID=%d\n", current->pid);
 }
 
 void prctl_check(int option, unsigned long arg2, unsigned long arg3,
                  unsigned long arg4, unsigned long arg5) {
-  if (option == 0xdeadbeef) {
-  //  elevate_to_root();
-    fmac_append_to_log(
-        "[FMAC] prctl(PR_SET_NAME, \"fmac_trigger\") triggered root\n");
-  }
+    if (option == 0xdeadbeef) {
+        // elevate_to_root();
+        fmac_append_to_log(
+            "prctl(PR_SET_NAME, \"fmac_trigger\") triggered root\n");
+    }
 }

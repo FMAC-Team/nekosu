@@ -43,7 +43,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type) {
 
   rule = kmalloc(sizeof(*rule), GFP_KERNEL);
   if (!rule) {
-    fmac_append_to_log("[FMAC] Failed to allocate rule\n");
+    fmac_append_to_log("Failed to allocate rule\n");
     return;
   }
 
@@ -60,30 +60,30 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type) {
   spin_unlock(&fmac_lock);
 
   fmac_append_to_log(
-      "[FMAC] Added rule: path=%s, uid=%u, deny=%d, op_type=%d\n", path_prefix,
+      "added rule: path=%s, uid=%u, deny=%d, op_type=%d\n", path_prefix,
       uid, deny, op_type);
 }
 
-void fmac_append_to_log(const char *fmt, ...) {
-  va_list args;
-  char buf[256];
-  int len;
-  unsigned long flags;
+void __fmac_append_to_log(const char *fmt, ...) {
+    va_list args;
+    char buf[256];
+    int len;
+    unsigned long flags;
 
-  va_start(args, fmt);
-  len = vsnprintf(buf, sizeof(buf), fmt, args);
-  va_end(args);
+    va_start(args, fmt);
+    len = vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
 
-  spin_lock_irqsave(&fmac_log_lock, flags);
-  if (fmac_log_len + len < MAX_LOG_SIZE) {
-    memcpy(fmac_log_buffer + fmac_log_len, buf, len);
-    fmac_log_len += len;
-  } else {
-    fmac_log_len = 0;
-    memcpy(fmac_log_buffer, buf, len);
-    fmac_log_len = len;
-  }
-  spin_unlock_irqrestore(&fmac_log_lock, flags);
+    spin_lock_irqsave(&fmac_log_lock, flags);
+    if (fmac_log_len + len < MAX_LOG_SIZE) {
+        memcpy(fmac_log_buffer + fmac_log_len, buf, len);
+        fmac_log_len += len;
+    } else {
+        fmac_log_len = 0;
+        memcpy(fmac_log_buffer, buf, len);
+        fmac_log_len = len;
+    }
+    spin_unlock_irqrestore(&fmac_log_lock, flags);
 }
 
 static int __init fmac_init(void) {
@@ -93,7 +93,7 @@ static int __init fmac_init(void) {
 
   ret = fmac_procfs_init();
   if (ret) {
-    pr_err("[FMAC] Failed to initialize procfs\n");
+    fmac_append_to_log("Failed to initialize procfs\n");
     return ret;
   }
   
@@ -102,7 +102,7 @@ static int __init fmac_init(void) {
   #endif
   
   fmac_append_to_log(
-      "[FMAC] File Monitoring and Access Control initialized.\n");
+      "File Monitoring and Access Control initialized.\n");
   return 0;
 }
 
@@ -122,7 +122,7 @@ static void __exit fmac_exit(void) {
 
   synchronize_rcu();
 
-  pr_info("[FMAC] File Monitoring and Access Control exited.\n");
+  pr_info("File Monitoring and Access Control exited.\n");
 }
 
 module_init(fmac_init);

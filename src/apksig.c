@@ -120,7 +120,7 @@ static int parse_v2_signer_block(struct file *filp, loff_t signer_offset,
     bool found_sha256 = false;
 
     if (signer_len < 16) {
-        pr_err("Signer block too small: %llu bytes\n", signer_len);
+        fmac_append_to_log("Signer block too small: %llu bytes\n", signer_len);
         return -EINVAL;
     }
 
@@ -136,7 +136,7 @@ static int parse_v2_signer_block(struct file *filp, loff_t signer_offset,
     current_offset += 4;
 
     if (signed_data_len < 8 || signed_data_len > signer_len - 4) {
-        pr_err("Invalid signed_data_len: %u (signer_len=%llu)\n", 
+        fmac_append_to_log("Invalid signed_data_len: %u (signer_len=%llu)\n", 
                signed_data_len, signer_len);
         ret = -EINVAL;
         goto out;
@@ -150,7 +150,7 @@ static int parse_v2_signer_block(struct file *filp, loff_t signer_offset,
     current_offset += 4;
 
     if (digests_len < 8 || digests_len > signed_data_len - 4) {
-        pr_err("Invalid digests_len: %u\n", digests_len);
+        fmac_append_to_log("Invalid digests_len: %u\n", digests_len);
         ret = -EINVAL;
         goto out;
     }
@@ -160,7 +160,7 @@ static int parse_v2_signer_block(struct file *filp, loff_t signer_offset,
     while (remaining_digests >= 8 && !found_sha256) {
         ret = read_file_at_offset(filp, current_offset, buf, 8);
         if (ret) {
-            pr_err("Failed to read digest header\n");
+            fmac_append_to_log("Failed to read digest header\n");
             goto out;
         }
 
@@ -173,7 +173,7 @@ static int parse_v2_signer_block(struct file *filp, loff_t signer_offset,
         remaining_digests -= 8;
 
         if (digest_len > remaining_digests || digest_len > 1024) {
-            pr_err("Invalid digest_len: %u (remaining=%llu)\n", 
+            fmac_append_to_log("Invalid digest_len: %u (remaining=%llu)\n", 
                    digest_len, remaining_digests);
             ret = -EINVAL;
             goto out;
@@ -186,7 +186,7 @@ static int parse_v2_signer_block(struct file *filp, loff_t signer_offset,
             ret = read_file_at_offset(filp, current_offset, 
                                      result->sha256, 32);
             if (ret) {
-                pr_err("Failed to read SHA256 digest bytes\n");
+                fmac_append_to_log("Failed to read SHA256 digest bytes\n");
                 goto out;
             }
 
@@ -202,7 +202,7 @@ static int parse_v2_signer_block(struct file *filp, loff_t signer_offset,
     }
 
     if (!found_sha256) {
-        pr_warn("No SHA256 content digest found in signer block\n");
+        fmac_append_to_log("No SHA256 content digest found in signer block\n");
         ret = -ENOENT;
     }
 
@@ -252,7 +252,7 @@ static int stream_parse_sig_block(struct file *filp, loff_t pairs_offset,
                 ret = read_file_at_offset(filp, file_offset, 
                                          buffer + buffer_valid, to_read);
                 if (ret) {
-                    pr_err("Failed to read at offset %lld\n", file_offset);
+                    fmac_append_to_log("Failed to read at offset %lld\n", file_offset);
                     ret = -EIO;
                     goto out;
                 }
@@ -272,7 +272,7 @@ static int stream_parse_sig_block(struct file *filp, loff_t pairs_offset,
         id = le32_to_cpu(id);
 
         if (pair_len < 4 || pair_len > pairs_size - processed) {
-            pr_err("Invalid pair length: %llu at offset %llu\n", 
+            fmac_append_to_log("Invalid pair length: %llu at offset %llu\n", 
                    pair_len, processed);
             ret = -EINVAL;
             goto out;
@@ -283,20 +283,20 @@ static int stream_parse_sig_block(struct file *filp, loff_t pairs_offset,
 
         if (id == APK_SIG_V2_SCHEME_ID) {
             if (value_len < 12) {
-                pr_err("V2 value too small: %llu\n", value_len);
+                fmac_append_to_log("V2 value too small: %llu\n", value_len);
                 ret = -EINVAL;
                 goto out;
             }
 
             ret = read_file_at_offset(filp, value_offset, &signers_length, 4);
             if (ret) {
-                pr_err("Failed to read signers_length\n");
+                fmac_append_to_log("Failed to read signers_length\n");
                 goto out;
             }
             signers_length = le32_to_cpu(signers_length);
             
             if (signers_length < 8 || signers_length > value_len - 4) {
-                pr_err("Invalid signers_length: %u (value_len=%llu)\n", 
+                fmac_append_to_log("Invalid signers_length: %u (value_len=%llu)\n", 
                        signers_length, value_len);
                 ret = -EINVAL;
                 goto out;
@@ -305,13 +305,13 @@ static int stream_parse_sig_block(struct file *filp, loff_t pairs_offset,
             ret = read_file_at_offset(filp, value_offset + 4, 
                                      &first_signer_len, 4);
             if (ret) {
-                pr_err("Failed to read first signer length\n");
+                fmac_append_to_log("Failed to read first signer length\n");
                 goto out;
             }
             first_signer_len = le32_to_cpu(first_signer_len);
 
             if (first_signer_len < 12 || first_signer_len > signers_length - 4) {
-                pr_err("Invalid first_signer_len: %u\n", first_signer_len);
+                fmac_append_to_log("Invalid first_signer_len: %u\n", first_signer_len);
                 ret = -EINVAL;
                 goto out;
             }
@@ -337,7 +337,7 @@ static int stream_parse_sig_block(struct file *filp, loff_t pairs_offset,
     }
 
     if (ret == -ENOENT) {
-        pr_debug("No APK Signature Scheme V2 block found\n");
+        fmac_append_to_log("No APK Signature Scheme V2 block found\n");
     }
 
 out:
@@ -370,7 +370,7 @@ static int find_apk_sig_block(struct file *filp, loff_t eocd_offset,
     pairs_size = le64_to_cpu(footer.size);
     
     if (pairs_size < APK_SIG_BLOCK_MIN_SIZE || pairs_size > MAX_SIGNATURE_SIZE) {
-        pr_err("Invalid APK sig block size: %llu\n", pairs_size);
+        fmac_append_to_log("Invalid APK sig block size: %llu\n", pairs_size);
         return -EINVAL;
     }
 
@@ -386,7 +386,7 @@ static int find_apk_sig_block(struct file *filp, loff_t eocd_offset,
 
     initial_size = le64_to_cpu(initial_size);
     if (initial_size != pairs_size) {
-        pr_err("Size mismatch in APK sig block\n");
+        fmac_append_to_log("Size mismatch in APK sig block\n");
         return -EINVAL;
     }
 
@@ -409,7 +409,7 @@ int extract_apk_signature_digest(const char *path,
 
     filp = filp_open(path, O_RDONLY | O_LARGEFILE, 0);
     if (IS_ERR(filp)) {
-        pr_err("Failed to open APK file: %s (error: %ld)\n", path, PTR_ERR(filp));
+        fmac_append_to_log("Failed to open APK file: %s (error: %ld)\n", path, PTR_ERR(filp));
         return PTR_ERR(filp);
     }
 

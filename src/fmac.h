@@ -29,6 +29,9 @@
 #define FMAC_HASH_BITS 8
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
+#define fmac_append_to_log(fmt, ...) \
+    __fmac_append_to_log("%s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+
 enum fmac_op_type {
     FMAC_OP_MKDIRAT = 0,
     FMAC_OP_OPENAT  = 1,

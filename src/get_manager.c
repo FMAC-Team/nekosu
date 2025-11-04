@@ -16,7 +16,11 @@
 #define READ_CHUNK_SIZE (4096)  // 4KB chunks for streaming
 #define POLL_DELAY (3 * HZ)
 
+#ifdef CONFIG_FMAC_DEBUG
 static char *target_pkg = "com.android.shell";
+#elif
+static char *target_pkg = "me.neko.nksu";
+#endif
 
 static struct delayed_work poll_work;
 
