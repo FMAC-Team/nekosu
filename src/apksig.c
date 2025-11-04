@@ -7,6 +7,8 @@
 #include <linux/version.h>
 #include <linux/string.h>
 
+#include "fmac.h"
+
 #define ZIP_END_CENTRAL_DIR_SIG     0x06054b50
 #define ZIP_EOCD_MIN_SIZE           22
 
