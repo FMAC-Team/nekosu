@@ -29,7 +29,7 @@
 
 static int transive_to_domain(const char *domain)
 {
-    struct cred *cred = __task_cred(current);
+    const struct cred *cred = __task_cred(current);
     if (unlikely(!cred)) {
         fmac_append_to_log("Failed to get task credentials!\n");
         return -EINVAL;
