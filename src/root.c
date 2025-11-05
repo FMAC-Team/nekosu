@@ -31,6 +31,7 @@ static int transive_to_domain(const char *domain)
 {
     const struct cred *cred;
     struct task_security_struct *tsec;
+    size_t domain_len;
     
     cred  = __task_cred(current);
     if (unlikely(!cred)) {
