@@ -27,7 +27,7 @@
 #include "fmac.h"
 #include "objsec.h"
 
-static int transive_to_domain(const char *domain)
+int transive_to_domain(const char *domain)
 {
     const struct cred *cred;
     struct task_security_struct *tsec;

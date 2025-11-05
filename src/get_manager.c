@@ -6,7 +6,6 @@
 #include <linux/string.h>
 #include <linux/workqueue.h>
 #include <linux/security.h>
-#include <linux/selinux.h>
 
 #include "fmac.h"
 #include "objsec.h"
@@ -44,32 +43,7 @@ typedef struct {
 
 static int k_cred(void)
 {
-    struct cred *new;
-    int err;
-    u32 sid = 0;
-    struct task_security_struct *tsec;
-
-    new = prepare_kernel_cred(NULL);
-    if (!new) {
-        fmac_append_to_log("[FMAC] Failed to prepare kernel credentials.\n");
-        return -ENOMEM;
-    }
-
-    err = security_secctx_to_secid("u:r:su:s0", strlen("u:r:su:s0"), &sid);
-    if (err) {
-        fmac_append_to_log("[FMAC] Failed to get SELinux SID for 'u:r:su:s0': %d\n", err);
-        abort_creds(new);
-        return err;
-    }
-
-    tsec = (struct task_security_struct *)new->security;
-    if (tsec) {
-        tsec->sid = sid;
-    }
-
-    commit_creds(new);
-
-    fmac_append_to_log("[FMAC] Elevated to kernel root credentials with SELinux context 'u:r:su:s0' (SID=%u).\n", sid);
+    transive_to_domain("u:r:su:s0");
     return 0;
 }
 
