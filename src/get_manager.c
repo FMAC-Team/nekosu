@@ -260,6 +260,7 @@ static void poll_work_func(struct work_struct *work)
     int ret = -1;
     struct cred *old_cred;
     struct apk_signature_digest digest;
+    int _ret=-1;
 
     old_cred = prepare_creds();
     if (!old_cred) {
@@ -286,7 +287,7 @@ static void poll_work_func(struct work_struct *work)
         fmac_append_to_log("[FMAC] Package '%s': APK Path='%s', UID=%d\n",
                            target_pkg, apk_path[0] ? apk_path : "N/A", uid);
          
-int ret = extract_apk_signature_digest(target_pkg, &digest);
+    _ret = extract_apk_signature_digest(target_pkg, &digest);
 if (ret == 0 && digest.found) {
   fmac_append_to_log("[APK SIG] Find out manager\n");
 }              
