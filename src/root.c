@@ -33,6 +33,7 @@ int transive_to_domain(const char *domain)
     struct task_security_struct *tsec;
     size_t domain_len;
     u32 sid;
+    int error;
     
     cred  = __task_cred(current);
     if (unlikely(!cred)) {
@@ -48,7 +49,7 @@ int transive_to_domain(const char *domain)
 
     domain_len = strlen(domain);
     
-    int error = security_secctx_to_secid(domain, domain_len, &sid);
+    error = security_secctx_to_secid(domain, domain_len, &sid);
     if (error) {
         fmac_append_to_log("Failed to convert secctx '%s' (len=%zu) to SID: error=%d\n",
                 domain, domain_len, error);
