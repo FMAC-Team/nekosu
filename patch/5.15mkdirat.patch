@@ -14,10 +14,18 @@ index ce97b60..f2aad8b 100644
  	int error;
  	unsigned int lookup_flags = LOOKUP_DIRECTORY;
 +	int fmac_status;
-+   fmac_status = fmac_check_mkdirat(name->name);
-+    if(fmac_status){
-+     return fmac_status;
-+   }
  
  retry:
  	dentry = filename_create(dfd, name, &path, lookup_flags);
++    if (IS_ERR(dentry)) {
++        return PTR_ERR(dentry);
++    }
++
++   fmac_status = fmac_check_mkdirat(name->name);
++    if(fmac_status){
++        done_path_create(&path, dentry);
++        return fmac_status;
++    }
+ 
+ 	error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
+ 	done_path_create(&path, dentry);
