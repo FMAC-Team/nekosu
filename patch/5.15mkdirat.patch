@@ -15,9 +15,7 @@ index ce97b60..ae2bb39 100644
  	if (IS_ERR(dentry))
  		goto out_putname;
 +		
-+     if(fmac_check_mkdirat(name->name)){
-+       return fmac_status;
-+       }
++     fmac_check_mkdirat(name->name);
  
  	error = security_path_mkdir(&path, dentry,
  			mode_strip_umask(path.dentry->d_inode, mode));
