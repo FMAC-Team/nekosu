@@ -1,8 +1,6 @@
-diff --git a/fs/namei.c b/fs/namei.c
-index ce97b60..f2aad8b 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -4069,12 +4069,18 @@ int vfs_mkdir(struct user_namespace *mnt_userns, struct inode *dir,
+--- a/fs/namei.c	2025-11-07 11:16:27.377662974 +0800
++++ b/fs/namei.c	2025-11-07 11:13:51.261663034 +0800
+@@ -4069,18 +4069,26 @@ int vfs_mkdir(struct user_namespace *mnt
  }
  EXPORT_SYMBOL_NS(vfs_mkdir, ANDROID_GKI_VFS_EXPORT_ONLY);
  
@@ -17,15 +15,14 @@ index ce97b60..f2aad8b 100644
  
  retry:
  	dentry = filename_create(dfd, name, &path, lookup_flags);
-+    if (IS_ERR(dentry)) {
-+        return PTR_ERR(dentry);
-+    }
-+
-+   fmac_status = fmac_check_mkdirat(name->name);
-+    if(fmac_status){
-+        done_path_create(&path, dentry);
-+        return fmac_status;
-+    }
+ 	error = PTR_ERR(dentry);
+ 	if (IS_ERR(dentry))
+ 		goto out_putname;
++		
++fmac_status = fmac_check_mkdirat(name->name);
++if(fmac_status){
++       return fmac_status;
++ }
  
- 	error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
- 	done_path_create(&path, dentry);
+ 	error = security_path_mkdir(&path, dentry,
+ 			mode_strip_umask(path.dentry->d_inode, mode));
