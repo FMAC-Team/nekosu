@@ -22,7 +22,7 @@ The kernel module source code is located in the `src/` directory.
 
 ### 2. Nekosu (Android Application)
 
-NzHelper is the official Android manager application for Nekosu. It is located in the `app/` submodule.
+nksu is the official Android manager application for Nekosu. It is located in the `app/`.
 
 The application provides:
 *   An interface to manage the Nekosu environment (under development).
@@ -44,7 +44,7 @@ To build and integrate the FMAC kernel module, you need a Linux kernel source tr
 4.  Configure your kernel build (`make menuconfig`) and enable `Device Drivers -> FMAC`.
 5.  Build your kernel as usual.
 
-### Building NzHelper (Android App)
+### Building nkus (Android App)
 
 The NzHelper application can be built using Gradle.
 
