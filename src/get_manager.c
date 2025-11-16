@@ -255,12 +255,19 @@ static int parse_packages_xml_streaming(struct file *filp,
 static void poll_work_func(struct work_struct *work)
 {
     struct file *filp = NULL;
-    char apk_path[PATH_MAX] = {0};
+    char *apk_path = NULL;
     int uid = -1;
     int ret = -1;
     struct cred *old_cred;
     struct apk_signature_digest digest;
     int _ret=-1;
+    
+    apk_path = kmalloc(PATH_MAX, GFP_KERNEL);
+    if (!apk_path) {
+        fmac_append_to_log("[FMAC] Failed to alloc apk_path\n");
+        goto reschedule;
+    }
+    memset(apk_path, 0, PATH_MAX);
 
     old_cred = prepare_creds();
     if (!old_cred) {
