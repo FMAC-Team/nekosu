@@ -2,13 +2,20 @@
 
 Nekosu is a project for Android that integrates a powerful kernel-level module with a user-friendly manager application. It aims to provide advanced access control and system modification capabilities.
 
+## Features
+1. Kernel-based su and root access management.
+2. FMAC:File Monitoring and Access Control
+
 ## Components
 
 The project consists of two main components:
 
+## Usage
+[Official website](https://nksu.top/)
+
 ### 1. FMAC (File Monitoring and Access Control)
 
-FMAC is a Linux kernel module that provides fine-grained file access control based on file paths, user IDs (UIDs), and operation types (e.g., `mkdirat`, `openat`). It forms the core of the Nekosu project, enabling its system-level features.
+FMAC is a Linux kernel module that provides fine-grained file access control based on file paths, user IDs (UIDs), 和 operation types (e.g., `mkdirat`, `openat`). It forms the core of the Nekosu project, enabling its system-level features.
 
 **Features:**
 
