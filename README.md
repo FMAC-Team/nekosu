@@ -6,12 +6,12 @@ Nekosu is a project for Android that integrates a powerful kernel-level module w
 1. Kernel-based su and root access management.
 2. FMAC:File Monitoring and Access Control
 
+## Usage
+[Official website](https://nksu.top/)
+
 ## Components
 
 The project consists of two main components:
-
-## Usage
-[Official website](https://nksu.top/)
 
 ### 1. FMAC (File Monitoring and Access Control)
 
