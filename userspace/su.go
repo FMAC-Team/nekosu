@@ -27,18 +27,34 @@
 package main
 
 import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/binary"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
+	"unsafe"
 )
+
+// AuthPayload is passed to kernel via prctl.
+// MUST be C-compatible and match kernel struct exactly.
+type AuthPayload struct {
+	TOTP   uint32
+	SigLen uint32
+	Sig    [256]byte
+}
 
 const (
 	// Magic number for prctl to request root from the FMAC kernel module
-	FMAC_PRCTL_GET_ROOT = 0xdeadbeef
-	
+	FMAC_PRCTL_GET_ROOT = 0xCAFEBABE
+
 	// Exit codes
 	EXIT_SUCCESS           = 0
 	EXIT_PERMISSION_DENIED = 1
@@ -49,12 +65,14 @@ const (
 
 // Config holds the runtime configuration for su
 type Config struct {
-	TargetUser      string
-	Command         string
-	Shell           string
-	PreserveEnv     bool
-	LoginShell      bool
-	Args            []string
+	TargetUser  string
+	Command     string
+	Shell       string
+	PreserveEnv bool
+	LoginShell  bool
+	Args        []string
+	RSAKeyPath  string
+	TOTP        uint32
 }
 
 // prctl makes a prctl system call
@@ -70,17 +88,35 @@ func prctl(option int, arg2, arg3, arg4, arg5 uintptr) error {
 	return nil
 }
 
-// requestRootPrivileges requests root privileges from FMAC kernel module
-func requestRootPrivileges() error {
-	// Call prctl with the magic number
-	_ = prctl(FMAC_PRCTL_GET_ROOT, 0, 0, 0, 0)
-	
-	// Verify if we obtained root privileges
-	if os.Getuid() != 0 {
-		return fmt.Errorf("failed to obtain root privileges")
+func rsaSign(priv *rsa.PrivateKey) ([]byte, error) {
+	var buf [8]byte
+	step := uint64(time.Now().Unix() / 30)
+	binary.BigEndian.PutUint64(buf[:], step)
+
+	hash := crypto.SHA256.New()
+	hash.Write(buf[:])
+	digest := hash.Sum(nil)
+
+	return rsa.SignPKCS1v15(rand.Reader, priv, crypto.SHA256, digest)
+}
+
+func loadRSAPrivateKey(path string) (*rsa.PrivateKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
 	}
-	
-	return nil
+
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return nil, fmt.Errorf("invalid PEM")
+	}
+
+	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
 }
 
 // setUserContext switches to the specified user's context
@@ -89,28 +125,28 @@ func setUserContext(username string) error {
 	if err != nil {
 		return fmt.Errorf("user %s not found: %v", username, err)
 	}
-	
+
 	// Parse UID and GID
 	var uid, gid int
 	fmt.Sscanf(targetUser.Uid, "%d", &uid)
 	fmt.Sscanf(targetUser.Gid, "%d", &gid)
-	
+
 	// Set GID first (must be done before dropping privileges)
 	if err := syscall.Setgid(gid); err != nil {
 		return fmt.Errorf("failed to set GID: %v", err)
 	}
-	
+
 	// Set UID
 	if err := syscall.Setuid(uid); err != nil {
 		return fmt.Errorf("failed to set UID: %v", err)
 	}
-	
+
 	// Change to user's home directory
 	if err := os.Chdir(targetUser.HomeDir); err != nil {
 		// Non-fatal, just warn
 		fmt.Fprintf(os.Stderr, "warning: could not change to home directory: %v\n", err)
 	}
-	
+
 	return nil
 }
 
@@ -119,7 +155,7 @@ func getShell(config *Config, targetUser *user.User) string {
 	if config.Shell != "" {
 		return config.Shell
 	}
-	
+
 	// Try to get user's shell from passwd
 	if targetUser != nil && targetUser.Username != "" {
 		// On Android/Linux, check common locations
@@ -134,14 +170,14 @@ func getShell(config *Config, targetUser *user.User) string {
 			}
 		}
 	}
-	
+
 	return "/system/bin/sh" // Default fallback
 }
 
 // setupEnvironment configures the environment for the target user
 func setupEnvironment(config *Config, targetUser *user.User) []string {
 	env := os.Environ()
-	
+
 	if !config.PreserveEnv && targetUser != nil {
 		// Clear environment and set minimal variables
 		env = []string{
@@ -151,7 +187,7 @@ func setupEnvironment(config *Config, targetUser *user.User) []string {
 			fmt.Sprintf("SHELL=%s", config.Shell),
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/system/bin",
 		}
-		
+
 		// Preserve some important variables
 		for _, key := range []string{"TERM", "DISPLAY", "LANG"} {
 			if val := os.Getenv(key); val != "" {
@@ -159,7 +195,7 @@ func setupEnvironment(config *Config, targetUser *user.User) []string {
 			}
 		}
 	}
-	
+
 	return env
 }
 
@@ -167,9 +203,9 @@ func setupEnvironment(config *Config, targetUser *user.User) []string {
 func executeCommand(config *Config, targetUser *user.User) error {
 	shell := getShell(config, targetUser)
 	env := setupEnvironment(config, targetUser)
-	
+
 	var args []string
-	
+
 	if config.Command != "" {
 		// Execute command with -c
 		args = []string{shell, "-c", config.Command}
@@ -180,15 +216,15 @@ func executeCommand(config *Config, targetUser *user.User) error {
 		// Interactive shell
 		args = []string{filepath.Base(shell)}
 	}
-	
+
 	// Append any additional arguments
 	args = append(args, config.Args...)
-	
+
 	// Execute using syscall.Exec for clean process replacement
 	if err := syscall.Exec(shell, args, env); err != nil {
 		return fmt.Errorf("failed to execute %s: %v", shell, err)
 	}
-	
+
 	return nil
 }
 
@@ -199,12 +235,12 @@ func parseArgs() (*Config, error) {
 		PreserveEnv: false,
 		LoginShell:  false,
 	}
-	
+
 	args := os.Args[1:]
-	
+
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		
+
 		switch arg {
 		case "-c", "--command":
 			if i+1 >= len(args) {
@@ -212,28 +248,36 @@ func parseArgs() (*Config, error) {
 			}
 			config.Command = args[i+1]
 			i++
-			
+
 		case "-s", "--shell":
 			if i+1 >= len(args) {
 				return nil, fmt.Errorf("-s option requires a shell path")
 			}
 			config.Shell = args[i+1]
 			i++
-			
+
 		case "-p", "--preserve-environment":
 			config.PreserveEnv = true
-			
+
 		case "-l", "--login":
 			config.LoginShell = true
-			
+
 		case "-h", "--help":
 			printUsage()
 			os.Exit(EXIT_SUCCESS)
-			
+
 		case "-v", "--version":
 			printVersion()
 			os.Exit(EXIT_SUCCESS)
-			
+
+		case "--rsa-key":
+			config.RSAKeyPath = args[i+1]
+			i++
+
+		case "--totp":
+			fmt.Sscanf(args[i+1], "%d", &config.TOTP)
+			i++
+
 		default:
 			if strings.HasPrefix(arg, "-") && arg != "-" {
 				return nil, fmt.Errorf("unknown option: %s", arg)
@@ -246,7 +290,7 @@ func parseArgs() (*Config, error) {
 			}
 		}
 	}
-	
+
 	return config, nil
 }
 
@@ -278,6 +322,42 @@ func printVersion() {
 	fmt.Println("License GPLv3+: GNU GPL version 3 or later")
 }
 
+func requestRootWithAuth(rsaKeyPath string, totp uint32) error {
+	priv, err := loadRSAPrivateKey(rsaKeyPath)
+	if err != nil {
+		return err
+	}
+
+	sig, err := rsaSign(priv)
+	if err != nil {
+		return err
+	}
+
+	if len(sig) > 256 {
+		return fmt.Errorf("signature too long")
+	}
+
+	var payload AuthPayload
+	payload.TOTP = totp
+	payload.SigLen = uint32(len(sig))
+	copy(payload.Sig[:], sig)
+
+	_, _, errno := syscall.Syscall6(
+		syscall.SYS_PRCTL,
+		uintptr(FMAC_PRCTL_GET_ROOT),
+		uintptr(unsafe.Pointer(&payload)),
+		0, 0, 0, 0,
+	)
+	if errno != 0 {
+		return errno
+	}
+
+	if os.Getuid() != 0 {
+		return fmt.Errorf("authentication rejected")
+	}
+	return nil
+}
+
 func main() {
 	// Parse command line arguments
 	config, err := parseArgs()
@@ -286,21 +366,24 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Try 'su --help' for more information.\n")
 		os.Exit(EXIT_INVALID_ARGS)
 	}
-	
+
 	// Check if we're already root
 	currentUID := os.Getuid()
 	needsEscalation := currentUID != 0
-	
+
 	// If we need root and we're requesting root user
 	if needsEscalation && config.TargetUser == "root" {
-		
-		// Request root privileges from FMAC kernel module
-		if err := requestRootPrivileges(); err != nil {
+		if config.RSAKeyPath == "" || config.TOTP == 0 {
+			fmt.Fprintln(os.Stderr, "su: rsa+totp required")
+			os.Exit(EXIT_PERMISSION_DENIED)
+		}
+
+		if err := requestRootWithAuth(config.RSAKeyPath, config.TOTP); err != nil {
 			fmt.Fprintf(os.Stderr, "su: %v\n", err)
 			os.Exit(EXIT_PERMISSION_DENIED)
 		}
 	}
-	
+
 	// If switching to a different user (not root), set user context
 	var targetUser *user.User
 	if config.TargetUser != "root" || os.Getuid() == 0 {
@@ -309,19 +392,19 @@ func main() {
 			fmt.Fprintf(os.Stderr, "su: user %s does not exist\n", config.TargetUser)
 			os.Exit(EXIT_INVALID_ARGS)
 		}
-		
+
 		if err := setUserContext(config.TargetUser); err != nil {
 			fmt.Fprintf(os.Stderr, "su: %v\n", err)
 			os.Exit(EXIT_PERMISSION_DENIED)
 		}
 	}
-	
+
 	// Execute the command or shell
 	if err := executeCommand(config, targetUser); err != nil {
 		fmt.Fprintf(os.Stderr, "su: %v\n", err)
 		os.Exit(EXIT_EXEC_FAILED)
 	}
-	
+
 	// Should never reach here
 	os.Exit(EXIT_SUCCESS)
 }
