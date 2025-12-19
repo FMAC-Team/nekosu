@@ -68,4 +68,7 @@ int transive_to_domain(const char *domain);
 // totp.c
 u32 generate_totp(const u8 *key, int key_len);
 
+// rsa_pub.c
+int check_totp_rsa(const char __user *user_buf, size_t user_len);
+
 #endif /* _LINUX_FMAC_H */

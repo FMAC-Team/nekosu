@@ -1,9 +1,10 @@
 #include <linux/module.h>
 #include <linux/ptrace.h>
 #include <linux/tracepoint.h>
+#include <asm/syscall.h>
 #include <trace/events/syscalls.h>
 
-#include <asm/syscall.h>
+#include "fmac.h"
 
 static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
 {

