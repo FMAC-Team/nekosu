@@ -90,7 +90,7 @@ static int __init fmac_init(void)
     }
 
 #ifdef CONFIG_FMAC_ROOT
-    totp_init();
+    fmac_tracepoint_init();
 #endif
 
     fmac_append_to_log("File Monitoring and Access Control initialized.\n");

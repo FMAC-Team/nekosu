@@ -65,4 +65,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
 
 int transive_to_domain(const char *domain);
 
+// totp.c
+u32 generate_totp(const u8 *key, int key_len);
+
 #endif /* _LINUX_FMAC_H */

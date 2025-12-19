@@ -16,7 +16,4 @@ int fmac_uid_proc_init(void);
 void fmac_uid_proc_exit(void);
 bool fmac_uid_allowed(void);
 
-// totp.c
-int totp_init(void);
-
 #endif

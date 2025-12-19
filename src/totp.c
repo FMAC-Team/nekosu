@@ -17,7 +17,7 @@
 #define TOTP_STEP        30
 #define SHA1_DIGEST_SIZE 20
 
-static char *totp_secret_key = "Hello!..........";
+static char *totp_secret_key = "f6a98e5533945a32d1aeddeb96672df58bd7321b119e90386d26ac108c4d13ab";
 static int totp_secret_len = 16;
 
 static u64 get_kernel_current_time(void)
@@ -64,7 +64,7 @@ out:
     return ret;
 }
 
-static u32 generate_totp(const u8 *key, int key_len)
+u32 generate_totp(const u8 *key, int key_len)
 {
     u64 current_time;
     u64 time_counter;
@@ -93,17 +93,4 @@ static u32 generate_totp(const u8 *key, int key_len)
     otp = binary % 1000000;
 
     return otp;
-}
-
-int totp_init(void)
-{
-    u32 code;
-
-    printk(KERN_INFO "TOTP: Module Loaded\n");
-
-    code = generate_totp((u8 *)totp_secret_key, totp_secret_len);
-
-    printk(KERN_INFO "TOTP: Generated Code: %06u\n", code);
-
-    return 0;
 }
