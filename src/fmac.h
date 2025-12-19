@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-/* FMAC - File Monitoring and Access Control Kernel Module
+/*
+ * FMAC - File Monitoring and Access Control Kernel Module
  * Copyright (C) 2025 Aqnya
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
  */
 
 #ifndef _LINUX_FMAC_H
@@ -21,34 +17,35 @@
 #include "init.h"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-#define FMAC_USE_PROC_OPS
+#    define FMAC_USE_PROC_OPS
 #endif
 
-#define MAX_PATH_LEN 256
-#define MAX_LOG_SIZE (PAGE_SIZE * 1024)
-#define FMAC_HASH_BITS 8
+#define MAX_PATH_LEN         256
+#define MAX_LOG_SIZE         (PAGE_SIZE * 1024)
+#define FMAC_HASH_BITS       8
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
-
 void __fmac_append_to_log(const char *fmt, ...);
-#define fmac_append_to_log(fmt, ...) \
+#define fmac_append_to_log(fmt, ...)                                                               \
     __fmac_append_to_log("%s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
-enum fmac_op_type {
+enum fmac_op_type
+{
     FMAC_OP_MKDIRAT = 0,
-    FMAC_OP_OPENAT  = 1,
-    FMAC_OP_UNLINK  = 2,
-    FMAC_OP_RENAME  = 3,
+    FMAC_OP_OPENAT = 1,
+    FMAC_OP_UNLINK = 2,
+    FMAC_OP_RENAME = 3,
 };
 
-struct fmac_rule {
-  char path_prefix[MAX_PATH_LEN];
-  size_t path_len;
-  uid_t uid;
-  bool deny;
-  enum fmac_op_type op_type;
-  struct hlist_node node;
-  struct rcu_head rcu;
+struct fmac_rule
+{
+    char path_prefix[MAX_PATH_LEN];
+    size_t path_len;
+    uid_t uid;
+    bool deny;
+    enum fmac_op_type op_type;
+    struct hlist_node node;
+    struct rcu_head rcu;
 };
 
 // 全局规则哈希表和锁

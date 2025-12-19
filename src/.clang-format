@@ -1,0 +1,52 @@
+---
+# FMAC 项目 clang-format 配置文件
+# 适用于 C/C++ 开发
+
+Language: Cpp
+BasedOnStyle: LLVM
+
+# 缩进与列限制
+IndentWidth: 4
+ColumnLimit: 100
+TabWidth: 4
+UseTab: Never
+
+# 括号换行策略
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: Never
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeElse: false
+  IndentBraces: false
+
+# 排版细节
+AlignAfterOpenBracket: Align
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: false
+AlignTrailingComments: true
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+
+# 指针对齐 (例如: char* ptr)
+PointerAlignment: Right
+
+# 包含文件排序
+SortIncludes: true
+IncludeCategories:
+  - Regex:           '^<linux/.*'
+    Priority:        1
+  - Regex:           '^<asm/.*'
+    Priority:        2
+  - Regex:           '^<.*'
+    Priority:        3
+  - Regex:           '.*'
+    Priority:        4
+
+# 宏处理
+IndentPPDirectives: AfterHash
+...

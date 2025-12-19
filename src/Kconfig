@@ -2,7 +2,6 @@ menu "FMAC"
 
 config FMAC
 	tristate "File Monitoring and Access"
-	depends on OVERLAY_FS
 	default y
 	help
 	  Enable kernel-level File Monitoring and Access
@@ -20,5 +19,12 @@ config FMAC_ROOT
 	default y
 	help
 	  Enable FMAC root feature.
+
+config FMAC_ROOT_KPROBE
+	bool "FMAC ROOT feature by kprobe"
+	depends on KPROBES && FMAC_ROOT
+	default y
+	help
+	  Enable FMAC root feature by kprobe.
 
 endmenu

@@ -1,21 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-/* FMAC - File Monitoring and Access Control Kernel Module
+/*
+ * FMAC - File Monitoring and Access Control Kernel Module
  * Copyright (C) 2025 Aqnya
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
  */
 
-#include <linux/kernel.h>
-#include <linux/fs.h>
-#include <linux/sched.h>
 #include <linux/cred.h>
-#include <linux/uaccess.h>
-#include <linux/slab.h>
-#include <linux/rculist.h>
 #include <linux/errno.h>
+#include <linux/fs.h>
+#include <linux/kernel.h>
+#include <linux/rculist.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
 
 #include "fmac.h"
 
@@ -34,15 +30,15 @@ static bool fmac_check_access(const char *path, uid_t uid, int op_type)
     key = jhash(norm_path, path_len, 0);
 
     rcu_read_lock();
-    hash_for_each_possible_rcu(fmac_rule_ht, rule, node, key) {
+    hash_for_each_possible_rcu(fmac_rule_ht, rule, node, key)
+    {
         if (rule->uid != 0 && rule->uid != uid)
             continue;
 
         if (rule->op_type != -1 && rule->op_type != op_type)
             continue;
 
-        if (rule->path_len == path_len &&
-            strncmp(norm_path, rule->path_prefix, path_len) == 0) {
+        if (rule->path_len == path_len && strncmp(norm_path, rule->path_prefix, path_len) == 0) {
             deny = rule->deny;
             break;
         }
@@ -65,8 +61,8 @@ static int __fmac_check_path(const char __user *pathname, int op_type, const cha
 
     if (fmac_check_access(path, uid, op_type)) {
         if (fmac_printk)
-            fmac_append_to_log("Denied %s: %s by UID %u (pid %d)\n",
-                               op_name, path, uid, current->pid);
+            fmac_append_to_log("Denied %s: %s by UID %u (pid %d)\n", op_name, path, uid,
+                               current->pid);
         return -EACCES;
     }
 

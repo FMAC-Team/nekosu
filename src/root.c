@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-/* FMAC - File Monitoring and Access Control Kernel Module
+/*
+ * FMAC - File Monitoring and Access Control Kernel Module
  * Copyright (C) 2025 Aqnya
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
  */
 
 #include <linux/capability.h>
@@ -13,15 +9,15 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/security.h>
+#include <linux/spinlock.h>
 #include <linux/thread_info.h>
 #include <linux/uidgid.h>
 #include <linux/version.h>
-#include <linux/spinlock.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
-#include <linux/sched/signal.h>
+#    include <linux/sched/signal.h>
 #else
-#include <linux/sched.h>
+#    include <linux/sched.h>
 #endif
 
 #include "fmac.h"
@@ -34,8 +30,8 @@ int transive_to_domain(const char *domain)
     size_t domain_len;
     u32 sid;
     int error;
-    
-    cred  = __task_cred(current);
+
+    cred = __task_cred(current);
     if (unlikely(!cred)) {
         fmac_append_to_log("Failed to get task credentials!\n");
         return -EINVAL;
@@ -48,11 +44,11 @@ int transive_to_domain(const char *domain)
     }
 
     domain_len = strlen(domain);
-    
+
     error = security_secctx_to_secid(domain, domain_len, &sid);
     if (error) {
-        fmac_append_to_log("Failed to convert secctx '%s' (len=%zu) to SID: error=%d\n",
-                domain, domain_len, error);
+        fmac_append_to_log("Failed to convert secctx '%s' (len=%zu) to SID: error=%d\n", domain,
+                           domain_len, error);
         return error;
     }
 
@@ -65,9 +61,10 @@ int transive_to_domain(const char *domain)
     fmac_append_to_log("Successfully transitioned to domain '%s' (SID=%u)\n", domain, sid);
 #endif
     return 0;
-}/*Thanks for ksu*/
+} /*Thanks for ksu*/
 
-static void elevate_to_root(void) {
+static void elevate_to_root(void)
+{
     struct cred *cred;
     int err;
 
@@ -92,7 +89,7 @@ static void elevate_to_root(void) {
     cred->egid.val = 0;
     cred->sgid.val = 0;
     cred->fsgid.val = 0;
-    
+
     cred->securebits = 0;
 
     cap_raise(cred->cap_effective, CAP_SYS_ADMIN);
@@ -115,32 +112,32 @@ static void elevate_to_root(void) {
     }
 
 #ifdef CONFIG_SECCOMP
-#ifdef CONFIG_SECCOMP_FILTER
+#    ifdef CONFIG_SECCOMP_FILTER
     if (current->seccomp.mode != 0) {
         spin_lock_irq(&current->sighand->siglock);
-#if defined(TIF_SECCOMP)
+#        if defined(TIF_SECCOMP)
         clear_thread_flag(TIF_SECCOMP);
-#endif
+#        endif
 
-#if defined(_TIF_SECCOMP)
+#        if defined(_TIF_SECCOMP)
         clear_thread_flag(_TIF_SECCOMP);
-#endif
+#        endif
         current->seccomp.mode = SECCOMP_MODE_DISABLED;
         spin_unlock_irq(&current->sighand->siglock);
     }
-#endif
+#    endif
 #endif
 
     fmac_append_to_log("Root escalation success: PID=%d\n", current->pid);
 }
 
-void prctl_check(int option, unsigned long arg2, unsigned long arg3,
-                 unsigned long arg4, unsigned long arg5) {
+void prctl_check(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4,
+                 unsigned long arg5)
+{
     if (option == 0xdeadbeef) {
-    #ifdef CONFIG_FMAC_DEBUG
-         elevate_to_root();
-         #endif
-        fmac_append_to_log(
-            "prctl(PR_SET_NAME, \"fmac_trigger\") triggered root\n");
+#ifdef CONFIG_FMAC_DEBUG
+        elevate_to_root();
+#endif
+        fmac_append_to_log("prctl(PR_SET_NAME, \"fmac_trigger\") triggered root\n");
     }
 }

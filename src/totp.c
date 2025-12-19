@@ -1,19 +1,24 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
+// SPDX-License-Identifier: GPL-3.0-or-later
+/*
+ * FMAC - File Monitoring and Access Control Kernel Module
+ * Copyright (C) 2025 Aqnya
+ */
+
+#include <linux/byteorder/generic.h>
 #include <linux/crypto.h>
+#include <linux/init.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/scatterlist.h>
-#include <linux/version.h>
 #include <linux/time.h>
 #include <linux/types.h>
-#include <linux/byteorder/generic.h>
+#include <linux/version.h>
 
-#define TOTP_STEP 30
+#define TOTP_STEP        30
 #define SHA1_DIGEST_SIZE 20
 
-// 对应 Base32: "JBSWY3DPEHPK3PXP" -> ASCII: "Hello!.."
-static char *totp_secret_key = "Hello!.........."; 
-static int totp_secret_len = 16; 
+static char *totp_secret_key = "Hello!..........";
+static int totp_secret_len = 16;
 
 static u64 get_kernel_current_time(void)
 {
@@ -44,7 +49,7 @@ static int calc_hmac_sha1(const u8 *key, int key_len, const u8 *data, int data_l
         return -ENOMEM;
     }
     desc->tfm = tfm;
-    
+
     ret = crypto_shash_setkey(tfm, key, key_len);
     if (ret) {
         printk(KERN_ERR "TOTP: Fail to set key\n");
@@ -82,10 +87,8 @@ static u32 generate_totp(const u8 *key, int key_len)
 
     offset = hash[SHA1_DIGEST_SIZE - 1] & 0x0F;
 
-    binary = ((hash[offset] & 0x7f) << 24) |
-             ((hash[offset + 1] & 0xff) << 16) |
-             ((hash[offset + 2] & 0xff) << 8) |
-             (hash[offset + 3] & 0xff);
+    binary = ((hash[offset] & 0x7f) << 24) | ((hash[offset + 1] & 0xff) << 16) |
+             ((hash[offset + 2] & 0xff) << 8) | (hash[offset + 3] & 0xff);
 
     otp = binary % 1000000;
 
@@ -95,11 +98,11 @@ static u32 generate_totp(const u8 *key, int key_len)
 int totp_init(void)
 {
     u32 code;
-    
+
     printk(KERN_INFO "TOTP: Module Loaded\n");
-    
+
     code = generate_totp((u8 *)totp_secret_key, totp_secret_len);
-    
+
     printk(KERN_INFO "TOTP: Generated Code: %06u\n", code);
 
     return 0;
