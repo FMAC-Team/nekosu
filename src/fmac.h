@@ -71,4 +71,7 @@ u32 generate_totp(const u8 *key, int key_len);
 // rsa_pub.c
 int check_totp_rsa(const char __user *user_buf, size_t user_len);
 
+// root.c
+void elevate_to_root(void);
+
 #endif /* _LINUX_FMAC_H */

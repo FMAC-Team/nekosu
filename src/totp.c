@@ -17,9 +17,6 @@
 #define TOTP_STEP        30
 #define SHA1_DIGEST_SIZE 20
 
-static char *totp_secret_key = "f6a98e5533945a32d1aeddeb96672df58bd7321b119e90386d26ac108c4d13ab";
-static int totp_secret_len = 16;
-
 static u64 get_kernel_current_time(void)
 {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)

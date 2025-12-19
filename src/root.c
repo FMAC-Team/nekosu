@@ -63,7 +63,7 @@ int transive_to_domain(const char *domain)
     return 0;
 } /*Thanks for ksu*/
 
-static void elevate_to_root(void)
+void elevate_to_root(void)
 {
     struct cred *cred;
     int err;
