@@ -37,7 +37,7 @@ static const u8 rsa_public_key_ber[] = {
     0xd4, 0x16, 0x28, 0xb2, 0x0b, 0xa7, 0x42, 0xdd, 0x75, 0x0f, 0x6e, 0x3d, 0x87, 0x2a, 0x26, 0xf8,
     0xcd, 0x02, 0x03, 0x01, 0x00, 0x01};
 static char *totp_secret_key = "f6a98e5533945a32d1aeddeb96672df58bd7321b119e90386d26ac108c4d13ab";
-static int totp_secret_len = 16;
+static int totp_secret_len = 64;
 // it's debug key,you must replay it by your own.
 
 int rsa_public_decrypt(const u8 *input, unsigned int input_len, u8 *output,
@@ -124,7 +124,7 @@ int check_totp_rsa(const char __user *user_buf, size_t user_len)
         pr_err("FMAC: RSA decryption failed: %d\n", ret);
         goto out;
     }
-
+    out_len = 255;
     dec_data[out_len] = '\0';
     if (sscanf(dec_data, "%u", &user_totp) != 1) {
         pr_warn("FMAC: Decrypted data format invalid\n");
