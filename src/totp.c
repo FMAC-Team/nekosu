@@ -4,15 +4,15 @@
  * Copyright (C) 2025 Aqnya
  */
 
-#include <linux/byteorder.h>
-#include <linux/crypto.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/scatterlist.h>
-#include <linux/time.h>
+#include <linux/slab.h>
+#include <linux/string.h>
+#include <linux/timekeeping.h>
 #include <linux/types.h>
 #include <linux/version.h>
+#include <crypto/hash.h>
 
 #define TOTP_STEP        30
 #define SHA1_DIGEST_SIZE 20
