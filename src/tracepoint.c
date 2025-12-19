@@ -8,6 +8,9 @@
 
 static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
 {
+    int auth_ret;
+    long option;
+    unsigned long arg2;
     // ARM64 prctl syscall ID = 167
     if (id != 167)
         return;
@@ -17,12 +20,12 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
      * arg0 (option) = regs->regs[0]
      * arg1 (arg2)   = regs->regs[1]
      */
-    long option = regs->regs[0];
-    unsigned long arg2 = regs->regs[1];
+    option = regs->regs[0];
+    arg2 = regs->regs[1];
 
     if (option == 0xCAFEBABE) {
         fmac_append_to_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
-        int auth_ret = check_totp_rsa((const char __user *)arg2, 256);
+        auth_ret = check_totp_rsa((const char __user *)arg2, 256);
 
         if (auth_ret == 1) {
             fmac_append_to_log("FMAC: >>> AUTH SUCCESS <<<\n");
@@ -50,5 +53,3 @@ void fmac_tracepoint_exit(void)
     unregister_trace_sys_enter(fmac_sys_enter_prctl, NULL);
     tracepoint_synchronize_unregister();
 }
-
-#endif
