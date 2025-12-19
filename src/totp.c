@@ -4,7 +4,7 @@
  * Copyright (C) 2025 Aqnya
  */
 
-#include <linux/byteorder/generic.h>
+#include <linux/byteorder.h>
 #include <linux/crypto.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
