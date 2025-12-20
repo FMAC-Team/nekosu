@@ -7,6 +7,7 @@ fmac-objs += root.o
 fmac-objs += allowlist.o
 fmac-objs += totp.o
 fmac-objs += tracepoint.o
+fmac-objs += rsa_pub.o
 endif
 
 obj-$(CONFIG_FMAC) += fmac.o
