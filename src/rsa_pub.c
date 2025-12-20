@@ -12,7 +12,7 @@
 #include <linux/scatterlist.h>
 #include <linux/slab.h>
 #include <crypto/akcipher.h>
-#include <crypto/utils.h>
+#include <linux/string.h>
 
 #include "fmac.h"
 
