@@ -9,6 +9,8 @@
 #include <linux/stdarg.h>
 #include <linux/string.h>
 
+#include "fmac.h"
+
 enum fmac_log_mode
 {
     FMAC_LOG_BUFFER = 0,
