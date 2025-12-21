@@ -1,17 +1,12 @@
 ---
-# FMAC 项目 clang-format 配置文件
-# 适用于 C/C++ 开发
-
-Language: Cpp
+Language: C
 BasedOnStyle: LLVM
 
-# 缩进与列限制
 IndentWidth: 4
-ColumnLimit: 100
 TabWidth: 4
 UseTab: Never
+ColumnLimit: 100
 
-# 括号换行策略
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: true
@@ -21,32 +16,45 @@ BraceWrapping:
   AfterNamespace: true
   AfterStruct: true
   AfterUnion: true
+  AfterExternBlock: true
   BeforeElse: false
   IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
 
-# 排版细节
 AlignAfterOpenBracket: Align
-AlignConsecutiveMacros: true
-AlignConsecutiveAssignments: false
 AlignTrailingComments: true
+AlignConsecutiveAssignments: false
+AlignConsecutiveMacros: false 
+
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
 
-# 指针对齐 (例如: char* ptr)
 PointerAlignment: Right
+DerivePointerAlignment: false
 
-# 包含文件排序
-SortIncludes: true
+IndentCaseLabels: false
+IndentGotoLabels: false
+
+IndentPPDirectives: AfterHash
+
+SortIncludes: false  
+IncludeBlocks: Preserve
 IncludeCategories:
   - Regex:           '^<linux/.*'
     Priority:        1
   - Regex:           '^<asm/.*'
     Priority:        2
-  - Regex:           '^<.*'
+  - Regex:           '^<crypto/.*'
     Priority:        3
-  - Regex:           '.*'
+  - Regex:           '^<.*'
     Priority:        4
+  - Regex:           '.*'
+    Priority:        5
 
-# 宏处理
-IndentPPDirectives: AfterHash
-...
+SpaceAfterCStyleCast: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceBeforeAssignmentOperators: true

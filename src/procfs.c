@@ -65,7 +65,7 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer, siz
     char path[MAX_PATH_LEN];
     unsigned int uid;
     int deny;
-    int op_type = -1; // 默认通配
+    int op_type = -1;
 
     if (count > sizeof(kbuf) - 1)
         return -EINVAL;
@@ -153,14 +153,14 @@ int fmac_procfs_init(void)
         return -ENOMEM;
     }
 
-    fmac_proc_entry = proc_create("rules", 0666, fmac_proc_dir, &fmac_proc_ops);
+    fmac_proc_entry = proc_create("rules", 0600, fmac_proc_dir, &fmac_proc_ops);
     if (!fmac_proc_entry) {
         pr_err("[FMAC] Failed to create /proc/fmac\n");
         fmac_procfs_exit();
         return -ENOMEM;
     }
 
-    fmac_log_entry = proc_create("log", 0444, fmac_proc_dir, &fmac_log_proc_ops);
+    fmac_log_entry = proc_create("log", 0400, fmac_proc_dir, &fmac_log_proc_ops);
     if (!fmac_log_entry) {
         pr_err("[FMAC] Failed to create /proc/fmac_log\n");
         fmac_procfs_exit();

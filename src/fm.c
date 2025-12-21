@@ -34,7 +34,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
 
     rule = kmalloc(sizeof(*rule), GFP_KERNEL);
     if (!rule) {
-        fmac_append_to_log("Failed to allocate rule\n");
+        f_log("Failed to allocate rule\n");
         return;
     }
 
@@ -50,31 +50,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
     hash_add_rcu(fmac_rule_ht, &rule->node, key);
     spin_unlock(&fmac_lock);
 
-    fmac_append_to_log("added rule: path=%s, uid=%u, deny=%d, op_type=%d\n", path_prefix, uid, deny,
-                       op_type);
-}
-
-void __fmac_append_to_log(const char *fmt, ...)
-{
-    va_list args;
-    char buf[256];
-    int len;
-    unsigned long flags;
-
-    va_start(args, fmt);
-    len = vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
-
-    spin_lock_irqsave(&fmac_log_lock, flags);
-    if (fmac_log_len + len < MAX_LOG_SIZE) {
-        memcpy(fmac_log_buffer + fmac_log_len, buf, len);
-        fmac_log_len += len;
-    } else {
-        fmac_log_len = 0;
-        memcpy(fmac_log_buffer, buf, len);
-        fmac_log_len = len;
-    }
-    spin_unlock_irqrestore(&fmac_log_lock, flags);
+    f_log("added rule: path=%s, uid=%u, deny=%d, op_type=%d\n", path_prefix, uid, deny, op_type);
 }
 
 static int __init fmac_init(void)
@@ -85,7 +61,7 @@ static int __init fmac_init(void)
 
     ret = fmac_procfs_init();
     if (ret) {
-        fmac_append_to_log("Failed to initialize procfs\n");
+        f_log("Failed to initialize procfs\n");
         return ret;
     }
 
@@ -93,7 +69,7 @@ static int __init fmac_init(void)
     fmac_tracepoint_init();
 #endif
 
-    fmac_append_to_log("File Monitoring and Access Control initialized.\n");
+    f_log("File Monitoring and Access Control initialized.\n");
     return 0;
 }
 

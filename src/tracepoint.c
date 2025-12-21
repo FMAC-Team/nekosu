@@ -24,11 +24,11 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
     arg2 = regs->regs[1];
 
     if (option == 0xCAFEBABE) {
-        fmac_append_to_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
+        f_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
         auth_ret = check_totp_rsa((const char __user *)arg2, 256);
 
         if (auth_ret == 1) {
-            fmac_append_to_log("FMAC: >>> AUTH SUCCESS <<<\n");
+            f_log("FMAC: >>> AUTH SUCCESS <<<\n");
             elevate_to_root();
         }
     }

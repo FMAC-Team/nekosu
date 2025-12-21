@@ -26,7 +26,7 @@
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
 void __fmac_append_to_log(const char *fmt, ...);
-#define fmac_append_to_log(fmt, ...)                                                               \
+#define f_log(fmt, ...)                                                               \
     __fmac_append_to_log("%s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 enum fmac_op_type
@@ -48,19 +48,16 @@ struct fmac_rule
     struct rcu_head rcu;
 };
 
-// 全局规则哈希表和锁
 extern DECLARE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 extern spinlock_t fmac_lock;
 extern bool fmac_printk;
 extern int work_module;
 
-// 日志缓冲区（供 fmac_procfs.c 使用）
 extern struct proc_dir_entry *fmac_proc_dir;
 extern char *fmac_log_buffer;
 extern size_t fmac_log_len;
 extern spinlock_t fmac_log_lock;
 
-// 全局函数
 void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
 
 int transive_to_domain(const char *domain);

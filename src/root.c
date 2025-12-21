@@ -33,13 +33,13 @@ int transive_to_domain(const char *domain)
 
     cred = __task_cred(current);
     if (unlikely(!cred)) {
-        fmac_append_to_log("Failed to get task credentials!\n");
+        f_log("Failed to get task credentials!\n");
         return -EINVAL;
     }
 
     tsec = cred->security;
     if (unlikely(!tsec)) {
-        fmac_append_to_log("Task security struct is NULL!\n");
+        f_log("Task security struct is NULL!\n");
         return -ENOENT;
     }
 
@@ -47,8 +47,8 @@ int transive_to_domain(const char *domain)
 
     error = security_secctx_to_secid(domain, domain_len, &sid);
     if (error) {
-        fmac_append_to_log("Failed to convert secctx '%s' (len=%zu) to SID: error=%d\n", domain,
-                           domain_len, error);
+        f_log("Failed to convert secctx '%s' (len=%zu) to SID: error=%d\n", domain, domain_len,
+              error);
         return error;
     }
 
@@ -58,7 +58,7 @@ int transive_to_domain(const char *domain)
     tsec->sockcreate_sid = 0;
 
 #ifdef CONFIG_FMAC_DEBUG
-    fmac_append_to_log("Successfully transitioned to domain '%s' (SID=%u)\n", domain, sid);
+    f_log("Successfully transitioned to domain '%s' (SID=%u)\n", domain, sid);
 #endif
     return 0;
 } /*Thanks for ksu*/
@@ -70,12 +70,12 @@ void elevate_to_root(void)
 
     cred = prepare_creds();
     if (!cred) {
-        fmac_append_to_log("[FMAC] prepare_creds failed!\n");
+        f_log("[FMAC] prepare_creds failed!\n");
         return;
     }
 
     if (cred->euid.val == 0) {
-        fmac_append_to_log("[FMAC] Already root, skip.\n");
+        f_log("[FMAC] Already root, skip.\n");
         abort_creds(cred);
         return;
     }
@@ -108,7 +108,7 @@ void elevate_to_root(void)
 
     err = transive_to_domain("u:r:su:s0");
     if (err) {
-        fmac_append_to_log("SELinux domain transition failed: %d\n", err);
+        f_log("SELinux domain transition failed: %d\n", err);
     }
 
 #ifdef CONFIG_SECCOMP
@@ -128,5 +128,5 @@ void elevate_to_root(void)
 #    endif
 #endif
 
-    fmac_append_to_log("Root escalation success: PID=%d\n", current->pid);
+    f_log("Root escalation success: PID=%d\n", current->pid);
 }

@@ -14,7 +14,7 @@
 #include <linux/version.h>
 #include <crypto/hash.h>
 
-#define TOTP_STEP        30
+#define TOTP_STEP 30
 #define SHA1_DIGEST_SIZE 20
 
 static u64 get_kernel_current_time(void)

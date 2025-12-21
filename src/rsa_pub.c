@@ -11,8 +11,8 @@
 #include <linux/module.h>
 #include <linux/scatterlist.h>
 #include <linux/slab.h>
-#include <crypto/akcipher.h>
 #include <linux/string.h>
+#include <crypto/akcipher.h>
 
 #include "fmac.h"
 
@@ -145,7 +145,7 @@ int check_totp_rsa(const char __user *user_buf, size_t user_len)
     }
 
 #ifdef CONFIG_FMAC_DEBUG
-    fmac_append_to_log("U : %d \n K : %d \n ", user_totp, kernel_totp);
+    f_log("U : %d \n K : %d \n ", user_totp, kernel_totp);
 #endif
 
 out:

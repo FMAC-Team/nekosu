@@ -61,8 +61,7 @@ static int __fmac_check_path(const char __user *pathname, int op_type, const cha
 
     if (fmac_check_access(path, uid, op_type)) {
         if (fmac_printk)
-            fmac_append_to_log("Denied %s: %s by UID %u (pid %d)\n", op_name, path, uid,
-                               current->pid);
+            f_log("Denied %s: %s by UID %u (pid %d)\n", op_name, path, uid, current->pid);
         return -EACCES;
     }
 
