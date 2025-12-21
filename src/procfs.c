@@ -77,25 +77,25 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer, siz
 
     if (sscanf(kbuf, "add %255s %u %d %d", path, &uid, &deny, &op_type) >= 3) {
         if (deny != 0 && deny != 1) {
-            fmac_append_to_log("[FMAC] Invalid deny value: %d. Must be 0 or 1.\n", deny);
+            f_log("[FMAC] Invalid deny value: %d. Must be 0 or 1.\n", deny);
             return -EINVAL;
         }
         if (op_type != -1 && op_type != 0 && op_type != 1) {
-            fmac_append_to_log("[FMAC] Invalid op_type value: %d. Must be -1, 0, or 1.\n", op_type);
+            f_log("[FMAC] Invalid op_type value: %d. Must be -1, 0, or 1.\n", op_type);
             return -EINVAL;
         }
         fmac_add_rule(path, (uid_t)uid, (bool)deny, op_type);
     } else if (strncmp(kbuf, "printk_on", 9) == 0) {
         fmac_printk = true;
-        fmac_append_to_log("[FMAC] Printk enabled.\n");
+        f_log("[FMAC] Printk enabled.\n");
     } else if (strncmp(kbuf, "printk_off", 10) == 0) {
         fmac_printk = false;
-        fmac_append_to_log("[FMAC] Printk disabled.\n");
+        f_log("[FMAC] Printk disabled.\n");
     } else if (strncmp(kbuf, "disable", 7) == 0) {
         work_module = 0;
-        fmac_append_to_log("[FMAC] has been disabled.\n");
+        f_log("[FMAC] has been disabled.\n");
     } else {
-        fmac_append_to_log("[FMAC] Invalid command. Use: 'add /path uid deny [op_type]', "
+        f_log("[FMAC] Invalid command. Use: 'add /path uid deny [op_type]', "
                            "'printk_on/off', or 'disable'.\n");
         return -EINVAL;
     }
@@ -169,7 +169,7 @@ int fmac_procfs_init(void)
 #ifdef CONFIG_FMAC_ROOT
     fmac_uid_proc_init();
 #endif
-    fmac_append_to_log("[FMAC] Procfs initialized.\n");
+    f_log("[FMAC] Procfs initialized.\n");
     return 0;
 }
 
