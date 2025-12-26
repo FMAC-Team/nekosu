@@ -96,7 +96,7 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer, siz
         f_log("[FMAC] has been disabled.\n");
     } else {
         f_log("[FMAC] Invalid command. Use: 'add /path uid deny [op_type]', "
-                           "'printk_on/off', or 'disable'.\n");
+              "'printk_on/off', or 'disable'.\n");
         return -EINVAL;
     }
 
