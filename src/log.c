@@ -17,7 +17,11 @@ enum fmac_log_mode
     FMAC_LOG_KLOG = 1,
 };
 
+#ifdef CONFIG_FMAC_DEBUG
+static enum fmac_log_mode fmac_log_mode = FMAC_LOG_KLOG;
+#else
 static enum fmac_log_mode fmac_log_mode = FMAC_LOG_BUFFER;
+#endif
 
 void __fmac_append_to_log(const char *fmt, ...)
 {
