@@ -3,7 +3,7 @@
  * FMAC - File Monitoring and Access Control Kernel Module
  * Copyright (C) 2025 Aqnya
  */
-
+ 
 #include <linux/crypto.h>
 #include <linux/err.h>
 #include <linux/init.h>
@@ -13,147 +13,156 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <crypto/akcipher.h>
+#include <crypto/hash.h>
 
 #include "fmac.h"
 
-static const u8 rsa_public_key_ber[] = {
-    0x30, 0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01,
-    0x01, 0x05, 0x00, 0x03, 0x82, 0x01, 0x0f, 0x00, 0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01, 0x01,
-    0x00, 0x9b, 0x81, 0x53, 0xc7, 0xfd, 0xa2, 0x35, 0x57, 0x11, 0x08, 0x17, 0xc9, 0x8e, 0x1a, 0x3b,
-    0x72, 0x50, 0x3b, 0x7c, 0x10, 0xa1, 0x17, 0xf0, 0x8d, 0x72, 0x8d, 0xd8, 0xcb, 0xa5, 0x50, 0x96,
-    0x7c, 0xfe, 0xd1, 0x2c, 0x78, 0xe8, 0x40, 0x32, 0x75, 0xe5, 0x39, 0x9f, 0xd0, 0xd4, 0x3e, 0x2d,
-    0x1d, 0xc8, 0x7b, 0xe3, 0x86, 0xa0, 0x01, 0x2a, 0x2f, 0xc5, 0x71, 0xef, 0xd3, 0xa4, 0xfe, 0xcc,
-    0x23, 0x51, 0xb1, 0x78, 0x4d, 0x4b, 0xfd, 0x0e, 0x78, 0x47, 0xd7, 0x83, 0xf5, 0x3f, 0xb1, 0x52,
-    0xf4, 0x4c, 0xe8, 0xb2, 0xa1, 0x5c, 0x0b, 0x22, 0xe9, 0xe5, 0xe8, 0x99, 0x20, 0x66, 0x2e, 0x76,
-    0xf1, 0x98, 0xfd, 0x55, 0xfc, 0x44, 0xf3, 0x15, 0x57, 0x34, 0x25, 0x1e, 0x1f, 0xeb, 0x14, 0x46,
-    0xbe, 0x12, 0x17, 0x72, 0xb2, 0x7e, 0xde, 0x65, 0xe8, 0x35, 0xb3, 0x63, 0x0b, 0xa0, 0x6f, 0xbf,
-    0x9f, 0x74, 0x85, 0x73, 0xd1, 0xac, 0x43, 0x1b, 0x27, 0x65, 0xf2, 0x1f, 0x1f, 0xdf, 0x8e, 0x99,
-    0x0e, 0xfb, 0x5b, 0x6e, 0xb2, 0xa9, 0xb8, 0x65, 0x03, 0x5d, 0x08, 0x13, 0x34, 0x74, 0x2d, 0x1c,
-    0xfe, 0x58, 0x70, 0x33, 0x8c, 0x0c, 0x46, 0xd9, 0xf7, 0xa3, 0xcb, 0x98, 0xdc, 0x39, 0x24, 0xab,
-    0x04, 0xab, 0x9d, 0x79, 0x61, 0xe3, 0xec, 0x42, 0xd7, 0x61, 0xad, 0x1f, 0x7e, 0xd5, 0x1d, 0xd6,
-    0xd8, 0x66, 0xd2, 0x71, 0xb1, 0xc0, 0x93, 0xaa, 0xc4, 0x7c, 0xd7, 0xc4, 0xc5, 0xe2, 0xf9, 0xfa,
-    0x4f, 0x01, 0x9e, 0x66, 0x4c, 0x4d, 0x0e, 0xa6, 0xd1, 0x2d, 0x29, 0xe9, 0x14, 0xa7, 0xea, 0xbd,
-    0x84, 0xcb, 0x1f, 0x77, 0x54, 0xd7, 0xb0, 0x18, 0x8d, 0xb0, 0x5f, 0x3a, 0xeb, 0x2d, 0x02, 0x24,
-    0xd4, 0x16, 0x28, 0xb2, 0x0b, 0xa7, 0x42, 0xdd, 0x75, 0x0f, 0x6e, 0x3d, 0x87, 0x2a, 0x26, 0xf8,
-    0xcd, 0x02, 0x03, 0x01, 0x00, 0x01};
+static const u8 ecc_public_key_der[] = {
+    0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a,
+    0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00, 0x04, 0x7c, 0x47, 0xba, 0x6d, 0xa3,
+    0x8d, 0xd4, 0x24, 0x2b, 0xfa, 0xc3, 0xd9, 0x86, 0x64, 0x55, 0x40, 0xdb, 0x9b, 0x01, 0x46, 0x49,
+    0x19, 0x8d, 0x92, 0xdb, 0xe2, 0x38, 0x24, 0x2a, 0x99, 0x9c, 0xec, 0x46, 0xa6, 0x83, 0x6b, 0x5b,
+    0x91, 0x41, 0x5f, 0x05, 0x9a, 0x86, 0x5f, 0x91, 0x76, 0x76, 0xf1, 0xa4, 0xa9, 0xf1, 0x25, 0x53,
+    0x84, 0x6d, 0xea, 0xf8, 0x72, 0x41, 0x53, 0x08, 0x68, 0x28, 0xe8};
+unsigned int ec_pub_edr_pem_len = 91;
+
 static char *totp_secret_key = "f6a98e5533945a32d1aeddeb96672df58bd7321b119e90386d26ac108c4d13ab";
 static int totp_secret_len = 64;
-// it's debug key,you must replay it by your own.
 
-int rsa_public_decrypt(const u8 *input, unsigned int input_len, u8 *output,
-                       unsigned int *output_len)
+static int compute_sha256(const u8 *data, unsigned int data_len, u8 *hash)
+{
+    struct crypto_shash *tfm;
+    struct shash_desc *desc;
+    int ret;
+
+    tfm = crypto_alloc_shash("sha256", 0, 0);
+    if (IS_ERR(tfm))
+        return PTR_ERR(tfm);
+
+    desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(tfm), GFP_KERNEL);
+    if (!desc) {
+        crypto_free_shash(tfm);
+        return -ENOMEM;
+    }
+
+    desc->tfm = tfm;
+    ret = crypto_shash_digest(desc, data, data_len, hash);
+
+    kfree(desc);
+    crypto_free_shash(tfm);
+    return ret;
+}
+
+int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_code)
 {
     struct crypto_akcipher *tfm = NULL;
     struct akcipher_request *req = NULL;
     struct crypto_wait cwait;
     struct scatterlist src, dst;
-    unsigned int key_len;
+    u8 hash[32]; /* SHA-256 hash */
+    u8 *sig_der = NULL;
+    unsigned int sig_der_len;
     int ret;
 
-    if (!input || !output || !output_len)
-        return -EINVAL;
+    u8 totp_str[12];
+    int totp_len = snprintf(totp_str, sizeof(totp_str), "%u", totp_code);
 
-    tfm = crypto_alloc_akcipher("pkcs1pad(rsa)", 0, 0);
-    if (IS_ERR(tfm))
+    ret = compute_sha256(totp_str, totp_len, hash);
+    if (ret) {
+        pr_err("FMAC: SHA-256 computation failed: %d\n", ret);
+        return ret;
+    }
+
+    /* Allocate ECDSA cipher */
+    tfm = crypto_alloc_akcipher("ecdsa", 0, 0);
+    if (IS_ERR(tfm)) {
+        pr_err("FMAC: Failed to allocate ECDSA cipher\n");
         return PTR_ERR(tfm);
+    }
 
-    ret = crypto_akcipher_set_pub_key(tfm, rsa_public_key_ber, sizeof(rsa_public_key_ber));
-    if (ret)
-        goto out;
-
-    key_len = crypto_akcipher_maxsize(tfm);
-    if (input_len != key_len || *output_len < key_len) {
-        ret = -EINVAL;
+    /* Set public key */
+    ret = crypto_akcipher_set_pub_key(tfm, ecc_public_key_der, sizeof(ecc_public_key_der));
+    if (ret) {
+        pr_err("FMAC: Failed to set ECC public key: %d\n", ret);
         goto out;
     }
 
+    /* Allocate request */
     req = akcipher_request_alloc(tfm, GFP_KERNEL);
     if (!req) {
         ret = -ENOMEM;
         goto out;
     }
 
-    sg_init_one(&src, input, input_len);
-    sg_init_one(&dst, output, *output_len);
+    sig_der = kmalloc(sig_len, GFP_KERNEL);
+    if (!sig_der) {
+        ret = -ENOMEM;
+        goto out;
+    }
+    memcpy(sig_der, signature, sig_len);
+    sig_der_len = sig_len;
+
+    sg_init_one(&src, sig_der, sig_der_len);
+    sg_init_one(&dst, hash, sizeof(hash));
 
     crypto_init_wait(&cwait);
     akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG, crypto_req_done, &cwait);
 
-    akcipher_request_set_crypt(req, &src, &dst, input_len, *output_len);
+    akcipher_request_set_crypt(req, &src, &dst, sig_der_len, sizeof(hash));
 
     ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
-    if (ret)
-        goto out;
-
-    *output_len = req->dst_len;
+    if (ret) {
+        pr_warn("FMAC: ECDSA signature verification failed: %d\n", ret);
+    } else {
+        pr_info("FMAC: ECDSA signature verification succeeded\n");
+    }
 
 out:
-    if (ret)
-        memzero_explicit(output, *output_len);
+    if (sig_der)
+        kfree(sig_der);
     if (req)
         akcipher_request_free(req);
-    crypto_free_akcipher(tfm);
+    if (tfm)
+        crypto_free_akcipher(tfm);
+
     return ret;
 }
 
-int check_totp_rsa(const char __user *user_buf, size_t user_len)
+int check_totp_ecc(const char __user *user_buf, size_t user_len)
 {
-    u8 *enc_data = NULL;
-    u8 *dec_data = NULL;
-    unsigned int out_len = 256;
-    u32 kernel_totp, user_totp;
+    u8 *buffer = NULL;
+    u32 k_totp;
     int ret = 0;
 
-    if (user_len != 256)
+    if (user_len < 64 || user_len > 96) {
+        pr_err("FMAC: Invalid input length: %zu\n", user_len);
         return -EINVAL;
+    }
 
-    enc_data = kmalloc(256, GFP_KERNEL);
-    dec_data = kzalloc(256, GFP_KERNEL);
-    if (!enc_data || !dec_data) {
+    buffer = kmalloc(user_len, GFP_KERNEL);
+    if (!buffer) {
         ret = -ENOMEM;
         goto out;
     }
 
-    if (copy_from_user(enc_data, user_buf, 256)) {
+    if (copy_from_user(buffer, user_buf, user_len)) {
         ret = -EFAULT;
         goto out;
     }
 
-    ret = rsa_public_decrypt(enc_data, 256, dec_data, &out_len);
+    k_totp = generate_totp((u8 *)totp_secret_key, totp_secret_len);
+
+    ret = ecc_verify_signature(buffer, user_len, k_totp);
     if (ret) {
-        pr_err("FMAC: RSA decryption failed: %d\n", ret);
+        pr_warn("FMAC: ECDSA signature verification failed\n");
+        ret = -1;
         goto out;
     }
-    out_len = 255;
-    dec_data[out_len] = '\0';
-    if (sscanf(dec_data, "%u", &user_totp) != 1) {
-        pr_warn("FMAC: Decrypted data format invalid\n");
-        ret = -EBADMSG;
-        goto out;
-    }
-
-    kernel_totp = generate_totp((u8 *)totp_secret_key, totp_secret_len);
-
-    pr_info("FMAC: User TOTP: %06u, Kernel TOTP: %06u\n", user_totp, kernel_totp);
-
-    if (user_totp == kernel_totp) {
-        pr_info("FMAC: TOTP/RSA Verification Passed!\n");
-        ret = 1;
-    } else {
-        pr_warn("FMAC: TOTP Mismatch!\n");
-        ret = 0;
-    }
-
-#ifdef CONFIG_FMAC_DEBUG
-    f_log("U : %d \n K : %d \n ", user_totp, kernel_totp);
-#endif
 
 out:
-    if (enc_data)
-        kfree(enc_data);
-    if (dec_data) {
-        memzero_explicit(dec_data, 256);
-        kfree(dec_data);
+    if (buffer) {
+        memzero_explicit(buffer, user_len);
+        kfree(buffer);
     }
     return ret;
 }
