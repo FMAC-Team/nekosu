@@ -9,8 +9,7 @@
 static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
 {
     int auth_ret;
-    long option;
-    unsigned long arg2;
+    unsigned long option,arg2,arg3;
     // ARM64 prctl syscall ID = 167
     if (id != 167)
         return;
@@ -20,9 +19,14 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
      * arg0 (option) = regs->regs[0]
      * arg1 (arg2)   = regs->regs[1]
      */
-    option = regs->regs[0];
-    arg2 = regs->regs[1];
-    arg3 = regs->regs[2]; // user space lenght
+
+
+    option = PT_REGS_PARM1(regs);
+    arg2  = PT_REGS_PARM2(regs);
+    arg3  = PT_REGS_PARM2(regs);
+//    option = regs->regs[0];
+ //   arg2 = regs->regs[1];
+   // arg3 = regs->regs[2]; // user space lenght
 
     if (option == 0xCAFEBABE) {
         f_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
