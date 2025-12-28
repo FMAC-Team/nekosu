@@ -3,7 +3,7 @@
  * FMAC - File Monitoring and Access Control Kernel Module
  * Copyright (C) 2025 Aqnya
  */
- 
+
 #include <linux/crypto.h>
 #include <linux/err.h>
 #include <linux/init.h>

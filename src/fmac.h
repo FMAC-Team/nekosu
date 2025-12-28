@@ -20,14 +20,13 @@
 #    define FMAC_USE_PROC_OPS
 #endif
 
-#define MAX_PATH_LEN         256
-#define MAX_LOG_SIZE         (PAGE_SIZE * 1024)
-#define FMAC_HASH_BITS       8
+#define MAX_PATH_LEN 256
+#define MAX_LOG_SIZE (PAGE_SIZE * 1024)
+#define FMAC_HASH_BITS 8
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
 void __fmac_append_to_log(const char *fmt, ...);
-#define f_log(fmt, ...)                                                               \
-    __fmac_append_to_log("%s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define f_log(fmt, ...) __fmac_append_to_log("%s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 enum fmac_op_type
 {
