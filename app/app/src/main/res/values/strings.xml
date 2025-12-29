@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Nekosu</string>
+    <string name="all_app">All app</string>
+    <string name="can_launch_app">Can launch</string>
 </resources>

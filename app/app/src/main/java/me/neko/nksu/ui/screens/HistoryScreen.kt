@@ -29,11 +29,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-
-// ----------------------------
-// 数据结构
-// ----------------------------
-
 data class AppInfo(
     val name: String,
     val packageName: String,
@@ -43,8 +38,8 @@ data class AppInfo(
 )
 
 enum class FilterMode(val label: String) {
-    ALL("全部应用"),
-    LAUNCHABLE("可启动应用"),
+    ALL(R.string.all_app),
+    LAUNCHABLE(R.string.can_launch_app),
     SYSTEM("系统应用"),
     USER("用户应用")
 }
