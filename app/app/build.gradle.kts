@@ -52,7 +52,7 @@ android {
 
 
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            abiFilters += listOf("arm64-v8a", "x86_64")
         }
         
         signingConfigs {
@@ -125,9 +125,7 @@ android {
         jniLibs {
             useLegacyPackaging = true
             pickFirsts += listOf(
-                "lib/armeabi-v7a/libc++_shared.so",
                 "lib/arm64-v8a/libc++_shared.so",
-                "lib/x86/libc++_shared.so",
                 "lib/x86_64/libc++_shared.so"
             )
         }
