@@ -226,3 +226,8 @@ See the LICENSE file for details.
 
 Contributions are welcome.  
 Please submit pull requests or open issues to help improve the project.
+
+---
+## Acknowledgments
+
+* Special thanks to the contributors of [CLI11](https://github.com/CLIUtils/CLI11) for providing an excellent command-line parsing library that simplified our CLI development.
