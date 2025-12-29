@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import me.neko.nksu.R
 
 data class AppInfo(
     val name: String,
