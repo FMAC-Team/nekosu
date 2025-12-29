@@ -50,20 +50,24 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // NDK 配置 - 支持的 CPU 架构
+
         ndk {
-            // 指定需要支持的 ABI（应用程序二进制接口）
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
+        
+        signingConfigs {
+        debug {
+            storeFile file('debug.keystore') 
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
 
-        // External Native Build 配置（如果使用 CMake）
         externalNativeBuild {
             cmake {
-                // C++ 标准版本
                 cppFlags += "-std=c++17"
-                // 编译参数
                 arguments += listOf(
-                    "-DANDROID_STL=c++_shared",  // 使用共享的 C++ 标准库
+                    "-DANDROID_STL=c++_shared",
                     "-DANDROID_PLATFORM=android-26"
                 )
             }
@@ -73,38 +77,31 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            isShrinkResources = true // 移除未使用的资源
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
 
-            // Native 调试符号配置
             ndk {
-                debugSymbolLevel = "FULL"  // 生成完整的调试符号
+                debugSymbolLevel = "FULL"
             }
         }
 
         debug {
-            // Debug 模式下的 Native 配置
+        signingConfig signingConfigs.debug
             ndk {
                 debugSymbolLevel = "FULL"
             }
         }
     }
 
-    // External Native Build 配置 - CMake 或 ndk-build
-    externalNativeBuild {
-        // 如果使用 CMake，取消下面的注释
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")  // CMakeLists.txt 的路径
-            version = "3.22.1"  // CMake 版本
-        }
 
-        // 如果使用 ndk-build，使用下面的配置（二选一）
-        // ndkBuild {
-        //     path = file("src/main/cpp/Android.mk")
-        // }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     compileOptions {
@@ -123,11 +120,9 @@ android {
         buildConfig = true
     }
 
-    // Native 库和资源打包选项
     packaging {
         jniLibs {
             useLegacyPackaging = true
-            // 保留所有 native 库
             pickFirsts += listOf(
                 "lib/armeabi-v7a/libc++_shared.so",
                 "lib/arm64-v8a/libc++_shared.so",
@@ -137,12 +132,10 @@ android {
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            // 排除重复的 native 库
-            excludes += "/lib/armeabi/**"  // 如果不需要旧的 armeabi
+            excludes += "/lib/armeabi/**"
         }
     }
 
-    // 自定义 APK 文件名
     android.applicationVariants.all {
         outputs.all {
             if (this is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
@@ -152,9 +145,7 @@ android {
             }
         }
     }
-
-    // NDK 版本（可选，指定特定的 NDK 版本）
-    ndkVersion = "27.1.12297006"  // 或者你安装的 NDK 版本
+    ndkVersion = "27.1.12297006"
 }
 
 dependencies {
