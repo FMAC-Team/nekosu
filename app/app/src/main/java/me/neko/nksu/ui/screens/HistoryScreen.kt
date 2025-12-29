@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.res.stringResource
 import me.neko.nksu.R
 
 data class AppInfo(
@@ -39,8 +40,8 @@ data class AppInfo(
 )
 
 enum class FilterMode(val label: String) {
-    ALL(R.string.all_app),
-    LAUNCHABLE(R.string.can_launch_app),
+    ALL(stringResource(R.string.all_app)),
+    LAUNCHABLE(stringResource(R.string.can_launch_app)),
     SYSTEM("系统应用"),
     USER("用户应用")
 }
