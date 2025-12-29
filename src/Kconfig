@@ -2,7 +2,7 @@ menu "FMAC"
 
 config FMAC
 	tristate "File Monitoring and Access"
-	default y
+	default m
 	help
 	  Enable kernel-level File Monitoring and Access
 
@@ -20,9 +20,9 @@ config FMAC_ROOT
 	help
 	  Enable FMAC root feature.
 
-config FMAC_ROOT_KPROBE
+config FMAC_ROOT_TRACEPOINT
 	bool "FMAC ROOT feature by kprobe"
-	depends on KPROBES && FMAC_ROOT
+	depends on TRACING && FMAC_ROOT
 	default y
 	help
 	  Enable FMAC root feature by kprobe.
