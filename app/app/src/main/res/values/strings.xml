@@ -1,5 +1,13 @@
 <resources>
     <string name="app_name">Nekosu</string>
-    <string name="all_app">All app</string>
-    <string name="can_launch_app">Can launch</string>
+    <string name="all_app">All Apps</string>
+    <string name="can_launch_app">Launchable Apps</string>
+    <string name="system_app">System Apps</string>
+    <string name="user_app">User Apps</string>
+
+    <string name="search">Search</string>
+    <string name="filter">Filter</string>
+    <string name="close_search">Close Search</string>
+    <string name="search_hint">Search app name or package</string>
+    <string name="no_app_found">No apps found</string>
 </resources>
