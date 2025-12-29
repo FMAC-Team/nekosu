@@ -56,7 +56,7 @@ android {
         }
         
         signingConfigs {
-        debug {
+         create("debug") {
             storeFile=file('debug.keystore') 
             storePassword="android"
             keyAlias="androiddebugkey"
@@ -90,7 +90,7 @@ android {
         }
 
         debug {
-        signingConfig signingConfigs.debug
+        signingConfig = signingConfigs.getByName("debug") 
             ndk {
                 debugSymbolLevel = "FULL"
             }
