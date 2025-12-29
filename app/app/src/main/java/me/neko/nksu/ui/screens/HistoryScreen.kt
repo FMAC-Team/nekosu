@@ -40,7 +40,7 @@ data class AppInfo(
     val isLaunchable: Boolean
 )
 
-enum class FilterMode(@StringRes val labelRes: Int) {
+enum class FilterMode(@param:StringRes val labelRes: Int) {
     ALL(R.string.all_app),
     LAUNCHABLE(R.string.can_launch_app),
     SYSTEM(R.string.system_app),
