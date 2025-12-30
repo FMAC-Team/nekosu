@@ -13,4 +13,6 @@
     <string name="sig_check_failed">
         Signature validation failed. Possible tampered or unofficial APK detected. Aborting.
     </string>
+    <string name="settings_title">Settings</string>
+    <string name="about">About</string>
 </resources>
