@@ -3,9 +3,10 @@ project(nekosu_native)
 
 set(OPENSSL_DIR ${CMAKE_SOURCE_DIR}/third_party/openssl)
 
+add_library(nksu SHARED su.cpp libnksu.cpp)
+
 target_include_directories(nksu PRIVATE ${OPENSSL_DIR}/include)
 
-add_library(nksu SHARED su.cpp libnksu.cpp)
 
 target_link_libraries(nksu
     log
