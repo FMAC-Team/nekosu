@@ -1,18 +1,6 @@
 cmake_minimum_required(VERSION 3.18.1)
-project("nekosu_native")
+project(nekosu_native)
 
-add_library(
-        native-lib
-        SHARED
-        native-lib.cpp
-)
+add_library(nksu SHARED su.cpp libnksu.cpp)
 
-find_library(
-        log-lib
-        log
-)
-
-target_link_libraries(
-        native-lib
-        ${log-lib}
-)
+target_link_libraries(nksu log)
