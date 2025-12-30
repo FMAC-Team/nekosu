@@ -66,7 +66,7 @@ std::vector<unsigned char> sign_data(const std::string &data, EVP_PKEY *priv_key
 }
 
 
-static int AuthenticationManager(const std::string key,
+ int AuthenticationManager(const std::string key,
                                  const std::string totp) {
   FILE *fp = fopen(key.c_str(), "r");
   if (!fp) {
