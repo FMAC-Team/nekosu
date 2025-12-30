@@ -62,6 +62,12 @@ android {
             keyAlias="androiddebugkey"
             keyPassword="android"
         }
+        create("release_sig") {
+            storeFile=file("release.keystore") 
+            storePassword="android"
+            keyAlias="androiddebugkey"
+            keyPassword="android"
+        }
        }
 
         externalNativeBuild {
@@ -83,6 +89,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            signingConfig = signingConfigs.getByName("release_sig") 
 
             ndk {
                 debugSymbolLevel = "FULL"
