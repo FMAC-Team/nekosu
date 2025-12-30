@@ -41,7 +41,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                Text(stringResource(R.string.settings_title))
+                title = { Text(stringResource(R.string.settings_title)) },
                 scrollBehavior = scrollBehavior
             )
         },
