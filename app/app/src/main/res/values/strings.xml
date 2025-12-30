@@ -10,4 +10,7 @@
     <string name="close_search">Close Search</string>
     <string name="search_hint">Search app name or package</string>
     <string name="no_app_found">No apps found</string>
+    <string name="sig_check_failed">
+        Signature validation failed. Possible tampered or unofficial APK detected. Aborting.
+    </string>
 </resources>
