@@ -4,13 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import me.neko.nksu.ui.theme.NekosuTheme
 import me.neko.nksu.ui.screens.MainScreen
-import androidx.compose.ui.res.stringResource
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,13 +30,12 @@ class MainActivity : ComponentActivity() {
                 MainScreen()
 
                 if (showDialog) {
-                    KeyInputDialog(onKeySaved = {  showDialog = false })
+                    KeyInputDialog(onDismiss = { showDialog = false })
                 }
             }
         }
     }
 }
-
 
 @Composable
 fun KeyInputDialog(onDismiss: () -> Unit) {
@@ -49,15 +52,17 @@ fun KeyInputDialog(onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = inputText,
-                    onValueChange = {
+                    onValueChange = { 
                         inputText = it
-                        isError = false
+                        isError = false 
                     },
                     label = { Text(stringResource(id = R.string.dialog_key_label)) },
                     singleLine = true,
                     isError = isError,
                     supportingText = {
-                        if (isError)  {                          Text(stringResource(id = R.string.dialog_key_error))}
+                        if (isError) {
+                            Text(stringResource(id = R.string.dialog_key_error))
+                        }
                     }
                 )
             }
