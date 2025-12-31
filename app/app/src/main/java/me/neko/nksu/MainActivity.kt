@@ -50,6 +50,7 @@ fun KeyInputDialog(onDismiss: () -> Unit) {
             Column {
                 Text(text = stringResource(id = R.string.dialog_key_desc))
                 Spacer(modifier = Modifier.height(8.dp))
+                
                 OutlinedTextField(
                     value = inputText,
                     onValueChange = { 
@@ -57,20 +58,23 @@ fun KeyInputDialog(onDismiss: () -> Unit) {
                         isError = false 
                     },
                     label = { Text(stringResource(id = R.string.dialog_key_label)) },
-                    singleLine = true,
+                    singleLine = false,
+                    minLines = 3,
+                    maxLines = 5,
                     isError = isError,
                     supportingText = {
                         if (isError) {
                             Text(stringResource(id = R.string.dialog_key_error))
                         }
-                    }
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         confirmButton = {
             Button(onClick = {
                 if (inputText.isNotBlank()) {
-                    KeyUtils.saveKey(context, inputText)
+                    KeyUtils.saveKey(context, inputText.trim())
                     onDismiss()
                 } else {
                     isError = true
