@@ -10,11 +10,22 @@ object KeyUtils {
         return file.exists()
     }
     
-    fun saveKey(context: Context, key: String) {
-        try {
-            File(context.filesDir, KEY_FILE_NAME).writeText(key)
-        } catch (e: Exception) {
-            e.printStackTrace()
+fun saveKey(context: Context, key: String) {
+    val MAX_SIZE = 512 * 1024 // 512KB
+
+    try {
+        val keyBytes = key.toByteArray(Charsets.UTF_8)
+
+        if (keyBytes.size > MAX_SIZE) {
+            Log.e("StorageError", "数据过大 (${keyBytes.size} bytes)，拒绝写入")
+            return 
         }
+        File(context.filesDir, KEY_FILE_NAME).writeBytes(keyBytes)
+
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
+}
+
+
 }
