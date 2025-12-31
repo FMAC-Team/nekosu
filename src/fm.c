@@ -11,7 +11,7 @@
 
 #include "fmac.h"
 
-MODULE_LICENSE("GPLv3");
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Aqnya");
 MODULE_DESCRIPTION("FMAC");
 
