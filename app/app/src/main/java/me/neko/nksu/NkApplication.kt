@@ -18,7 +18,7 @@ class NkApplication : Application() {
             Process.killProcess(Process.myPid())
             exitProcess(1)
         }
-        NotificationUtil.createChannel(this)
+  //      NotificationUtil.createChannel(this)
         CrashHandler.init(this)
     }
 }
