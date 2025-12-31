@@ -12,7 +12,7 @@ object KeyUtils {
     }
     
 fun saveKey(context: Context, key: String) {
-    val MAX_SIZE = 512 * 1024 // 512KB
+    val MAX_SIZE = 4 * 1024
 
     try {
         val keyBytes = key.toByteArray(Charsets.UTF_8)
