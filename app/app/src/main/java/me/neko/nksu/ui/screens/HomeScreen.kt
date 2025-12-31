@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import me.neko.nksu.BuildConfig
+import me.neko.nksu.Native
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
