@@ -15,4 +15,10 @@
     </string>
     <string name="settings_title">Settings</string>
     <string name="about">About</string>
+    <string name="dialog_key_title">Set Secret Key</string>
+    <string name="dialog_key_desc">You can enter the secret key now, or click \"Later\" to browse the app first.</string>
+    <string name="dialog_key_label">Secret Key</string>
+    <string name="dialog_key_error">Key cannot be empty</string>
+    <string name="dialog_key_save">Save and Enter</string>
+    <string name="dialog_key_later">Later</string>
 </resources>

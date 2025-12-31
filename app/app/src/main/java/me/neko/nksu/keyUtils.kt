@@ -9,4 +9,12 @@ object KeyUtils {
         val file = File(context.filesDir, KEY_FILE_NAME)
         return file.exists()
     }
+    
+    fun saveKey(context: Context, key: String) {
+        try {
+            File(context.filesDir, KEY_FILE_NAME).writeText(key)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

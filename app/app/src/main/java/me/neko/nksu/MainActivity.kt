@@ -10,6 +10,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import me.neko.nksu.ui.theme.NekosuTheme
 import me.neko.nksu.ui.screens.MainScreen
+import androidx.compose.ui.res.stringResource
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,22 +26,57 @@ class MainActivity : ComponentActivity() {
                 MainScreen()
 
                 if (showDialog) {
-                    KeyMissingDialog(onDismiss = { showDialog = false })
+                    KeyInputDialog(onKeySaved = {  showDialog = false })
                 }
             }
         }
     }
 }
 
+
 @Composable
-fun KeyMissingDialog(onDismiss: () -> Unit) {
+fun KeyInputDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    var inputText by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
+
     AlertDialog(
-        onDismissRequest = { },
-        title = { Text(text = "缺失密钥") },
-        text = { Text(text = "在应用私有目录中未找到必要的密钥文件，请检查后再试。") },
+        onDismissRequest = { onDismiss() },
+        title = { Text(text = stringResource(id = R.string.dialog_key_title)) },
+        text = {
+            Column {
+                Text(text = stringResource(id = R.string.dialog_key_desc))
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = {
+                        inputText = it
+                        isError = false
+                    },
+                    label = { Text(stringResource(id = R.string.dialog_key_label)) },
+                    singleLine = true,
+                    isError = isError,
+                    supportingText = {
+                        if (isError)  {                          Text(stringResource(id = R.string.dialog_key_error))}
+                    }
+                )
+            }
+        },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("确定")
+            Button(onClick = {
+                if (inputText.isNotBlank()) {
+                    KeyUtils.saveKey(context, inputText)
+                    onDismiss()
+                } else {
+                    isError = true
+                }
+            }) {
+                Text(stringResource(id = R.string.dialog_key_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onDismiss() }) {
+                Text(stringResource(id = R.string.dialog_key_later))
             }
         }
     )
