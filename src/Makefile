@@ -7,8 +7,16 @@ ifdef CONFIG_FMAC_ROOT
 fmac-objs += root.o
 fmac-objs += allowlist.o
 fmac-objs += totp.o
-fmac-objs += kprobe.o
 fmac-objs += rsa_pub.o
+
+ifeq ($(CONFIG_FMAC),m)
+    fmac-objs += kprobe.o
+endif
+
+ifeq ($(CONFIG_FMAC),y)
+    fmac-objs += tracepoint.o
+endif
+
 endif
 
 obj-$(CONFIG_FMAC) += fmac.o

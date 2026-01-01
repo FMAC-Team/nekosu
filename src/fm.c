@@ -62,8 +62,12 @@ static int __init fmac_init(void)
     }
 
 #ifdef CONFIG_FMAC_ROOT
-  //  fmac_tracepoint_init();
+  //  
+#if IS_MODULE(CONFIG_FMAC)
   fmac_kprobe_init();
+  #elif IS_BUILTIN(CONFIG_FMAC)
+  fmac_tracepoint_init();
+  #endif
 #endif
 
     f_log("File Monitoring and Access Control initialized.\n");
