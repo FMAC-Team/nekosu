@@ -6,8 +6,17 @@
 
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
-#include <stdarg.h>
 #include <linux/string.h>
+
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+
+#include <linux/stdarg.h>
+#else
+#include <stdarg.h>
+#endif
+
 
 #include "fmac.h"
 
