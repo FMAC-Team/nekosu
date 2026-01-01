@@ -6,7 +6,7 @@
 
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
-#include <linux/stdarg.h>
+#include <stdarg.h>
 #include <linux/string.h>
 
 #include "fmac.h"
