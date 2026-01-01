@@ -28,6 +28,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.res.stringResource
+import me.neko.nksu.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,9 +39,10 @@ fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
+    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text("设置") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 scrollBehavior = scrollBehavior
             )
         },
@@ -49,7 +52,6 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
         ) {
             ListItem(
                 modifier = Modifier
@@ -64,7 +66,10 @@ fun SettingsScreen(
                     )
                 },
                 headlineContent = {
-                    Text(text = "关于", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = stringResource(R.string.about),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             )
             

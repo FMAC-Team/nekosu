@@ -1,18 +1,15 @@
 cmake_minimum_required(VERSION 3.18.1)
-project("nekosu_native")
+project(nekosu_native)
 
-add_library(
-        native-lib
-        SHARED
-        native-lib.cpp
-)
+set(OPENSSL_DIR ${CMAKE_SOURCE_DIR}/third_party/openssl)
 
-find_library(
-        log-lib
-        log
-)
+add_library(nksu SHARED su.cpp libnksu.cpp)
 
-target_link_libraries(
-        native-lib
-        ${log-lib}
+target_include_directories(nksu PRIVATE ${OPENSSL_DIR}/include)
+
+
+target_link_libraries(nksu
+    log
+    ${OPENSSL_DIR}/${ANDROID_ABI}/libssl.a
+    ${OPENSSL_DIR}/${ANDROID_ABI}/libcrypto.a
 )

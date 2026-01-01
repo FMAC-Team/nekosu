@@ -1,3 +1,24 @@
 <resources>
     <string name="app_name">Nekosu</string>
+    <string name="all_app">All Apps</string>
+    <string name="can_launch_app">Launchable Apps</string>
+    <string name="system_app">System Apps</string>
+    <string name="user_app">User Apps</string>
+
+    <string name="search">Search</string>
+    <string name="filter">Filter</string>
+    <string name="close_search">Close Search</string>
+    <string name="search_hint">Search app name or package</string>
+    <string name="no_app_found">No apps found</string>
+    <string name="sig_check_failed">
+        Signature validation failed. Possible tampered or unofficial APK detected. Aborting.
+    </string>
+    <string name="settings_title">Settings</string>
+    <string name="about">About</string>
+    <string name="dialog_key_title">Set Secret Key</string>
+    <string name="dialog_key_desc">You can enter the secret key now, or click \"Later\" to browse the app first.</string>
+    <string name="dialog_key_label">Secret Key</string>
+    <string name="dialog_key_error">Key cannot be empty</string>
+    <string name="dialog_key_save">Save and Enter</string>
+    <string name="dialog_key_later">Later</string>
 </resources>

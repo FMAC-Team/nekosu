@@ -9,7 +9,8 @@ import java.security.MessageDigest
 
 object SigCheck {
 
-    private const val EXPECTED_SIGNATURE = "A26EA8F25044AFA79B11862F23729A4EF97F25CF63D37C0E74484365FFB5ED25"
+    private const val DEBUG_EXPECTED_SIGNATURE = "1692015C04AA6CEA61B9E3FBF6CBC9FA5933E6A6A5788C12D1289A6D9E51D45E"
+    private const val RELEASE_EXPECTED_SIGNATURE = "1C9CEAC6A82DE20EF909103926C296B2882653B4C9189360FCA9F081FCD663B1"
     
     private const val TAG = "SigCheck"
 
@@ -51,7 +52,7 @@ object SigCheck {
             for (certBytes in certs) {
                 val currentSignature = getSHA256(certBytes)
                  Log.d(TAG, "Found Signature: $currentSignature")
-                if (EXPECTED_SIGNATURE == currentSignature) {
+                if (DEBUG_EXPECTED_SIGNATURE == currentSignature|| RELEASE_EXPECTED_SIGNATURE == currentSignature) {
                     return true
                 }
             }

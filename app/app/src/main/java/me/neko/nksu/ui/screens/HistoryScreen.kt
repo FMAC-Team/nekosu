@@ -3,6 +3,7 @@ package me.neko.nksu.ui.screens
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -28,11 +30,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-
-// ----------------------------
-// 数据结构
-// ----------------------------
+import me.neko.nksu.R
 
 data class AppInfo(
     val name: String,
@@ -42,11 +40,11 @@ data class AppInfo(
     val isLaunchable: Boolean
 )
 
-enum class FilterMode(val label: String) {
-    ALL("全部应用"),
-    LAUNCHABLE("可启动应用"),
-    SYSTEM("系统应用"),
-    USER("用户应用")
+enum class FilterMode(@param:StringRes val labelRes: Int) {
+    ALL(R.string.all_app),
+    LAUNCHABLE(R.string.can_launch_app),
+    SYSTEM(R.string.system_app),
+    USER(R.string.user_app)
 }
 
 class AppViewModel(private val context: Context) : ViewModel() {
@@ -83,11 +81,6 @@ class AppViewModel(private val context: Context) : ViewModel() {
     }
 }
 
-
-// ----------------------------
-// ViewModel Factory
-// ----------------------------
-
 class AppViewModelFactory(
     private val context: Context
 ) : ViewModelProvider.Factory {
@@ -98,16 +91,10 @@ class AppViewModelFactory(
     }
 }
 
-
-// ----------------------------
-// Composable 页面
-// ----------------------------
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen() {
 
-    // 正确：在 Composable 内读取 context
     val context = LocalContext.current.applicationContext
 
     val viewModel: AppViewModel = viewModel(
@@ -155,12 +142,14 @@ fun HistoryScreen() {
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("搜索应用名或包名") },
+                            placeholder = {
+                                Text(stringResource(R.string.search_hint))
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
                     } else {
-                        Text(filterMode.label)
+                        Text(stringResource(filterMode.labelRes))
                     }
                 },
                 navigationIcon = {
@@ -169,20 +158,29 @@ fun HistoryScreen() {
                             isSearching = false
                             searchQuery = ""
                         }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "关闭搜索")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.close_search)
+                            )
                         }
                     }
                 },
                 actions = {
                     if (!isSearching) {
                         IconButton(onClick = { isSearching = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "搜索")
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = stringResource(R.string.search)
+                            )
                         }
                     }
 
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.FilterList, contentDescription = "过滤")
+                            Icon(
+                                Icons.Default.FilterList,
+                                contentDescription = stringResource(R.string.filter)
+                            )
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
@@ -190,7 +188,9 @@ fun HistoryScreen() {
                         ) {
                             FilterMode.values().forEach { mode ->
                                 DropdownMenuItem(
-                                    text = { Text(mode.label) },
+                                    text = {
+                                        Text(stringResource(mode.labelRes))
+                                    },
                                     onClick = {
                                         filterMode = mode
                                         menuExpanded = false
@@ -210,11 +210,10 @@ fun HistoryScreen() {
                 .padding(innerPadding),
             contentAlignment = Alignment.Center
         ) {
-
             when {
                 isLoading -> CircularProgressIndicator()
 
-                apps.isEmpty() -> Text("没有找到应用")
+                apps.isEmpty() -> Text(stringResource(R.string.no_app_found))
 
                 else -> {
                     LazyColumn(
@@ -243,8 +242,10 @@ fun HistoryScreen() {
                                         withContext(Dispatchers.IO) {
                                             try {
                                                 val drawable =
-                                                    localContext.packageManager.getApplicationIcon(app.packageName)
-                                                iconBitmap = drawable.toBitmap().asImageBitmap()
+                                                    localContext.packageManager
+                                                        .getApplicationIcon(app.packageName)
+                                                iconBitmap =
+                                                    drawable.toBitmap().asImageBitmap()
                                             } catch (_: Exception) {
                                             } finally {
                                                 isIconLoading = false
@@ -257,22 +258,29 @@ fun HistoryScreen() {
                                         contentAlignment = Alignment.Center
                                     ) {
                                         when {
-                                            isIconLoading -> CircularProgressIndicator(Modifier.size(20.dp))
-                                            iconBitmap != null -> Image(
-                                                bitmap = iconBitmap!!,
-                                                contentDescription = app.name,
-                                                modifier = Modifier.size(40.dp)
-                                            )
-                                            else -> Icon(
-                                                Icons.Default.Android,
-                                                contentDescription = app.name,
-                                                modifier = Modifier.size(40.dp)
-                                            )
+                                            isIconLoading ->
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+
+                                            iconBitmap != null ->
+                                                Image(
+                                                    bitmap = iconBitmap!!,
+                                                    contentDescription = app.name,
+                                                    modifier = Modifier.size(40.dp)
+                                                )
+
+                                            else ->
+                                                Icon(
+                                                    Icons.Default.Android,
+                                                    contentDescription = app.name,
+                                                    modifier = Modifier.size(40.dp)
+                                                )
                                         }
                                     }
                                 },
                                 modifier = Modifier.clickable {
-                                    // TODO: 点击后的行为
+                                    // TODO: 点击事件
                                 }
                             )
                             HorizontalDivider()
@@ -283,7 +291,6 @@ fun HistoryScreen() {
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
