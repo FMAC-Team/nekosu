@@ -73,6 +73,22 @@ fun SettingsScreen(
                 }
             )
             
+            ListItem(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        LogUtils.exportLogs(context) // 调用导出逻辑
+                    },
+                leadingContent = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
+                headlineContent = {
+                    Text(text = "导出调试日志", style = MaterialTheme.typography.titleMedium)
+                },
+                supportingContent = {
+                    Text(text = "收集系统日志用于故障排查")
+                }
+            )
+
+            
             Spacer(modifier = Modifier.weight(1f))
         }
 
