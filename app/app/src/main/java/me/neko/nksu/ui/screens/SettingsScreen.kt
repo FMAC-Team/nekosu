@@ -37,6 +37,8 @@ import me.neko.nksu.R
 fun SettingsScreen(
     navController: NavController
 ) {
+val mContext = LocalContext.current 
+    
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -78,7 +80,7 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        LogUtils.exportLogs(context) // 调用导出逻辑
+                        LogUtils.exportLogs(mContext) // 调用导出逻辑
                     },
                 leadingContent = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
                 headlineContent = {
