@@ -31,10 +31,12 @@ enum class InstallStatus {
     NOT_INSTALLED 
 }
 
+private const val B32_SECRET = "P2U6KVKZKSFKXGXO7XN6S6X62X6M6NE7"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen() {
-private const val B32_SECRET = "P2U6KVKZKSFKXGXO7XN6S6X62X6M6NE7"
+
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     
@@ -44,7 +46,7 @@ private const val B32_SECRET = "P2U6KVKZKSFKXGXO7XN6S6X62X6M6NE7"
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
            val keypath = KeyUtils.getKeyFilePath(context)
-            if (key != null) {
+            if (keypath != null) {
                 val token = KeyUtils.getTotpToken(B32_SECRET)
                 val result = Native().authenticate(keypath, token)
                 installStatus = if (result == 0) InstallStatus.INSTALLED else InstallStatus.NOT_INSTALLED
