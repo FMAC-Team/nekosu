@@ -7,7 +7,7 @@
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_me_neko_nksu_NativeBridge_authenticate(
+Java_me_neko_nksu_Native_authenticate(
         JNIEnv* env,
         jobject /* this */,
         jstring jKey,
