@@ -29,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import me.neko.nksu.utils.LogUtils
 import me.neko.nksu.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +38,8 @@ import me.neko.nksu.R
 fun SettingsScreen(
     navController: NavController
 ) {
+val mContext = LocalContext.current 
+    
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -72,6 +76,22 @@ fun SettingsScreen(
                     )
                 }
             )
+            
+            ListItem(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        LogUtils.exportLogs(mContext) // 调用导出逻辑
+                    },
+                leadingContent = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
+                headlineContent = {
+                    Text(text = "导出调试日志", style = MaterialTheme.typography.titleMedium)
+                },
+                supportingContent = {
+                    Text(text = "收集系统日志用于故障排查")
+                }
+            )
+
             
             Spacer(modifier = Modifier.weight(1f))
         }

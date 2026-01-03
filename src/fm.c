@@ -8,6 +8,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/string.h>
 
 #include "fmac.h"
 
@@ -34,7 +35,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
         return;
     }
 
-    strlcpy(rule->path_prefix, path_prefix, MAX_PATH_LEN);
+    strscpy(rule->path_prefix, path_prefix, MAX_PATH_LEN);
     rule->path_len = strlen(path_prefix);
     rule->uid = uid;
     rule->deny = deny;

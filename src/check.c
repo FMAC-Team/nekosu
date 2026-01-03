@@ -22,7 +22,7 @@ static bool fmac_check_access(const char *path, uid_t uid, int op_type)
     u32 key;
 
     char norm_path[MAX_PATH_LEN];
-    size_t path_len = strlcpy(norm_path, path, MAX_PATH_LEN);
+    size_t path_len = strscpy(norm_path, path, MAX_PATH_LEN);
 
     while (path_len > 1 && norm_path[path_len - 1] == '/')
         norm_path[--path_len] = '\0';
