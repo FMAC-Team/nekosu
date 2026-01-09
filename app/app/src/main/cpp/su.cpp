@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <vector>
 
-#include "log.hpp"
+#include "log.h"
 
 #define AU_MANAGER 0xCAFEBABE
 #define GE_ROOT 0xBAADBABE
