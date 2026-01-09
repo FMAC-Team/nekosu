@@ -1,6 +1,6 @@
 package me.neko.nksu
 
-import android.content.context
+import android.content.Context
 
 class Native {
     companion object {
