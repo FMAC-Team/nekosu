@@ -37,7 +37,7 @@ extern "C" JNIEXPORT jint JNICALL Java_me_neko_nksu_Native_authenticate(
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_me_neko_nksu_util_NativeSigCheck_validate(JNIEnv *env, jobject thiz, jobject context) {
+Java_me_neko_nksu_Native_Sigcheck(JNIEnv *env, jobject thiz, jobject context) {
     // 获取 context.getApplicationInfo().sourceDir
     jclass contextClass = env->GetObjectClass(context);
     jmethodID getAppInfoMethod = env->GetMethodID(contextClass, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
