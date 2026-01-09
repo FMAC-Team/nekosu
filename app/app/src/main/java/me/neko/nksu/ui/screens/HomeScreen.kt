@@ -46,7 +46,7 @@ fun HomeScreen() {
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
            val keypath = KeyUtils.getKeyFilePath(context)
-            if (keypath != null) {
+            if (KeyUtils.checkKeyExists(context)){
                 val token = KeyUtils.getTotpToken(B32_SECRET)
                 val result = Native().authenticate(keypath, token)
                 installStatus = if (result == 0) InstallStatus.INSTALLED else InstallStatus.NOT_INSTALLED
