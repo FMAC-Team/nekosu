@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.ViewModel
@@ -31,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.neko.nksu.R
 
@@ -65,7 +67,8 @@ class AppViewModel(private val context: Context) : ViewModel() {
                 val cached = prefs.getString("apps_cache", null)
                 if (cached != null) {
                     val type = object : TypeToken<List<AppInfo>>() {}.type
-                    allApps = gson.fromJson(cached, type)
+                    val list: List<AppInfo> = gson.fromJson(cached, type)
+                    allApps = list
                     isLoaded = true
                     if (allApps.isNotEmpty()) return@withContext
                 }
@@ -179,9 +182,9 @@ fun HistoryScreen() {
                         IconButton(onClick = { isSearching = true }) {
                             Icon(Icons.Default.Search, contentDescription = null)
                         }
-                        IconButton(onClick = { 
-                            kotlinx.coroutines.MainScope().run { 
-                                viewModel.loadApps(true) 
+                        IconButton(onClick = {
+                            scope.launch {
+                                viewModel.loadApps(forceRefresh = true)
                             }
                         }) {
                             Icon(Icons.Default.Refresh, contentDescription = null)
@@ -233,7 +236,6 @@ fun HistoryScreen() {
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
