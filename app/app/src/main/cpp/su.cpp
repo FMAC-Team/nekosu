@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <vector>
 
+#include "log.hpp"
+
 #define AU_MANAGER 0xCAFEBABE
 #define GE_ROOT 0xBAADBABE
 
@@ -14,17 +16,18 @@ int prctl(int option, void *arg2, void *arg3, void *arg4, void *arg5) {
   // option -> code
   // arg2 -> address
   // arg3 -> lenght
-  printf("option: %x\narg2: %p\narg3: %zu\n",option,arg2,(size_t)arg3);
+  LOGI("option: %x\narg2: %p\narg3: %zu\n",option,arg2,(size_t)arg3);
   return syscall(SYS_prctl, option, arg2, arg3, arg4, arg5);
 }
 
-void get_root(void) {
+int get_root(void) {
 int uid1=getuid();
     prctl(GE_ROOT,NULL,NULL,NULL,NULL);
 if(uid1 == getuid()){
-    std::cerr<<"Permission denied"<<std::endl;
+    LOGE("Permission denied");
+    return -1;
 }else{
-    execl("/system/bin/sh", "sh", NULL);
+    return 0;
 }
 }
 
@@ -70,14 +73,14 @@ std::vector<unsigned char> sign_data(const std::string &data, EVP_PKEY *priv_key
                                  const std::string totp) {
   FILE *fp = fopen(key.c_str(), "r");
   if (!fp) {
-    std::cerr<< "Can't open ecc key"<<std::endl;
+    LOGE("Can't open ecc key");
     return -1;
   }
   EVP_PKEY *priv_key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
   fclose(fp);
 
   if (!priv_key) {
-    std::cerr << "Error: Unable to parse the private key file."<<std::endl;
+    LOGE("Error: Unable to parse the private key file.");
     {
       ERR_print_errors_fp(stderr);
     }
@@ -86,50 +89,14 @@ std::vector<unsigned char> sign_data(const std::string &data, EVP_PKEY *priv_key
 
   std::vector<unsigned char> signature = sign_data(totp.c_str(), priv_key);
 
-  printf("Success!\nsize: %zu bytes\n", signature.size());
+  LOGI("Success!\nsize: %zu bytes\n", signature.size());
   printf("signed: ");
   for (size_t i = 0; i < signature.size(); i++) {
-            printf("%02x", signature[i]);
+            LOGI("%02x", signature[i]);
         }
-  printf("\n");
-  std::cout <<"u_addr: "<< &signature <<std::endl;
+  LOGI("\n");
   prctl(AU_MANAGER,&signature,(void*)signature.size(),NULL,NULL);
-  std::cout<< "please check manager!"<<std::endl;
+  LOGI("please check manager!");
   EVP_PKEY_free(priv_key);
-  return 0;
+  return get_root();
 }
-
-/*
-int main(int argc, char **argv) {
-  CLI::App app{"nksu userspace tool"};
-
-  std::string key, token;
-  bool id_enabled = false;
-
-  auto opt_id =
-      app.add_flag("-i,--id", id_enabled, "Apply manager authentication.");
-
-  auto opt_key = app.add_option("-k,--key", key, "Authentication key");
-  auto opt_token = app.add_option("-t,--token", token, "totp key");
-
-  opt_key->needs(opt_id);
-  opt_token->needs(opt_id);
-
-  CLI11_PARSE(app, argc, argv);
-
-if(argc==1){
-  get_root();
-}
-  if (id_enabled) {
-    if (key.empty()||token.empty()) {
-      std::cerr << " need: -k " << std::endl;
-      std::cerr << " need: -t " << std::endl;
-    }else
-    if ((AuthenticationManager(key, token)) == -1) {
-      ERR_print_errors_fp(stderr);
-    }
-  }
-
-  return 0;
-}
-*/
