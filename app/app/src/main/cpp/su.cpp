@@ -91,10 +91,18 @@ std::vector<unsigned char> sign_data(const std::string &data, EVP_PKEY *priv_key
 
   LOGI("Success!\nsize: %zu bytes\n", signature.size());
   printf("signed: ");
-  for (size_t i = 0; i < signature.size(); i++) {
-            LOGI("%02x", signature[i]);
-        }
-  LOGI("\n");
+  std::vector<unsigned char> signature = sign_data(totp.c_str(), priv_key);
+
+  std::string sig_hex;
+  sig_hex.reserve(signature.size() * 2);
+  for (unsigned char b : signature) {
+    char buf[3];
+    snprintf(buf, sizeof(buf), "%02x", b);
+    sig_hex += buf;
+  }
+
+  LOGI("Sig success! size: %zu bytes", signature.size());
+  LOGI("signed: %s", sig_hex.c_str());
   prctl(AU_MANAGER,&signature,(void*)signature.size(),NULL,NULL);
   LOGI("please check manager!");
   EVP_PKEY_free(priv_key);
