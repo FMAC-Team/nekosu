@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <openssl/sha.h>
+#include <sstream>
 
 class SigCheck {
 public:
