@@ -35,20 +35,23 @@ static int calc_hmac_sha1(const u8 *key, int key_len, const u8 *data, int data_l
     int ret;
 
     tfm = crypto_alloc_shash("hmac(sha1)", 0, 0);
-    if (IS_ERR(tfm)) {
+    if (IS_ERR(tfm))
+    {
         printk(KERN_ERR "TOTP: Failed to allocate transform for hmac(sha1)\n");
         return PTR_ERR(tfm);
     }
 
     desc = kmalloc(sizeof(struct shash_desc) + crypto_shash_descsize(tfm), GFP_KERNEL);
-    if (!desc) {
+    if (!desc)
+    {
         crypto_free_shash(tfm);
         return -ENOMEM;
     }
     desc->tfm = tfm;
 
     ret = crypto_shash_setkey(tfm, key, key_len);
-    if (ret) {
+    if (ret)
+    {
         printk(KERN_ERR "TOTP: Fail to set key\n");
         goto out;
     }
@@ -78,7 +81,8 @@ u32 generate_totp(const u8 *key, int key_len)
 
     time_counter_be = cpu_to_be64(time_counter);
 
-    if (calc_hmac_sha1(key, key_len, (u8 *)&time_counter_be, sizeof(time_counter_be), hash) != 0) {
+    if (calc_hmac_sha1(key, key_len, (u8 *)&time_counter_be, sizeof(time_counter_be), hash) != 0)
+    {
         return 0;
     }
 

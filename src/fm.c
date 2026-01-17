@@ -21,7 +21,6 @@ DEFINE_SPINLOCK(fmac_lock);
 bool fmac_printk = false;
 int work_module = 1;
 
-// RCU 释放规则
 static void fmac_rule_free_rcu(struct rcu_head *head)
 {
     struct fmac_rule *rule = container_of(head, struct fmac_rule, rcu);
@@ -34,7 +33,8 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
     u32 key;
 
     rule = kmalloc(sizeof(*rule), GFP_KERNEL);
-    if (!rule) {
+    if (!rule)
+    {
         f_log("Failed to allocate rule\n");
         return;
     }
@@ -61,18 +61,18 @@ static int __init fmac_init(void)
     hash_init(fmac_rule_ht);
 
     ret = fmac_procfs_init();
-    if (ret) {
+    if (ret)
+    {
         f_log("Failed to initialize procfs\n");
         return ret;
     }
 
 #ifdef CONFIG_FMAC_ROOT
-    //
-#    if IS_MODULE(CONFIG_FMAC)
+    #if IS_MODULE(CONFIG_FMAC)
     fmac_kprobe_init();
-#    elif IS_BUILTIN(CONFIG_FMAC)
+    #elif IS_BUILTIN(CONFIG_FMAC)
     fmac_tracepoint_init();
-#    endif
+    #endif
 #endif
 
     f_log("File Monitoring and Access Control initialized.\n");

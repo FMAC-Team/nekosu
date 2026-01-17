@@ -39,7 +39,8 @@ static int compute_sha256(const u8 *data, unsigned int data_len, u8 *hash)
         return PTR_ERR(tfm);
 
     desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(tfm), GFP_KERNEL);
-    if (!desc) {
+    if (!desc)
+    {
         crypto_free_shash(tfm);
         return -ENOMEM;
     }
@@ -67,34 +68,39 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     int totp_len = snprintf(totp_str, sizeof(totp_str), "%u", totp_code);
 
     ret = compute_sha256(totp_str, totp_len, hash);
-    if (ret) {
+    if (ret)
+    {
         pr_err("FMAC: SHA-256 computation failed: %d\n", ret);
         return ret;
     }
 
     /* Allocate ECDSA cipher */
     tfm = crypto_alloc_akcipher("ecdsa", 0, 0);
-    if (IS_ERR(tfm)) {
+    if (IS_ERR(tfm))
+    {
         pr_err("FMAC: Failed to allocate ECDSA cipher\n");
         return PTR_ERR(tfm);
     }
 
     /* Set public key */
     ret = crypto_akcipher_set_pub_key(tfm, ecc_public_key_der, sizeof(ecc_public_key_der));
-    if (ret) {
+    if (ret)
+    {
         pr_err("FMAC: Failed to set ECC public key: %d\n", ret);
         goto out;
     }
 
     /* Allocate request */
     req = akcipher_request_alloc(tfm, GFP_KERNEL);
-    if (!req) {
+    if (!req)
+    {
         ret = -ENOMEM;
         goto out;
     }
 
     sig_der = kmalloc(sig_len, GFP_KERNEL);
-    if (!sig_der) {
+    if (!sig_der)
+    {
         ret = -ENOMEM;
         goto out;
     }
@@ -110,9 +116,11 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     akcipher_request_set_crypt(req, &src, &dst, sig_der_len, sizeof(hash));
 
     ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
-    if (ret) {
+    if (ret)
+    {
         pr_warn("FMAC: ECDSA signature verification failed: %d\n", ret);
-    } else {
+    } else
+    {
         pr_info("FMAC: ECDSA signature verification succeeded\n");
     }
 
@@ -133,18 +141,21 @@ int check_totp_ecc(const char __user *user_buf, size_t user_len)
     u32 k_totp;
     int ret = 0;
 
-    if (user_len < 64 || user_len > 96) {
+    if (user_len < 64 || user_len > 96)
+    {
         pr_err("FMAC: Invalid input length: %zu\n", user_len);
         return -EINVAL;
     }
 
     buffer = kmalloc(user_len, GFP_KERNEL);
-    if (!buffer) {
+    if (!buffer)
+    {
         ret = -ENOMEM;
         goto out;
     }
 
-    if (copy_from_user(buffer, user_buf, user_len)) {
+    if (copy_from_user(buffer, user_buf, user_len))
+    {
         ret = -EFAULT;
         goto out;
     }
@@ -152,14 +163,16 @@ int check_totp_ecc(const char __user *user_buf, size_t user_len)
     k_totp = generate_totp((u8 *)totp_secret_key, totp_secret_len);
 
     ret = ecc_verify_signature(buffer, user_len, k_totp);
-    if (ret) {
+    if (ret)
+    {
         pr_warn("FMAC: ECDSA signature verification failed\n");
         ret = -1;
         goto out;
     }
 
 out:
-    if (buffer) {
+    if (buffer)
+    {
         memzero_explicit(buffer, user_len);
         kfree(buffer);
     }

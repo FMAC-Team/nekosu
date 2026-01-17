@@ -7,18 +7,18 @@
 
 #include <fmac.h>
 
-#define AUTH_OPTION 0xCAFEBABE
-
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-    unsigned long option = regs->regs[0];
-    unsigned long arg2 = regs->regs[1];
-    unsigned long arg3 = regs->regs[2];
+    unsigned long option = SYSCALL_ARG0;
+    unsigned long arg2 = SYSCALL_ARG1;
+    unsigned long arg3 = SYSCALL_ARG2;
 
-    if (option == AUTH_OPTION) {
+    if (option == AUTH_OPTION)
+    {
         pr_info("FMAC: Kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);
 
-        if (check_totp_ecc((const char __user *)arg2, arg3) == 1) {
+        if (check_totp_ecc((const char __user *)arg2, arg3) == 1)
+        {
             pr_info("FMAC: Authentication Success. Elevating to root...\n");
             elevate_to_root();
         }
@@ -36,7 +36,8 @@ int fmac_kprobe_init(void)
 {
     int ret;
     ret = register_kprobe(&kp);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         pr_err("FMAC: register_kprobe failed, returned %d\n", ret);
         return ret;
     }
