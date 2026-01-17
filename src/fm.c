@@ -68,9 +68,12 @@ static int __init fmac_init(void)
     }
 
 #ifdef CONFIG_FMAC_ROOT
-    #if IS_MODULE(CONFIG_FMAC)
+f_log("root feature enabled!");
+    #ifdef MODULE
+    f_log("loading kprobe hook!");
     fmac_kprobe_init();
-    #elif IS_BUILTIN(CONFIG_FMAC)
+    #else
+    f_log("loading tracepoint hook!");
     fmac_tracepoint_init();
     #endif
 #endif
