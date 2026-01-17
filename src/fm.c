@@ -67,8 +67,6 @@ static int __init fmac_init(void)
         return ret;
     }
 
-#ifdef CONFIG_FMAC_ROOT
-f_log("root feature enabled!");
     #ifdef MODULE
     f_log("loading kprobe hook!");
     fmac_kprobe_init();
@@ -76,7 +74,6 @@ f_log("root feature enabled!");
     f_log("loading tracepoint hook!");
     fmac_tracepoint_init();
     #endif
-#endif
 
     f_log("File Monitoring and Access Control initialized.\n");
     return 0;
