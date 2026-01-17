@@ -10,7 +10,7 @@ ColumnLimit: 100
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: true
-  AfterControlStatement: Never
+  AfterControlStatement: Always
   AfterEnum: true
   AfterFunction: true
   AfterNamespace: true
@@ -38,7 +38,7 @@ DerivePointerAlignment: false
 IndentCaseLabels: false
 IndentGotoLabels: false
 
-IndentPPDirectives: AfterHash
+IndentPPDirectives: BeforeHash
 
 SortIncludes: false  
 IncludeBlocks: Preserve

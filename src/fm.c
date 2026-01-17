@@ -10,14 +10,17 @@
 #include <linux/uaccess.h>
 #include <linux/string.h>
 
-#include "fmac.h"
+#include <fmac.h>
 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Aqnya");
+MODULE_DESCRIPTION("FMAC");
+MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 DEFINE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 DEFINE_SPINLOCK(fmac_lock);
 bool fmac_printk = false;
 int work_module = 1;
 
-// RCU 释放规则
 static void fmac_rule_free_rcu(struct rcu_head *head)
 {
     struct fmac_rule *rule = container_of(head, struct fmac_rule, rcu);
@@ -30,7 +33,8 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
     u32 key;
 
     rule = kmalloc(sizeof(*rule), GFP_KERNEL);
-    if (!rule) {
+    if (!rule)
+    {
         f_log("Failed to allocate rule\n");
         return;
     }
@@ -57,18 +61,18 @@ static int __init fmac_init(void)
     hash_init(fmac_rule_ht);
 
     ret = fmac_procfs_init();
-    if (ret) {
+    if (ret)
+    {
         f_log("Failed to initialize procfs\n");
         return ret;
     }
 
 #ifdef CONFIG_FMAC_ROOT
-  //  
-#if IS_MODULE(CONFIG_FMAC)
-  fmac_kprobe_init();
-  #elif IS_BUILTIN(CONFIG_FMAC)
-  fmac_tracepoint_init();
-  #endif
+    #if IS_MODULE(CONFIG_FMAC)
+    fmac_kprobe_init();
+    #elif IS_BUILTIN(CONFIG_FMAC)
+    fmac_tracepoint_init();
+    #endif
 #endif
 
     f_log("File Monitoring and Access Control initialized.\n");
@@ -98,8 +102,3 @@ static void __exit fmac_exit(void)
 
 module_init(fmac_init);
 module_exit(fmac_exit);
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Aqnya");
-MODULE_DESCRIPTION("FMAC");
-MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);

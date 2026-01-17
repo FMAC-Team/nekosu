@@ -1,5 +1,7 @@
 package me.neko.nksu
 
+import android.content.Context
+
 class Native {
     companion object {
         init {
@@ -8,6 +10,5 @@ class Native {
     }
 
     external fun authenticate(key: String?, token: String?): Int
-
-    external fun stringFromJNI(): String
+    external fun Sigcheck(context: Context): Boolean
 }

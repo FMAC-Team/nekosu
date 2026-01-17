@@ -1,0 +1,1 @@
+#define AUTH_OPTION 0xCAFEBABE

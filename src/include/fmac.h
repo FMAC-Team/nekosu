@@ -15,9 +15,10 @@
 #include <linux/version.h>
 
 #include "init.h"
+#include "op_code.h"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-#    define FMAC_USE_PROC_OPS
+    #define FMAC_USE_PROC_OPS
 #endif
 
 #define MAX_PATH_LEN 256

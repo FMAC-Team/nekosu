@@ -15,12 +15,12 @@
 #include <linux/version.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
-#    include <linux/sched/signal.h>
+    #include <linux/sched/signal.h>
 #else
-#    include <linux/sched.h>
+    #include <linux/sched.h>
 #endif
 
-#include "fmac.h"
+#include <fmac.h>
 #include "objsec.h"
 
 int transive_to_domain(const char *domain)
@@ -32,13 +32,15 @@ int transive_to_domain(const char *domain)
     int error;
 
     cred = __task_cred(current);
-    if (unlikely(!cred)) {
+    if (unlikely(!cred))
+    {
         f_log("Failed to get task credentials!\n");
         return -EINVAL;
     }
 
     tsec = cred->security;
-    if (unlikely(!tsec)) {
+    if (unlikely(!tsec))
+    {
         f_log("Task security struct is NULL!\n");
         return -ENOENT;
     }
@@ -46,7 +48,8 @@ int transive_to_domain(const char *domain)
     domain_len = strlen(domain);
 
     error = security_secctx_to_secid(domain, domain_len, &sid);
-    if (error) {
+    if (error)
+    {
         f_log("Failed to convert secctx '%s' (len=%zu) to SID: error=%d\n", domain, domain_len,
               error);
         return error;
@@ -69,12 +72,14 @@ void elevate_to_root(void)
     int err;
 
     cred = prepare_creds();
-    if (!cred) {
+    if (!cred)
+    {
         f_log("[FMAC] prepare_creds failed!\n");
         return;
     }
 
-    if (cred->euid.val == 0) {
+    if (cred->euid.val == 0)
+    {
         f_log("[FMAC] Already root, skip.\n");
         abort_creds(cred);
         return;
@@ -107,25 +112,27 @@ void elevate_to_root(void)
     commit_creds(cred);
 
     err = transive_to_domain("u:r:su:s0");
-    if (err) {
+    if (err)
+    {
         f_log("SELinux domain transition failed: %d\n", err);
     }
 
 #ifdef CONFIG_SECCOMP
-#    ifdef CONFIG_SECCOMP_FILTER
-    if (current->seccomp.mode != 0) {
+    #ifdef CONFIG_SECCOMP_FILTER
+    if (current->seccomp.mode != 0)
+    {
         spin_lock_irq(&current->sighand->siglock);
-#        if defined(TIF_SECCOMP)
+        #if defined(TIF_SECCOMP)
         clear_thread_flag(TIF_SECCOMP);
-#        endif
+        #endif
 
-#        if defined(_TIF_SECCOMP)
+        #if defined(_TIF_SECCOMP)
         clear_thread_flag(_TIF_SECCOMP);
-#        endif
+        #endif
         current->seccomp.mode = SECCOMP_MODE_DISABLED;
         spin_unlock_irq(&current->sighand->siglock);
     }
-#    endif
+    #endif
 #endif
 
     f_log("Root escalation success: PID=%d\n", current->pid);

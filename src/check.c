@@ -13,7 +13,7 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 
-#include "fmac.h"
+#include <fmac.h>
 
 static bool fmac_check_access(const char *path, uid_t uid, int op_type)
 {
@@ -32,15 +32,18 @@ static bool fmac_check_access(const char *path, uid_t uid, int op_type)
     rcu_read_lock();
     hash_for_each_possible_rcu(fmac_rule_ht, rule, node, key)
     {
-        if (rule->uid != 0 && rule->uid != uid) {
+        if (rule->uid != 0 && rule->uid != uid)
+        {
             continue;
         }
 
-        if (rule->op_type != -1 && rule->op_type != op_type) {
+        if (rule->op_type != -1 && rule->op_type != op_type)
+        {
             continue;
         }
 
-        if (rule->path_len == path_len && strncmp(norm_path, rule->path_prefix, path_len) == 0) {
+        if (rule->path_len == path_len && strncmp(norm_path, rule->path_prefix, path_len) == 0)
+        {
             deny = rule->deny;
             break;
         }
@@ -55,16 +58,20 @@ static int __fmac_check_path(const char __user *pathname, int op_type, const cha
     char path[MAX_PATH_LEN] = {0};
     uid_t uid = current_euid().val;
 
-    if (!pathname) {
+    if (!pathname)
+    {
         return -EINVAL;
     }
 
-    if (strncpy_from_user(path, pathname, MAX_PATH_LEN) < 0) {
+    if (strncpy_from_user(path, pathname, MAX_PATH_LEN) < 0)
+    {
         return -EFAULT;
     }
 
-    if (fmac_check_access(path, uid, op_type)) {
-        if (fmac_printk) {
+    if (fmac_check_access(path, uid, op_type))
+    {
+        if (fmac_printk)
+        {
             f_log("Denied %s: %s by UID %u (pid %d)\n", op_name, path, uid, current->pid);
         }
         return -EACCES;

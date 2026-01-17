@@ -11,7 +11,7 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 
-#include "fmac.h"
+#include <fmac.h>
 
 static struct proc_dir_entry *fmac_proc_entry;
 static struct proc_dir_entry *fmac_log_entry;
@@ -75,26 +75,33 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer, siz
 
     kbuf[count] = '\0';
 
-    if (sscanf(kbuf, "add %255s %u %d %d", path, &uid, &deny, &op_type) >= 3) {
-        if (deny != 0 && deny != 1) {
+    if (sscanf(kbuf, "add %255s %u %d %d", path, &uid, &deny, &op_type) >= 3)
+    {
+        if (deny != 0 && deny != 1)
+        {
             f_log("[FMAC] Invalid deny value: %d. Must be 0 or 1.\n", deny);
             return -EINVAL;
         }
-        if (op_type != -1 && op_type != 0 && op_type != 1) {
+        if (op_type != -1 && op_type != 0 && op_type != 1)
+        {
             f_log("[FMAC] Invalid op_type value: %d. Must be -1, 0, or 1.\n", op_type);
             return -EINVAL;
         }
         fmac_add_rule(path, (uid_t)uid, (bool)deny, op_type);
-    } else if (strncmp(kbuf, "printk_on", 9) == 0) {
+    } else if (strncmp(kbuf, "printk_on", 9) == 0)
+    {
         fmac_printk = true;
         f_log("[FMAC] Printk enabled.\n");
-    } else if (strncmp(kbuf, "printk_off", 10) == 0) {
+    } else if (strncmp(kbuf, "printk_off", 10) == 0)
+    {
         fmac_printk = false;
         f_log("[FMAC] Printk disabled.\n");
-    } else if (strncmp(kbuf, "disable", 7) == 0) {
+    } else if (strncmp(kbuf, "disable", 7) == 0)
+    {
         work_module = 0;
         f_log("[FMAC] has been disabled.\n");
-    } else {
+    } else
+    {
         f_log("[FMAC] Invalid command. Use: 'add /path uid deny [op_type]', "
               "'printk_on/off', or 'disable'.\n");
         return -EINVAL;
@@ -140,28 +147,32 @@ static const struct file_operations fmac_log_proc_ops = {
 int fmac_procfs_init(void)
 {
     fmac_log_buffer = vmalloc(MAX_LOG_SIZE);
-    if (!fmac_log_buffer) {
+    if (!fmac_log_buffer)
+    {
         pr_err("[FMAC] Failed to allocate log buffer\n");
         return -ENOMEM;
     }
     fmac_log_len = 0;
 
     fmac_proc_dir = proc_mkdir("fmac", NULL);
-    if (!fmac_proc_dir) {
+    if (!fmac_proc_dir)
+    {
         pr_err("[FMAC] Failed to create /proc/fmac directory\n");
         fmac_procfs_exit();
         return -ENOMEM;
     }
 
     fmac_proc_entry = proc_create("rules", 0600, fmac_proc_dir, &fmac_proc_ops);
-    if (!fmac_proc_entry) {
+    if (!fmac_proc_entry)
+    {
         pr_err("[FMAC] Failed to create /proc/fmac\n");
         fmac_procfs_exit();
         return -ENOMEM;
     }
 
     fmac_log_entry = proc_create("log", 0400, fmac_proc_dir, &fmac_log_proc_ops);
-    if (!fmac_log_entry) {
+    if (!fmac_log_entry)
+    {
         pr_err("[FMAC] Failed to create /proc/fmac_log\n");
         fmac_procfs_exit();
         return -ENOMEM;
@@ -175,12 +186,15 @@ int fmac_procfs_init(void)
 
 void fmac_procfs_exit(void)
 {
-    if (fmac_proc_dir) {
-        if (fmac_proc_entry) {
+    if (fmac_proc_dir)
+    {
+        if (fmac_proc_entry)
+        {
             remove_proc_entry("rules", fmac_proc_dir);
             fmac_proc_entry = NULL;
         }
-        if (fmac_log_entry) {
+        if (fmac_log_entry)
+        {
             remove_proc_entry("log", fmac_proc_dir);
             fmac_log_entry = NULL;
         }
@@ -189,7 +203,8 @@ void fmac_procfs_exit(void)
         fmac_proc_dir = NULL;
     }
 
-    if (fmac_log_buffer) {
+    if (fmac_log_buffer)
+    {
         vfree(fmac_log_buffer);
         fmac_log_buffer = NULL;
         fmac_log_len = 0;

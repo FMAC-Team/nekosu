@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,7 +29,10 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.neko.nksu.R
 
@@ -48,6 +52,8 @@ enum class FilterMode(@param:StringRes val labelRes: Int) {
 }
 
 class AppViewModel(private val context: Context) : ViewModel() {
+    private val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+    private val gson = Gson()
 
     var allApps by mutableStateOf<List<AppInfo>>(emptyList())
         private set
@@ -55,12 +61,20 @@ class AppViewModel(private val context: Context) : ViewModel() {
     var isLoaded by mutableStateOf(false)
         private set
 
-    suspend fun loadApps() {
-        if (isLoaded) return
-
-        val pm = context.packageManager
-
+    suspend fun loadApps(forceRefresh: Boolean = false) {
         withContext(Dispatchers.IO) {
+            if (!forceRefresh) {
+                val cached = prefs.getString("apps_cache", null)
+                if (cached != null) {
+                    val type = object : TypeToken<List<AppInfo>>() {}.type
+                    val list: List<AppInfo> = gson.fromJson(cached, type)
+                    allApps = list
+                    isLoaded = true
+                    if (allApps.isNotEmpty()) return@withContext
+                }
+            }
+
+            val pm = context.packageManager
             val installed = pm.getInstalledPackages(PackageManager.GET_META_DATA)
                 .mapNotNull { pkg ->
                     pkg.applicationInfo?.let { ai ->
@@ -77,62 +91,65 @@ class AppViewModel(private val context: Context) : ViewModel() {
 
             allApps = installed
             isLoaded = true
+            prefs.edit().putString("apps_cache", gson.toJson(installed)).apply()
         }
     }
 }
 
-class AppViewModelFactory(
-    private val context: Context
-) : ViewModelProvider.Factory {
-
+class AppViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return AppViewModel(context) as T
+    override fun <T : ViewModel> create(modelClass: Class<T>): T = AppViewModel(context) as T
+}
+
+@Composable
+fun AppIcon(packageName: String) {
+    val context = LocalContext.current
+    val iconBitmap by produceState<ImageBitmap?>(null, packageName) {
+        value = withContext(Dispatchers.IO) {
+            try {
+                context.packageManager.getApplicationIcon(packageName).toBitmap().asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    if (iconBitmap != null) {
+        Image(bitmap = iconBitmap!!, contentDescription = null, modifier = Modifier.size(40.dp))
+    } else {
+        Icon(Icons.Default.Android, contentDescription = null, modifier = Modifier.size(40.dp))
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen() {
-
     val context = LocalContext.current.applicationContext
-
-    val viewModel: AppViewModel = viewModel(
-        factory = AppViewModelFactory(context)
-    )
-
+    val viewModel: AppViewModel = viewModel(factory = AppViewModelFactory(context))
     var apps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     var filterMode by remember { mutableStateOf(FilterMode.USER) }
     var searchQuery by remember { mutableStateOf("") }
     var menuExpanded by remember { mutableStateOf(false) }
     var isSearching by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.loadApps()
     }
 
     LaunchedEffect(viewModel.allApps, filterMode, searchQuery) {
-        val all = viewModel.allApps
-        if (all.isNotEmpty()) {
-            apps = all.filter { app ->
-                val passFilter = when (filterMode) {
-                    FilterMode.ALL -> true
-                    FilterMode.LAUNCHABLE -> app.isLaunchable
-                    FilterMode.SYSTEM -> app.isSystem
-                    FilterMode.USER -> !app.isSystem
-                }
-
-                val q = searchQuery.trim().lowercase()
-                val passSearch = q.isEmpty() ||
-                    app.name.lowercase().contains(q) ||
-                    app.packageName.lowercase().contains(q)
-
-                passFilter && passSearch
+        apps = viewModel.allApps.filter { app ->
+            val passFilter = when (filterMode) {
+                FilterMode.ALL -> true
+                FilterMode.LAUNCHABLE -> app.isLaunchable
+                FilterMode.SYSTEM -> app.isSystem
+                FilterMode.USER -> !app.isSystem
             }
+            val q = searchQuery.trim().lowercase()
+            val passSearch = q.isEmpty() || app.name.lowercase().contains(q) || app.packageName.lowercase().contains(q)
+            passFilter && passSearch
         }
     }
-
-    val isLoading = !viewModel.isLoaded
 
     Scaffold(
         topBar = {
@@ -142,9 +159,7 @@ fun HistoryScreen() {
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = {
-                                Text(stringResource(R.string.search_hint))
-                            },
+                            placeholder = { Text(stringResource(R.string.search_hint)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -158,39 +173,31 @@ fun HistoryScreen() {
                             isSearching = false
                             searchQuery = ""
                         }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.close_search)
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                         }
                     }
                 },
                 actions = {
                     if (!isSearching) {
                         IconButton(onClick = { isSearching = true }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = stringResource(R.string.search)
-                            )
+                            Icon(Icons.Default.Search, contentDescription = null)
+                        }
+                        IconButton(onClick = {
+                            scope.launch {
+                                viewModel.loadApps(forceRefresh = true)
+                            }
+                        }) {
+                            Icon(Icons.Default.Refresh, contentDescription = null)
                         }
                     }
-
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(
-                                Icons.Default.FilterList,
-                                contentDescription = stringResource(R.string.filter)
-                            )
+                            Icon(Icons.Default.FilterList, contentDescription = null)
                         }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
+                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                             FilterMode.values().forEach { mode ->
                                 DropdownMenuItem(
-                                    text = {
-                                        Text(stringResource(mode.labelRes))
-                                    },
+                                    text = { Text(stringResource(mode.labelRes)) },
                                     onClick = {
                                         filterMode = mode
                                         menuExpanded = false
@@ -203,88 +210,26 @@ fun HistoryScreen() {
             )
         }
     ) { innerPadding ->
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                isLoading -> CircularProgressIndicator()
-
-                apps.isEmpty() -> Text(stringResource(R.string.no_app_found))
-
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        items(apps) { app ->
-                            ListItem(
-                                headlineContent = { Text(app.name) },
-                                supportingContent = {
-                                    Column {
-                                        Text(app.packageName)
-                                        Text("UID: ${app.uid}")
-                                    }
-                                },
-                                leadingContent = {
-                                    val localContext = LocalContext.current
-                                    var iconBitmap by remember(app.packageName) {
-                                        mutableStateOf<ImageBitmap?>(null)
-                                    }
-                                    var isIconLoading by remember(app.packageName) {
-                                        mutableStateOf(true)
-                                    }
-
-                                    LaunchedEffect(app.packageName) {
-                                        withContext(Dispatchers.IO) {
-                                            try {
-                                                val drawable =
-                                                    localContext.packageManager
-                                                        .getApplicationIcon(app.packageName)
-                                                iconBitmap =
-                                                    drawable.toBitmap().asImageBitmap()
-                                            } catch (_: Exception) {
-                                            } finally {
-                                                isIconLoading = false
-                                            }
-                                        }
-                                    }
-
-                                    Box(
-                                        modifier = Modifier.size(40.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        when {
-                                            isIconLoading ->
-                                                CircularProgressIndicator(
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-
-                                            iconBitmap != null ->
-                                                Image(
-                                                    bitmap = iconBitmap!!,
-                                                    contentDescription = app.name,
-                                                    modifier = Modifier.size(40.dp)
-                                                )
-
-                                            else ->
-                                                Icon(
-                                                    Icons.Default.Android,
-                                                    contentDescription = app.name,
-                                                    modifier = Modifier.size(40.dp)
-                                                )
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.clickable {
-                                    // TODO: 点击事件
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+            if (!viewModel.isLoaded) {
+                CircularProgressIndicator()
+            } else if (apps.isEmpty()) {
+                Text(stringResource(R.string.no_app_found))
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+                    items(apps, key = { it.packageName }) { app ->
+                        ListItem(
+                            headlineContent = { Text(app.name) },
+                            supportingContent = {
+                                Column {
+                                    Text(app.packageName)
+                                    Text("UID: ${app.uid}")
                                 }
-                            )
-                            HorizontalDivider()
-                        }
+                            },
+                            leadingContent = { AppIcon(app.packageName) },
+                            modifier = Modifier.clickable { }
+                        )
+                        HorizontalDivider()
                     }
                 }
             }
