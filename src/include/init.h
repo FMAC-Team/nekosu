@@ -19,7 +19,7 @@ bool fmac_uid_allowed(void);
 // tracepoint.c
 int fmac_tracepoint_init(void);
 
-//kprobe.c
+// kprobe.c
 int fmac_kprobe_init(void);
 
 #endif

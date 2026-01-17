@@ -12,13 +12,12 @@
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 
-#include <linux/stdarg.h>
+#    include <linux/stdarg.h>
 #else
-#include <stdarg.h>
+#    include <stdarg.h>
 #endif
 
-
-#include "fmac.h"
+#include <fmac.h>
 
 enum fmac_log_mode
 {

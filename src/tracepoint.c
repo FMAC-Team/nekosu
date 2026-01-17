@@ -4,8 +4,7 @@
 #include <asm/syscall.h>
 #include <trace/events/syscalls.h>
 
-#include "fmac.h"
-#include "arch.h"
+#include <fmac.h>
 
 static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
 {

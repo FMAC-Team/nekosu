@@ -5,15 +5,15 @@
 #include <linux/uaccess.h>
 #include <asm/syscall.h>
 
-#include "fmac.h"
+#include <fmac.h>
 
 #define AUTH_OPTION 0xCAFEBABE
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     unsigned long option = regs->regs[0];
-    unsigned long arg2   = regs->regs[1];
-    unsigned long arg3   = regs->regs[2];
+    unsigned long arg2 = regs->regs[1];
+    unsigned long arg3 = regs->regs[2];
 
     if (option == AUTH_OPTION) {
         pr_info("FMAC: Kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);

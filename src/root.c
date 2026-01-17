@@ -20,7 +20,7 @@
 #    include <linux/sched.h>
 #endif
 
-#include "fmac.h"
+#include <fmac.h>
 #include "objsec.h"
 
 int transive_to_domain(const char *domain)

@@ -14,7 +14,7 @@
 #include <linux/uaccess.h>
 #include <linux/uidgid.h>
 
-#include "fmac.h"
+#include <fmac.h>
 
 #define MAX_UIDS 128
 

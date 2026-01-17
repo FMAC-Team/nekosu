@@ -11,7 +11,7 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 
-#include "fmac.h"
+#include <fmac.h>
 
 static struct proc_dir_entry *fmac_proc_entry;
 static struct proc_dir_entry *fmac_log_entry;

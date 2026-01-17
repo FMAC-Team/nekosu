@@ -15,6 +15,7 @@
 #include <linux/version.h>
 
 #include "init.h"
+#include "arch.h"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 #    define FMAC_USE_PROC_OPS
