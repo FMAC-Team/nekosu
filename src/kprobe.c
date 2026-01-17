@@ -9,13 +9,13 @@
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-    unsigned long args[6];
+    unsigned long args[6], option,arg2,arg3;
     
     syscall_get_arguments(current, regs, args);
 
-    unsigned long option = args[0];
-    unsigned long arg2   = args[1];
-    unsigned long arg3   = args[2];
+     option = args[0];
+     arg2   = args[1];
+     arg3   = args[2];
 
     if (option == AUTH_OPTION)
     {
