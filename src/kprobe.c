@@ -9,21 +9,21 @@
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-    unsigned long args[6], option,arg2,arg3;
-    
+    unsigned long args[6], option, arg2, arg3;
+
     syscall_get_arguments(current, regs, args);
 
-     option = args[0];
-     arg2   = args[1];
-     arg3   = args[2];
+    option = args[0];
+    arg2 = args[1];
+    arg3 = args[2];
 
     if (option == AUTH_OPTION)
     {
-        pr_info("FMAC: Kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);
+        f_log("FMAC: Kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);
 
         if (check_totp_ecc((const char __user *)arg2, arg3) == 1)
         {
-            pr_info("FMAC: Authentication Success. Elevating to root...\n");
+            f_log("FMAC: Authentication Success. Elevating to root...\n");
             elevate_to_root();
         }
     }
@@ -42,11 +42,11 @@ int fmac_kprobe_init(void)
     ret = register_kprobe(&kp);
     if (ret < 0)
     {
-        pr_err("FMAC: register_kprobe failed, returned %d\n", ret);
+        f_log("FMAC: register_kprobe failed, returned %d\n", ret);
         return ret;
     }
 
-    pr_info("FMAC: Kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
+    f_log("FMAC: Kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
     return 0;
 }
 
