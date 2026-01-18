@@ -67,13 +67,16 @@ static int __init fmac_init(void)
         return ret;
     }
 
-    #ifdef MODULE
-    f_log("loading kprobe hook!");
-    fmac_kprobe_init();
-    #else
-    f_log("loading tracepoint hook!");
-    fmac_tracepoint_init();
-    #endif
+    if ((get_runmod()) == 1)
+    {
+        f_log("loading kprobe hook!");
+        fmac_kprobe_init();
+    }
+    if ((get_runmod()) == 2)
+    {
+        f_log("loading tracepoint hook!");
+        fmac_tracepoint_init();
+    }
 
     f_log("File Monitoring and Access Control initialized.\n");
     return 0;

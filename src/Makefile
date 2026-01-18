@@ -11,10 +11,12 @@ fmac-objs += rsa_pub.o
 
 ifeq ($(CONFIG_FMAC),m)
     fmac-objs += kprobe.o
+    fmac-objs += flags/flags_kprobe.o
 endif
 
 ifeq ($(CONFIG_FMAC),y)
     fmac-objs += tracepoint.o
+    fmac-objs += flags/flags_tracepoint.c
 endif
 
 endif
