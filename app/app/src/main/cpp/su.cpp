@@ -70,6 +70,7 @@ std::vector<unsigned char> sign_data(const std::string &data,
 }
 
 int AuthenticationManager(const std::string key, const std::string totp) {
+ LOGI("totp code: %s",totp.c_str());
   FILE *fp = fopen(key.c_str(), "r");
   if (!fp) {
     LOGE("Can't open ecc key");

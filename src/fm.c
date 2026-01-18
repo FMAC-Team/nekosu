@@ -66,14 +66,7 @@ static int __init fmac_init(void)
         f_log("Failed to initialize procfs\n");
         return ret;
     }
-
-#ifdef CONFIG_FMAC_ROOT
-    #if IS_MODULE(CONFIG_FMAC)
-    fmac_kprobe_init();
-    #elif IS_BUILTIN(CONFIG_FMAC)
-    fmac_tracepoint_init();
-    #endif
-#endif
+    fmac_hook_init();
 
     f_log("File Monitoring and Access Control initialized.\n");
     return 0;

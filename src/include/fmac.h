@@ -16,6 +16,7 @@
 
 #include "init.h"
 #include "op_code.h"
+#include "../flags/flags.h"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
     #define FMAC_USE_PROC_OPS
@@ -26,8 +27,11 @@
 #define FMAC_HASH_BITS 8
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : \
+                     strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+
 void __fmac_append_to_log(const char *fmt, ...);
-#define f_log(fmt, ...) __fmac_append_to_log("%s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define f_log(fmt, ...) __fmac_append_to_log("%s:%d: " fmt "\n", __FILENAME__, __LINE__, ##__VA_ARGS__)
 
 enum fmac_op_type
 {

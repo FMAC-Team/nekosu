@@ -16,10 +16,7 @@ int fmac_uid_proc_init(void);
 void fmac_uid_proc_exit(void);
 bool fmac_uid_allowed(void);
 
-// tracepoint.c
-int fmac_tracepoint_init(void);
-
-// kprobe.c
-int fmac_kprobe_init(void);
+// tracepoint.c and kprobe.c
+int fmac_hook_init(void);
 
 #endif

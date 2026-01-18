@@ -21,10 +21,10 @@ config FMAC_ROOT
 	  Enable FMAC root feature.
 
 config FMAC_ROOT_TRACEPOINT
-	bool "FMAC ROOT feature by kprobe"
+	bool "FMAC ROOT feature by tracepoint"
 	depends on TRACING && FMAC_ROOT
-	default y
+	default n
 	help
-	  Enable FMAC root feature by kprobe.
+	  Enable FMAC root feature by trace point.
 
 endmenu

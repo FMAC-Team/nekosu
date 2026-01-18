@@ -36,22 +36,22 @@ static struct kprobe kp = {
     .pre_handler = handler_pre,
 };
 
-int fmac_kprobe_init(void)
+int fmac_hook_init(void)
 {
     int ret;
     ret = register_kprobe(&kp);
     if (ret < 0)
     {
-        f_log("FMAC: register_kprobe failed, returned %d\n", ret);
+        f_log("register_kprobe failed, returned %d\n", ret);
         return ret;
     }
 
-    f_log("FMAC: Kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
+    f_log("kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
     return 0;
 }
 
-void fmac_kprobe_exit(void)
+void fmac_hook_exit(void)
 {
     unregister_kprobe(&kp);
-    pr_info("FMAC: Kprobe at %p unregistered\n", kp.addr);
+    pr_info("kprobe at %p unregistered\n", kp.addr);
 }
