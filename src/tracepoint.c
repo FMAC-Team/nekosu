@@ -12,7 +12,9 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
     unsigned long args[6], option, arg2, arg3;
     // ARM64 prctl syscall ID = 167
     if (id != 167)
-      {  return;}
+    {
+        return;
+    }
 
     syscall_get_arguments(current, regs, args);
 
@@ -51,7 +53,7 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
     }
 }
 
-int fmac_tracepoint_init(void)
+int fmac_hook_init(void)
 {
     int ret;
 
@@ -66,7 +68,7 @@ int fmac_tracepoint_init(void)
     return 0;
 }
 
-void fmac_tracepoint_exit(void)
+void fmac_hook_exit(void)
 {
     unregister_trace_sys_enter(fmac_sys_enter_prctl, NULL);
     tracepoint_synchronize_unregister();

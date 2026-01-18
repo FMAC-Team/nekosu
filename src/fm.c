@@ -66,17 +66,7 @@ static int __init fmac_init(void)
         f_log("Failed to initialize procfs\n");
         return ret;
     }
-
-    if ((get_runmod()) == 1)
-    {
-        f_log("loading kprobe hook!");
-        fmac_kprobe_init();
-    }
-    if ((get_runmod()) == 2)
-    {
-        f_log("loading tracepoint hook!");
-        fmac_tracepoint_init();
-    }
+    fmac_hook_init();
 
     f_log("File Monitoring and Access Control initialized.\n");
     return 0;
