@@ -40,7 +40,7 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
     //   arg2 = regs->regs[1];
     //  arg3 = regs->regs[2]; // user space lenght
 
-    if (option == 0xCAFEBABE)
+    if (option == CODE_AUTH)
     {
         f_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
         auth_ret = check_totp_ecc((const char __user *)arg2, arg3);
