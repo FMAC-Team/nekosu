@@ -1,10 +1,15 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+/*
+ * FMAC - File Monitoring and Access Control Kernel Module
+ * Copyright (C) 2025 Aqnya
+ */
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/kprobes.h>
 #include <linux/ptrace.h>
 #include <linux/uaccess.h>
 #include <asm/syscall.h>
-
 #include <fmac.h>
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)

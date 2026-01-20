@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+/*
+ * FMAC - File Monitoring and Access Control Kernel Module
+ * Copyright (C) 2025 Aqnya
+ */
+
 #include <linux/module.h>
 #include <linux/ptrace.h>
 #include <linux/tracepoint.h>

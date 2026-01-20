@@ -9,7 +9,6 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/string.h>
-
 #include <fmac.h>
 
 MODULE_LICENSE("GPL");

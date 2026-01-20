@@ -12,7 +12,6 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
-
 #include <fmac.h>
 
 static bool fmac_check_access(const char *path, uid_t uid, int op_type)
