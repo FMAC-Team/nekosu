@@ -9,7 +9,6 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/string.h>
-
 #include <fmac.h>
 
 MODULE_LICENSE("GPL");
@@ -18,7 +17,7 @@ MODULE_DESCRIPTION("FMAC");
 MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 DEFINE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 DEFINE_SPINLOCK(fmac_lock);
-bool fmac_printk = false;
+bool fmac_printk = true;
 int work_module = 1;
 
 static void fmac_rule_free_rcu(struct rcu_head *head)

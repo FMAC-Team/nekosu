@@ -1,10 +1,15 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+/*
+ * FMAC - File Monitoring and Access Control Kernel Module
+ * Copyright (C) 2025 Aqnya
+ */
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/kprobes.h>
 #include <linux/ptrace.h>
 #include <linux/uaccess.h>
 #include <asm/syscall.h>
-
 #include <fmac.h>
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
@@ -17,13 +22,13 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     arg2 = args[1];
     arg3 = args[2];
 
-    if (option == AUTH_OPTION)
+    if (option == CODE_AUTH)
     {
-        f_log("FMAC: Kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);
+        f_log("kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);
 
         if (check_totp_ecc((const char __user *)arg2, arg3) == 1)
         {
-            f_log("FMAC: Authentication Success. Elevating to root...\n");
+            f_log("authentication success. elevating to root...\n");
             elevate_to_root();
         }
     }
