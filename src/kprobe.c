@@ -59,7 +59,7 @@ static int handler_ret(struct kretprobe_instance *ri, struct pt_regs *regs)
 
 static struct kretprobe kp = {
     .kp.symbol_name = "__arm64_sys_prctl",
-    .handler = handler_pre,
+    .handler = handler_ret,
     .maxactive = 20,
 };
 
@@ -74,12 +74,13 @@ int fmac_hook_init(void)
         return ret;
     }
 
-    f_log("kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
+    f_log("kprobe registered at %p (%s)\n",kp
+   .kp.addr, kp.kp.symbol_name);
     return 0;
 }
 
 void fmac_hook_exit(void)
 {
     unregister_kretprobe(&kp);
-    pr_info("kprobe at %p unregistered\n", kp.addr);
+    pr_info("kprobe at %p unregistered\n", kp.kp.addr);
 }
