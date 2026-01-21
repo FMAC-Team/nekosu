@@ -74,8 +74,7 @@ int fmac_hook_init(void)
         return ret;
     }
 
-    f_log("kprobe registered at %p (%s)\n",kp
-   .kp.addr, kp.kp.symbol_name);
+    f_log("kprobe registered at %p (%s)\n", kp.kp.addr, kp.kp.symbol_name);
     return 0;
 }
 
