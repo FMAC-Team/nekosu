@@ -12,6 +12,7 @@
 #include <asm/syscall.h>
 #include <linux/anon_inodes.h>
 #include <linux/file.h>
+#include <linux/slab.h>
 #include <fmac.h>
 
 static char *shared_buffer;
@@ -25,7 +26,7 @@ static int anon_mmap(struct file *file, struct vm_area_struct *vma)
 
 static const struct file_operations anon_fops = {
     .owner = THIS_MODULE,
-    .mmap  = anon_mmap,
+    .mmap = anon_mmap,
 };
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
@@ -44,10 +45,11 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 
         if (check_totp_ecc((const char __user *)arg2, arg3) == 1)
         {
-        int fd = anon_inode_getfd("[fmac_shm]", &anon_fops, NULL, O_RDWR | O_CLOEXEC);
-        if (fd >= 0) {
-            f_log("returning fd %d\n", fd);
-            syscall_set_return_value(current, regs, 0, (unsigned long)fd);
+            int fd = anon_inode_getfd("[fmac_shm]", &anon_fops, NULL, O_RDWR | O_CLOEXEC);
+            if (fd >= 0)
+            {
+                f_log("returning fd %d\n", fd);
+                syscall_set_return_value(current, regs, 0, (unsigned long)fd);
             }
         }
     }
@@ -58,7 +60,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 static struct kretprobe kp = {
     .kp.symbol_name = "__arm64_sys_prctl",
     .handler = handler_pre,
-    .maxactive      = 20,
+    .maxactive = 20,
 };
 
 int fmac_hook_init(void)
