@@ -49,7 +49,7 @@ static int handler_ret(struct kretprobe_instance *ri, struct pt_regs *regs)
             if (fd >= 0)
             {
                 f_log("returning fd %d\n", fd);
-                syscall_set_return_value(current, regs, 0, (unsigned long)fd);
+                regs_set_return_value(regs, (unsigned long)fd);
             }
         }
     }
