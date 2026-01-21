@@ -58,7 +58,7 @@ fun HomeScreen() {
     
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = {
                     Text(
                         text = "nekosu",
