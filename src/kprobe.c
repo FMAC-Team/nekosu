@@ -29,7 +29,7 @@ static const struct file_operations anon_fops = {
     .mmap = anon_mmap,
 };
 
-static int handler_pre(struct kprobe *p, struct pt_regs *regs)
+static int handler_ret(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     unsigned long args[6], option, arg2, arg3;
 
