@@ -205,47 +205,51 @@ fun DeviceInfoCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceVariant 
         )
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .padding(vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PhoneAndroid,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Text(
-                    text = "设备信息",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    DeviceInfoItem(Icons.Filled.PhoneAndroid, "设备型号", Build.MODEL, Modifier.weight(1f), onInfoCopy)
-                    DeviceInfoItem(Icons.Filled.Build, "制造商", Build.MANUFACTURER, Modifier.weight(1f), onInfoCopy)
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    DeviceInfoItem(Icons.Filled.Android, "Android 版本", "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})", Modifier.weight(1f), onInfoCopy)
-                    DeviceInfoItem(Icons.Filled.Security, "安全补丁", Build.VERSION.SECURITY_PATCH, Modifier.weight(1f), onInfoCopy)
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    DeviceInfoItem(Icons.Filled.DeviceHub, "硬件平台", Build.HARDWARE, Modifier.weight(1f), onInfoCopy)
-                    DeviceInfoItem(Icons.Filled.Memory, "CPU 架构", Build.SUPPORTED_ABIS.firstOrNull() ?: "未知", Modifier.weight(1f), onInfoCopy)
-                }
-            }
+            DeviceInfoItem(
+                icon = Icons.Filled.Memory,
+                title = "内核版本",
+                value = System.getProperty("os.version") ?: "Unavailable",
+                onCopy = onInfoCopy
+            )
+
+            DeviceInfoItem(
+                icon = Icons.Filled.Android,
+                title = "Android 版本",
+                value = Build.VERSION.RELEASE,
+                onCopy = onInfoCopy
+            )
+
+            DeviceInfoItem(
+                icon = Icons.Filled.PhoneAndroid,
+                title = "设备",
+                value = "${Build.MANUFACTURER} ${Build.MODEL}",
+                onCopy = onInfoCopy
+            )
+
+            DeviceInfoItem(
+                icon = Icons.Filled.Settings,
+                title = "管理器版本",
+                value = "none", 
+                onCopy = onInfoCopy
+            )
+            
+            DeviceInfoItem(
+                icon = Icons.Filled.Security,
+                title = "SELinux 状态",
+                value = "强制执行",
+                onCopy = onInfoCopy
+            )
         }
     }
 }
@@ -258,27 +262,42 @@ fun DeviceInfoItem(
     modifier: Modifier = Modifier,
     onCopy: (String) -> Unit = {}
 ) {
-    Card(
-        modifier = modifier,
-        onClick = { onCopy("$title: $value") },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onCopy("$title: $value") }
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        // icons
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant, 
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(20.dp)) // space icon and fonts
+
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                Text(text = title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
-            }
-            Text(text = value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
+            )
         }
     }
 }
+
 
 
 @Preview(showBackground = true)
