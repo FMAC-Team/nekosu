@@ -104,7 +104,6 @@ fun HomeScreen() {
     }
     
     if (showInstallSheet) {
-         // TODO: 这里放入你的 InstallGuideSheet
          // InstallGuideSheet(onDismiss = { showInstallSheet = false })
     }
 }
@@ -221,35 +220,30 @@ fun DeviceInfoCard(
                 icon = Icons.Filled.Memory,
                 title = "内核版本",
                 value = System.getProperty("os.version") ?: "Unavailable",
-                onCopy = onInfoCopy
             )
 
             DeviceInfoItem(
                 icon = Icons.Filled.Android,
                 title = "Android 版本",
                 value = Build.VERSION.RELEASE,
-                onCopy = onInfoCopy
             )
 
             DeviceInfoItem(
                 icon = Icons.Filled.PhoneAndroid,
                 title = "设备",
                 value = "${Build.MANUFACTURER} ${Build.MODEL}",
-                onCopy = onInfoCopy
             )
 
             DeviceInfoItem(
                 icon = Icons.Filled.Settings,
                 title = "管理器版本",
                 value = "none", 
-                onCopy = onInfoCopy
             )
             
             DeviceInfoItem(
                 icon = Icons.Filled.Security,
                 title = "SELinux 状态",
                 value = "强制执行",
-                onCopy = onInfoCopy
             )
         }
     }
@@ -261,12 +255,11 @@ fun DeviceInfoItem(
     title: String,
     value: String,
     modifier: Modifier = Modifier,
-    onCopy: (String) -> Unit = {}
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onCopy("$title: $value") }
+          //  .clickable { onCopy("$title: $value") }
             .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
