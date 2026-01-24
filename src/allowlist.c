@@ -15,7 +15,7 @@
 #include <linux/xarray.h>
 #include <fmac.h>
 
-static DEFINE_XARRAY(fmac_uid_xa);
+DEFINE_XARRAY(fmac_uid_xa);
 
 bool fmac_uid_allowed(void)
 {
