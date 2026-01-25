@@ -65,7 +65,6 @@ static int __init fmac_init(void)
         f_log("Failed to initialize procfs\n");
         return ret;
     }
-    fmac_hook_init();
 #ifdef INIT_KPROBE
     fmac_kprobe_hook_init();
 #elif define(INIT_TP)
