@@ -19,6 +19,12 @@ endif
 
 endif
 
+ifeq ($(CONFIG_FMAC_ROOT_KPROBE), y)
+ccflags-y += -DINIT_KPROBE
+else
+ccflags-y += -DINIT_TP
+endif
+
 obj-$(CONFIG_FMAC) += fmac.o
 
 KDIR := $(KDIR)

@@ -63,7 +63,7 @@ static struct kretprobe kp = {
     .maxactive = 20,
 };
 
-int fmac_hook_init(void)
+int fmac_kprobe_hook_init(void)
 {
     int ret;
     shared_buffer = kzalloc(SHM_SIZE, GFP_KERNEL);

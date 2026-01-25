@@ -66,6 +66,11 @@ static int __init fmac_init(void)
         return ret;
     }
     fmac_hook_init();
+#ifdef INIT_KPROBE
+    fmac_kprobe_hook_init();
+#elif define(INIT_TP)
+    fmac_tp_hook_init();
+#endif
 
     f_log("File Monitoring and Access Control initialized.\n");
     return 0;
