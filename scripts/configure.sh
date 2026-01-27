@@ -5,6 +5,9 @@ CFLAGS="${KBUILD_CFLAGS:-}"
 
 CHECK_FUNCS=("printk" "vma_set_flags" "get_user_pages")
 
+echo "CC $CC"
+echo "CFLAGS $CFLAGS"
+
 echo "#ifndef _NKSU_FUNC_CHECK_H" > "$CONFIG_H"
 echo "#define _NKSU_FUNC_CHECK_H" >> "$CONFIG_H"
 
@@ -24,10 +27,10 @@ void check_symbol_existence(void) {
 EOF
 
     if [ $? -eq 0 ]; then
-        echo "  [+] Found: $FUNC"
+        echo "  [+] found: $FUNC"
         echo "#define HAVE_$FUNC 1" >> "$CONFIG_H"
     else
-        echo "  [-] Missing: $FUNC"
+        echo "  [-] missing: $FUNC"
         echo "/* #undef HAVE_$FUNC */" >> "$CONFIG_H"
     fi
 done
@@ -35,4 +38,3 @@ done
 echo "#endif" >> "$CONFIG_H"
 
 echo "Generated $CONFIG_H"
-cat $CONFIG_H
