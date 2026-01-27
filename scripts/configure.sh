@@ -8,8 +8,20 @@ CHECK_FUNCS=("printk" "vma_set_flags" "get_user_pages")
 echo "CC $CC"
 echo "CFLAGS $CFLAGS"
 
+# 从 CFLAGS 提取 KDIR 和 ARCH
 KDIR=$(echo "$CFLAGS" | grep -o '\-I[^ ]*' | head -1 | sed 's|-I||' | sed 's|/include$||')
 ARCH=$(echo "$CFLAGS" | grep -o 'arch/[^/]*' | head -1 | cut -d'/' -f2)
+
+# 构建完整的内核头文件路径
+KERNEL_CFLAGS="$CFLAGS \
+    -I${KDIR}/include/generated \
+    -I${KDIR}/include/generated/uapi \
+    -I${KDIR}/arch/${ARCH}/include/generated \
+    -I${KDIR}/arch/${ARCH}/include/generated/uapi \
+    -I${KDIR}/include/uapi \
+    -I${KDIR}/arch/${ARCH}/include/uapi \
+    -include ${KDIR}/include/linux/kconfig.h \
+    -D__KERNEL__"
 
 echo "#ifndef _NKSU_FUNC_CHECK_H" > "$CONFIG_H"
 echo "#define _NKSU_FUNC_CHECK_H" >> "$CONFIG_H"
@@ -18,7 +30,7 @@ echo "Checking kernel functions..."
 
 for FUNC in "${CHECK_FUNCS[@]}"; do
     
-    cat <<EOF | $CC $CFLAGS -I${KDIR}/include/generated -I${KDIR}/include/generated/uapi -I${KDIR}/arch/${ARCH}/include/generated -I${KDIR}/arch/${ARCH}/include/generated/uapi -Wno-unused -Werror=implicit-function-declaration -xc - -c -o /dev/null 2>&1
+    cat <<EOF | $CC ${KERNEL_CFLAGS} -Wno-unused -Werror=implicit-function-declaration -xc - -c -o /dev/null 2>&1
 #include <linux/module.h>
 #include <linux/mm.h>
 #include <linux/sched.h>
@@ -31,10 +43,10 @@ EOF
 
     if [ $? -eq 0 ]; then
         echo "  [+] found: $FUNC"
-        echo "#define HAVE_$FUNC 1" >> "$CONFIG_H"
+        echo "#define HAVE_${FUNC} 1" >> "$CONFIG_H"
     else
         echo "  [-] missing: $FUNC"
-        echo "/* #undef HAVE_$FUNC */" >> "$CONFIG_H"
+        echo "/* #undef HAVE_${FUNC} */" >> "$CONFIG_H"
     fi
 done
 
