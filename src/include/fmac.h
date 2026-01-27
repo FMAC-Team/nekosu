@@ -69,7 +69,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
 int transive_to_domain(const char *domain);
 
 // totp.c
-u32 generate_totp(const u8 *key, int key_len);
+u32 generate_totp_base32(const char *base32_secret);
 
 // rsa_pub.c
 int check_totp_ecc(const char __user *user_buf, size_t user_len);
