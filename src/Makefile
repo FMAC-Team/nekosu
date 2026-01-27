@@ -40,4 +40,4 @@ all:$(CONFIG_H)
 	
 $(CONFIG_H):
 	@echo "Running kernel-space function check..."
-	@$(MDIR)/../scripts/check_funcs.sh $(CONFIG_H)
+	@$(MDIR)/../scripts/configure.sh $(CONFIG_H)
