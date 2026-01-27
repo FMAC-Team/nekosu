@@ -22,7 +22,7 @@ for FUNC in "${CHECK_FUNCS[@]}"; do
 #include <linux/uaccess.h>
 
 void check_symbol_existence(void) {
-    (void)${FUNC};
+    ${FUNC};
 }
 EOF
 
