@@ -1,9 +1,9 @@
-KDIR ?= /lib/modules/$(shell uname -r)/build
+KDIR := $(KDIR)
 PWD := $(shell pwd)
 
 CHECK_FUNCS := vma_set_flags get_user_pages
 CONFIG_H := $(PWD)/config.h
-CHECK_PROGRAM := $(PWD)/check_func
+CHECK_PROGRAM := $(PWD)/function
 
 all: $(CONFIG_H)
 
