@@ -36,7 +36,7 @@ ccflags-y += -I$(MDIR)/include
 ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
 
 all:
-    $(CONFIG_H)
+	$(CONFIG_H)
 	make -C $(KDIR) M=$(MDIR) modules
 	
 $(CONFIG_H):
