@@ -68,8 +68,6 @@ static int base32_decode(const char *encoded, u8 *out, int out_len)
     return count;
 }
 
-
-
 static int calc_hmac_sha1(const u8 *key, int key_len, const u8 *data, int data_len, u8 *output)
 {
     struct crypto_shash *tfm;

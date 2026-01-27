@@ -26,11 +26,14 @@
 #define FMAC_HASH_BITS 8
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : \
-                     strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#define __FILENAME__                                                                               \
+    (strrchr(__FILE__, '/')    ? strrchr(__FILE__, '/') + 1                                        \
+     : strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1                                       \
+                               : __FILE__)
 
 void __fmac_append_to_log(const char *fmt, ...);
-#define f_log(fmt, ...) __fmac_append_to_log("%s:%d: " fmt "\n", __FILENAME__, __LINE__, ##__VA_ARGS__)
+#define f_log(fmt, ...)                                                                            \
+    __fmac_append_to_log("%s:%d: " fmt "\n", __FILENAME__, __LINE__, ##__VA_ARGS__)
 
 enum fmac_op_type
 {

@@ -75,7 +75,9 @@ int fmac_kprobe_hook_init(void)
     int ret;
     shared_buffer = vmalloc_user(SHM_SIZE);
     if (!shared_buffer)
- {   return -ENOMEM;}
+    {
+        return -ENOMEM;
+    }
     ret = register_kretprobe(&kp);
     if (ret < 0)
     {
