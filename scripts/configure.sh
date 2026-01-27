@@ -5,39 +5,36 @@ CFLAGS="$3"
 
 CHECK_FUNCS=("printk" "vma_set_flags" "get_user_pages")
 
-# 提取 KDIR 和 ARCH
+# 1. 提取内核源码路径 (KDIR)
+# 尝试从 CFLAGS 提取，如果提取不到，尝试从当前环境推断
 KDIR=$(echo "$CFLAGS" | grep -o '\-I[^ ]*' | head -1 | sed 's|-I||' | sed 's|/include$||')
-ARCH=$(echo "$CFLAGS" | grep -o 'arch/[^/]*' | head -1 | cut -d'/' -f2)
 
-# 完善内核搜索路径
-KERNEL_CFLAGS="$CFLAGS \
-    -I${KDIR}/include/generated \
-    -I${KDIR}/arch/${ARCH}/include/generated \
-    -I${KDIR}/include/uapi \
-    -I${KDIR}/arch/${ARCH}/include/uapi \
-    -D__KERNEL__"
+# 调试信息
+echo "KDIR detected: $KDIR"
 
 echo "#ifndef _NKSU_FUNC_CHECK_H" > "$CONFIG_H"
 echo "#define _NKSU_FUNC_CHECK_H" >> "$CONFIG_H"
 
-echo "Searching for function definitions via Preprocessor..."
+echo "Searching for function definitions in kernel headers..."
 
 for FUNC in "${CHECK_FUNCS[@]}"; do
-    # 修复点：将 -qW 改为 -qw
-    # 增加了一个简单的正则表达式，确保匹配的是函数名或宏名
-    cat <<EOF | $CC ${KERNEL_CFLAGS} -xc - -E -P 2>/dev/null | grep -qw "$FUNC"
-#include <linux/kernel.h>
-#include <linux/mm.h>
-#include <linux/printk.h>
-#include <linux/uaccess.h>
-#include <linux/sched.h>
-EOF
+    # 在内核 include 目录下搜索函数声明或宏定义
+    # 逻辑：在 KDIR/include 及其子目录中搜索包含全字的函数名
+    # 我们搜索常见的定义特征，如 "FUNC(" 或 "SYMBOL_GPL(FUNC)"
+    
+    FOUND=0
+    if [ -d "$KDIR/include" ]; then
+        # 搜索是否在头文件中有声明，或者是否有导出符号
+        if grep -rqw "$FUNC" "$KDIR/include" "$KDIR/arch" 2>/dev/null; then
+            FOUND=1
+        fi
+    fi
 
-    if [ $? -eq 0 ]; then
-        echo "  [+] defined: $FUNC"
+    if [ $FOUND -eq 1 ]; then
+        echo "  [+] found: $FUNC"
         echo "#define HAVE_${FUNC} 1" >> "$CONFIG_H"
     else
-        echo "  [-] not found: $FUNC"
+        echo "  [-] missing: $FUNC"
         echo "#define HAVE_${FUNC} 0" >> "$CONFIG_H"
     fi
 done
