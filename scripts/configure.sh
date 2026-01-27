@@ -15,7 +15,7 @@ echo "Checking kernel functions..."
 
 for FUNC in "${CHECK_FUNCS[@]}"; do
     
-    cat <<EOF | $CC $CFLAGS -Wno-unused -Werror=implicit-function-declaration -xc - -c -o /dev/null >/dev/null 2>&1
+    cat <<EOF | $CC $CFLAGS -Wno-unused -Werror=implicit-function-declaration -xc - -c -o /dev/null #>/dev/null 2>&1
 #include <linux/module.h>
 #include <linux/mm.h>
 #include <linux/sched.h>
