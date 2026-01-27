@@ -35,10 +35,9 @@ ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
 ccflags-y += -I$(MDIR)/include
 ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
 
-all:
-	$(CONFIG_H)
+all:$(CONFIG_H)
 	make -C $(KDIR) M=$(MDIR) modules
 	
 $(CONFIG_H):
 	@echo "Running kernel-space function check..."
-	@../scripts/check_funcs.sh $(CONFIG_H)
+	@$(MDIR)/../scripts/check_funcs.sh $(CONFIG_H)
