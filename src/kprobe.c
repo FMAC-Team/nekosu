@@ -27,7 +27,7 @@ static int anon_mmap(struct file *file, struct vm_area_struct *vma)
     if (size > SHM_SIZE)
         return -EINVAL;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
     vma_set_flags(vma, VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
 #else
     vma->vm_flags |= (VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
