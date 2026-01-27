@@ -23,9 +23,9 @@ echo "#define _NKSU_FUNC_CHECK_H" >> "$CONFIG_H"
 echo "Searching for function definitions via Preprocessor..."
 
 for FUNC in "${CHECK_FUNCS[@]}"; do
-    # 使用预处理器展开头文件并搜索函数名
-    # -xc-: 指定为C语言输入  -E: 仅预处理  -P: 禁止生成行标记
-    cat <<EOF | $CC ${KERNEL_CFLAGS} -xc - -E -P 2>/dev/null | grep -qW "$FUNC"
+    # 修复点：将 -qW 改为 -qw
+    # 增加了一个简单的正则表达式，确保匹配的是函数名或宏名
+    cat <<EOF | $CC ${KERNEL_CFLAGS} -xc - -E -P 2>/dev/null | grep -qw "$FUNC"
 #include <linux/kernel.h>
 #include <linux/mm.h>
 #include <linux/printk.h>
