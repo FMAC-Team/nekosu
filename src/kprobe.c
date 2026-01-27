@@ -12,6 +12,7 @@
 #include <asm/syscall.h>
 #include <linux/anon_inodes.h>
 #include <linux/file.h>
+#include <linux/slab.h>
 #include <fmac.h>
 
 static char *shared_buffer;
@@ -28,7 +29,7 @@ static const struct file_operations anon_fops = {
     .mmap = anon_mmap,
 };
 
-static int handler_pre(struct kprobe *p, struct pt_regs *regs)
+static int handler_ret(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     unsigned long args[6], option, arg2, arg3;
 
@@ -48,7 +49,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
             if (fd >= 0)
             {
                 f_log("returning fd %d\n", fd);
-                syscall_set_return_value(current, regs, 0, (unsigned long)fd);
+                regs_set_return_value(regs, (unsigned long)fd);
             }
         }
     }
@@ -58,11 +59,11 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 
 static struct kretprobe kp = {
     .kp.symbol_name = "__arm64_sys_prctl",
-    .handler = handler_pre,
+    .handler = handler_ret,
     .maxactive = 20,
 };
 
-int fmac_hook_init(void)
+int fmac_kprobe_hook_init(void)
 {
     int ret;
     shared_buffer = kzalloc(SHM_SIZE, GFP_KERNEL);
@@ -73,12 +74,12 @@ int fmac_hook_init(void)
         return ret;
     }
 
-    f_log("kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
+    f_log("kprobe registered at %p (%s)\n", kp.kp.addr, kp.kp.symbol_name);
     return 0;
 }
 
 void fmac_hook_exit(void)
 {
     unregister_kretprobe(&kp);
-    pr_info("kprobe at %p unregistered\n", kp.addr);
+    pr_info("kprobe at %p unregistered\n", kp.kp.addr);
 }
