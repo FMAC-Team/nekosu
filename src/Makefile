@@ -29,10 +29,11 @@ obj-$(CONFIG_FMAC) += fmac.o
 
 KDIR := $(KDIR)
 MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-CONFIG_H := $(MDIR)/config.h
+IDIR := $(MDIR)/include
+CONFIG_H := $(IDIR)/config.h
 
 ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
-ccflags-y += -I$(MDIR)/include
+ccflags-y += -I$(IDIR)
 ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
 
 all:$(CONFIG_H)
