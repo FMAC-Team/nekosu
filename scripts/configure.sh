@@ -23,3 +23,4 @@ else
 fi
 
 echo "Generated $CONFIG_H"
+cat $CONFIG_H
