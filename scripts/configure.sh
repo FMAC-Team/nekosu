@@ -3,7 +3,7 @@ CONFIG_H="$1"
 CC="${CC:-cc}"
 CFLAGS="${KBUILD_CFLAGS:-}" 
 
-CHECK_FUNCS=("vma_set_flags" "get_user_pages")
+CHECK_FUNCS=("printk" "vma_set_flags" "get_user_pages")
 
 echo "#ifndef _NKSU_FUNC_CHECK_H" > "$CONFIG_H"
 echo "#define _NKSU_FUNC_CHECK_H" >> "$CONFIG_H"
