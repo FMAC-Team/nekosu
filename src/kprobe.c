@@ -17,6 +17,8 @@
 #include <linux/mm.h>
 #include <fmac.h>
 
+#include "check/config.h"
+
 static char *shared_buffer;
 #define SHM_SIZE PAGE_SIZE
 
