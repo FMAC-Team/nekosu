@@ -41,4 +41,4 @@ all:$(CONFIG_H)
 	
 $(CONFIG_H):
 	@echo "Running kernel-space function check..."
-	@$(MDIR)/../scripts/configure.sh $(CONFIG_H) CC="$(CC)" KBUILD_CFLAGS="$(KBUILD_CFLAGS)"
+	@$(MDIR)/../scripts/configure.sh $(CONFIG_H) $(CC) $(KBUILD_CFLAGS)

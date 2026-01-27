@@ -1,7 +1,7 @@
 #!/bin/bash
 CONFIG_H="$1"
-CC="${CC:-cc}"
-CFLAGS="${KBUILD_CFLAGS:-}" 
+CC="$2"
+CFLAGS="$3" 
 
 CHECK_FUNCS=("printk" "vma_set_flags" "get_user_pages")
 
