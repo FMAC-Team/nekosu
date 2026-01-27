@@ -85,10 +85,10 @@ val mContext = LocalContext.current
                     },
                 leadingContent = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
                 headlineContent = {
-                    Text(text = "导出调试日志", style = MaterialTheme.typography.titleMedium)
+                    Text(text = stringResource(R.string.export_log), style = MaterialTheme.typography.titleMedium)
                 },
                 supportingContent = {
-                    Text(text = "收集系统日志用于故障排查")
+                    Text(stringResource(R.string.export_log_describe))
                 }
             )
 

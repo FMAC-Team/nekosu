@@ -8,6 +8,10 @@ import java.util.Locale
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.and
+import android.util.Base64
+import java.security.KeyFactory
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
 
 object KeyUtils {
     private const val KEY_FILE_NAME = "ecc_private.pem"
@@ -83,5 +87,28 @@ object KeyUtils {
             }
         }
         return bytes.toByteArray()
+    }
+    
+    fun isValidECCKey(keyString: String): Boolean {
+        if (keyString.isBlank()) return false
+
+        val cleanKey = keyString
+            .replace("-----BEGIN (.*)-----".toRegex(), "")
+            .replace("-----END (.*)-----".toRegex(), "")
+            .replace("\\s".toRegex(), "")
+
+        return try {
+            val keyBytes = Base64.decode(cleanKey, Base64.DEFAULT)
+            val factory = KeyFactory.getInstance("EC")
+            try {
+                factory.generatePrivate(PKCS8EncodedKeySpec(keyBytes))
+                true
+            } catch (e: Exception) {
+         Log.e("KeyUtils", "No valid private key!")
+         false
+            }
+        } catch (e: Exception) {
+            false
+        }
     }
 }

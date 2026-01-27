@@ -13,6 +13,7 @@
 #include <linux/anon_inodes.h>
 #include <linux/file.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include <fmac.h>
 
 static char *shared_buffer;
@@ -20,8 +21,14 @@ static char *shared_buffer;
 
 static int anon_mmap(struct file *file, struct vm_area_struct *vma)
 {
-    unsigned long pfn = virt_to_phys(shared_buffer) >> PAGE_SHIFT;
-    return remap_pfn_range(vma, vma->vm_start, pfn, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+    size_t size = vma->vm_end - vma->vm_start;
+
+    if (size > SHM_SIZE)
+        return -EINVAL;
+
+    vma->vm_flags |= VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP;
+
+    return remap_vmalloc_range(vma, shared_buffer, 0);
 }
 
 static const struct file_operations anon_fops = {
@@ -66,7 +73,9 @@ static struct kretprobe kp = {
 int fmac_kprobe_hook_init(void)
 {
     int ret;
-    shared_buffer = kzalloc(SHM_SIZE, GFP_KERNEL);
+    shared_buffer = vmalloc_user(SHM_SIZE);
+    if (!shared_buffer)
+ {   return -ENOMEM;}
     ret = register_kretprobe(&kp);
     if (ret < 0)
     {
