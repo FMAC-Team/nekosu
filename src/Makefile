@@ -1,4 +1,4 @@
-include buildc/check.mk
+include check/check.mk
 
 fmac-objs := fm.o
 fmac-objs += procfs.o
