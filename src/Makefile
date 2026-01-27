@@ -30,7 +30,6 @@ obj-$(CONFIG_FMAC) += fmac.o
 KDIR := $(KDIR)
 MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 IDIR := $(MDIR)/include
-CONFIG_H := $(IDIR)/config.h
 
 ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
 ccflags-y += -I$(IDIR)
@@ -38,7 +37,3 @@ ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-
 
 all:$(CONFIG_H)
 	make -C $(KDIR) M=$(MDIR) modules
-	
-$(CONFIG_H):
-	@echo "Running kernel-space function check..."
-	@$(MDIR)/../scripts/configure.sh $(CONFIG_H) $(CC) "-I$(KDIR)/include -I$(KDIR)/arch/$(ARCH)/include"
