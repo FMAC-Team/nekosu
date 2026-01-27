@@ -1,5 +1,3 @@
-include check/check.mk
-
 fmac-objs := fm.o
 fmac-objs += procfs.o
 fmac-objs += check.o
@@ -31,10 +29,16 @@ obj-$(CONFIG_FMAC) += fmac.o
 
 KDIR := $(KDIR)
 MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+CONFIG_H := $(PWD)/config.h
 
 ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
 ccflags-y += -I$(MDIR)/include
 ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
 
 all:
+    $(CONFIG_H)
 	make -C $(KDIR) M=$(MDIR) modules
+	
+$(CONFIG_H):
+	@echo "Running kernel-space function check..."
+	@../scripts/check_funcs.sh $(CONFIG_H)
