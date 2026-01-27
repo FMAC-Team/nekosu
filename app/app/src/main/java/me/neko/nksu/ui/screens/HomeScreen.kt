@@ -260,7 +260,7 @@ fun DeviceInfoItem(
         modifier = modifier
             .fillMaxWidth()
           //  .clickable { onCopy("$title: $value") }
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 24.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // icons
