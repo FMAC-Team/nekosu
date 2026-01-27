@@ -31,7 +31,7 @@ static int anon_mmap(struct file *file, struct vm_area_struct *vma)
     */
 
 #if HAVE_vma_set_flags
-vma_set_flags(vma, VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
+vma_flags_set(vma, VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
 #else
     vma->vm_flags |= (VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
 #endif

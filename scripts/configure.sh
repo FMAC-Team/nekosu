@@ -3,7 +3,7 @@ CONFIG_H="$1"
 CC="$2"
 CFLAGS="$3" 
 
-CHECK_FUNCS=( "vma_set_flags" "get_user_pages")
+CHECK_FUNCS=( "vma_flags_set" "get_user_pages")
 
 KDIR=$(echo "$CFLAGS" | grep -o '\-I[^ ]*' | head -1 | sed 's|-I||' | sed 's|/include$||')
 
