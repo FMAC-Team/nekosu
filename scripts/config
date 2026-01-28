@@ -20,7 +20,7 @@ for srcfile in "$SRC_DIR"/*.c; do
 
     cat > "$tmpmake" <<EOF
 CC ?= gcc
-CFLAGS ?= -Wall -Werror -I.
+CFLAGS ?= -Wall -Werror -I. -I$(KDIR)/include
 
 all:
 	\$(CC) \$(CFLAGS) -fsyntax-only $rpath_src
