@@ -144,8 +144,8 @@ fun StatusCard(status: InstallStatus, onClick: () -> Unit) {
                     MaterialTheme.colorScheme.primaryContainer,
                     MaterialTheme.colorScheme.primary,
                     Icons.Filled.CheckCircle,
-                    "已激活",
-                    "辅助服务正在运行"
+                    "已安装",
+                    "运行中"
                 )
             InstallStatus.NOT_INSTALLED ->
                 StatusConfig(
@@ -153,7 +153,7 @@ fun StatusCard(status: InstallStatus, onClick: () -> Unit) {
                     MaterialTheme.colorScheme.error,
                     Icons.Filled.SystemUpdate,
                     "未安装",
-                    "点击安装辅助服务"
+                    "点击安装"
                 )
             InstallStatus.CHECKING ->
                 StatusConfig(
