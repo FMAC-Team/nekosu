@@ -16,33 +16,6 @@
 #include <linux/vmalloc.h>
 #include <fmac.h>
 
-static char *shared_buffer;
-#define SHM_SIZE PAGE_SIZE
-
-static int anon_mmap(struct file *file, struct vm_area_struct *vma)
-{
-    unsigned long size = vma->vm_end - vma->vm_start;
-
-    if (!shared_buffer)
-        return -ENODEV;
-
-    if (size > SHM_SIZE)
-        return -EINVAL;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
-    vm_flags_set(vma, VM_READ | VM_WRITE | VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
-#else
-    vma->vm_flags |= (VM_READ | VM_WRITE | VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
-#endif
-
-    return remap_vmalloc_range(vma, shared_buffer, 0);
-}
-
-static const struct file_operations anon_fops = {
-    .owner = THIS_MODULE,
-    .mmap = anon_mmap,
-};
-
 static int handler_ret(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     unsigned long args[6], option, arg2, arg3;
@@ -59,7 +32,7 @@ static int handler_ret(struct kretprobe_instance *ri, struct pt_regs *regs)
 
         if (check_totp_ecc((const char __user *)arg2, arg3) == 1)
         {
-            int fd = anon_inode_getfd("[fmac_shm]", &anon_fops, NULL, O_RDWR | O_CLOEXEC);
+            int fd = fmac_anonfd_get();
             if (fd >= 0)
             {
                 f_log("returning fd %d\n", fd);
@@ -80,14 +53,9 @@ static struct kretprobe kp = {
 int fmac_kprobe_hook_init(void)
 {
     int ret;
-    shared_buffer = vmalloc_user(SHM_SIZE);
-    if (!shared_buffer)
-        return -ENOMEM;
-
     ret = register_kretprobe(&kp);
     if (ret < 0)
     {
-        vfree(shared_buffer);
         f_log("register_kprobe failed, returned %d\n", ret);
         return ret;
     }
@@ -99,8 +67,5 @@ int fmac_kprobe_hook_init(void)
 void fmac_hook_exit(void)
 {
     unregister_kretprobe(&kp);
-    if (shared_buffer)
-        vfree(shared_buffer);
-
     pr_info("kprobe at %p unregistered\n", kp.kp.addr);
 }

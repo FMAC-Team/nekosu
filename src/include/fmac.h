@@ -16,6 +16,7 @@
 
 #include "init.h"
 #include "op_code.h"
+#include "anonfd.h"
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)

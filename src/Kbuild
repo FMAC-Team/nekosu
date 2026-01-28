@@ -1,6 +1,6 @@
 fmac-y := fm.o procfs.o check.o log.o
 ifdef CONFIG_FMAC_ROOT
-    fmac-y += root.o allowlist.o totp.o rsa_pub.o
+    fmac-y += root.o allowlist.o totp.o rsa_pub.o anonfd.o
 
     ifeq ($(CONFIG_FMAC),m)
         fmac-y += kprobe.o
