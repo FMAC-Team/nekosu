@@ -20,8 +20,18 @@ static char *shared_buffer;
 
 static int anon_mmap(struct file *file, struct vm_area_struct *vma)
 {
-    unsigned long pfn = virt_to_phys(shared_buffer) >> PAGE_SHIFT;
-    return remap_pfn_range(vma, vma->vm_start, pfn, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+    unsigned long size = vma->vm_end - vma->vm_start;
+
+    if (!shared_buffer)
+    {
+        return -ENODEV;
+    }
+
+    if (size > SHM_SIZE)
+    {
+        return -EINVAL;
+    }
+    return remap_vmalloc_range(vma, shared_buffer, 0);
 }
 
 static const struct file_operations anon_fops = {
@@ -66,10 +76,15 @@ static struct kretprobe kp = {
 int fmac_kprobe_hook_init(void)
 {
     int ret;
-    shared_buffer = kzalloc(SHM_SIZE, GFP_KERNEL);
+    shared_buffer = vmalloc_user(SHM_SIZE);
+    if (!shared_buffer)
+    {
+        return -ENOMEM;
+    }
     ret = register_kretprobe(&kp);
     if (ret < 0)
     {
+        vfree(shared_buffer);
         f_log("register_kprobe failed, returned %d\n", ret);
         return ret;
     }
@@ -81,5 +96,9 @@ int fmac_kprobe_hook_init(void)
 void fmac_hook_exit(void)
 {
     unregister_kretprobe(&kp);
+    if (shared_buffer)
+    {
+        vfree(shared_buffer);
+    }
     pr_info("kprobe at %p unregistered\n", kp.kp.addr);
 }
