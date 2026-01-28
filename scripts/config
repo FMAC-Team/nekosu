@@ -32,8 +32,7 @@ all:
 	make -C \$(KDIR) M=$tmpdir modules 
 EOF
 
- #   if make -C "$tmpdir" >/dev/null 2>&1; then
- if make -C "$tmpdir" ; then
+   if make -C "$tmpdir" >/dev/null 2>&1; then
         echo "  [+] $base compiled successfully"
         echo "#define $macro 1" >> "$CONFIG_H"
     else
@@ -41,7 +40,7 @@ EOF
         echo "/* #undef $macro */" >> "$CONFIG_H"
     fi
 
-  #  rm -rf "$tmpdir"
+   rm -rf "$tmpdir"
 done
 
 echo "#endif" >> "$CONFIG_H"
