@@ -20,7 +20,7 @@ for srcfile in "$SRC_DIR"/*.c; do
 
     cat > "$tmpmake" <<EOF
 KDIR := \$(KDIR)
-MDIR := \$(realpath \$(dir \$(abspath \$(lastword $(MAKEFILE_LIST)))))
+MDIR := \$(realpath \$(dir \$(abspath \$(lastword \$(MAKEFILE_LIST)))))
 IDIR := \$(MDIR)/include
 
 all:
