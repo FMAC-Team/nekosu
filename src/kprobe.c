@@ -32,6 +32,13 @@ static int anon_mmap(struct file *file, struct vm_area_struct *vma)
     {
         return -EINVAL;
     }
+
+#ifdef HAVE_VM_FLAGS_SET
+    vm_flags_set(vma, VM_READ | VM_WRITE | VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
+#else
+    vma->vm_flags |= (VM_READ | VM_WRITE | VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
+#endif
+
     return remap_vmalloc_range(vma, shared_buffer, 0);
 }
 
