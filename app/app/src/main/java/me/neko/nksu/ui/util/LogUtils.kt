@@ -9,7 +9,6 @@ import java.io.File
 import java.io.FileOutputStream
 
 object LogUtils {
-
     /**
      * 导出并分享日志文件
      */
@@ -27,24 +26,27 @@ object LogUtils {
 
             // 3. 弹出分享菜单
             shareLogFile(context, logFile)
-            
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "导出日志失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun shareLogFile(context: Context, file: File) {
+    private fun shareLogFile(
+        context: Context,
+        file: File,
+    ) {
         // 注意：你需要在 AndroidManifest 中配置 FileProvider
         val authority = "${context.packageName}.fileprovider"
         val contentUri: Uri = FileProvider.getUriForFile(context, authority, file)
 
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_STREAM, contentUri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        
+        val intent =
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
         context.startActivity(Intent.createChooser(intent, "分享/导出日志"))
     }
 }

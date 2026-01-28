@@ -1,14 +1,12 @@
 package me.neko.nksu
 
 import android.app.Application
-import kotlin.system.exitProcess
-import android.util.Log
 import android.os.Process
-
-import me.neko.nksu.ui.util.CrashHandler
-import me.neko.nksu.ui.util.NotificationUtil
-import me.neko.nksu.util.SigCheck
+import android.util.Log
 import me.neko.nksu.R
+import me.neko.nksu.ui.util.CrashHandler
+import me.neko.nksu.util.SigCheck
+import kotlin.system.exitProcess
 
 class NkApplication : Application() {
     override fun onCreate() {
@@ -18,7 +16,7 @@ class NkApplication : Application() {
             Process.killProcess(Process.myPid())
             exitProcess(1)
         }
-  //      NotificationUtil.createChannel(this)
+        //      NotificationUtil.createChannel(this)
         CrashHandler.init(this)
     }
 }

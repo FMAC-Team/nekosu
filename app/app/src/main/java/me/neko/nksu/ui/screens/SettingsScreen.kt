@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -25,44 +25,44 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
-import me.neko.nksu.utils.LogUtils
 import me.neko.nksu.R
+import me.neko.nksu.utils.LogUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    navController: NavController
-) {
-val mContext = LocalContext.current 
-    
+fun SettingsScreen(navController: NavController) {
+    val mContext = LocalContext.current
+
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
-    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
         },
-        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
         ) {
             ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        navController.navigate("about")
-                    },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            navController.navigate("about")
+                        },
                 leadingContent = {
                     Icon(
                         imageVector = Icons.Outlined.Info,
@@ -72,30 +72,29 @@ val mContext = LocalContext.current
                 headlineContent = {
                     Text(
                         text = stringResource(R.string.about),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
-                }
+                },
             )
-            
+
             ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        LogUtils.exportLogs(mContext) // 调用导出逻辑
-                    },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            LogUtils.exportLogs(mContext) // 调用导出逻辑
+                        },
                 leadingContent = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
                 headlineContent = {
                     Text(text = stringResource(R.string.export_log), style = MaterialTheme.typography.titleMedium)
                 },
                 supportingContent = {
                     Text(stringResource(R.string.export_log_describe))
-                }
+                },
             )
 
-            
             Spacer(modifier = Modifier.weight(1f))
         }
-
     }
 }
 
@@ -103,6 +102,6 @@ val mContext = LocalContext.current
 @Composable
 fun SettingsScreenPreview() {
     SettingsScreen(
-        navController = rememberNavController()
+        navController = rememberNavController(),
     )
 }

@@ -9,6 +9,10 @@ class Native {
         }
     }
 
-    external fun authenticate(key: String?, token: String?): Int
+    external fun authenticate(
+        key: String?,
+        token: String?,
+    ): Int
+
     external fun Sigcheck(context: Context): Boolean
 }
