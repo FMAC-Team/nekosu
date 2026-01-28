@@ -24,11 +24,9 @@ static int anon_mmap(struct file *file, struct vm_area_struct *vma)
     unsigned long size = vma->vm_end - vma->vm_start;
 
     if (!shared_buffer)
-
         return -ENODEV;
 
     if (size > SHM_SIZE)
-
         return -EINVAL;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
@@ -84,7 +82,6 @@ int fmac_kprobe_hook_init(void)
     int ret;
     shared_buffer = vmalloc_user(SHM_SIZE);
     if (!shared_buffer)
-
         return -ENOMEM;
 
     ret = register_kretprobe(&kp);
@@ -103,7 +100,6 @@ void fmac_hook_exit(void)
 {
     unregister_kretprobe(&kp);
     if (shared_buffer)
-
         vfree(shared_buffer);
 
     pr_info("kprobe at %p unregistered\n", kp.kp.addr);
