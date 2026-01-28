@@ -1,6 +1,5 @@
 #ifndef _LOG_H_
 #define _LOG_H_
-#include <linux/stdarg.h>
 #include <linux/string.h>
 
 #define __FILENAME__                                                                               \
