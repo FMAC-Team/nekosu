@@ -93,7 +93,7 @@ static ssize_t proc_write(struct file *file, const char __user *buf, size_t coun
     return count;
 }
 
-#ifdef FMAC_USE_PROC_OPS
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 static const struct proc_ops fmac_uid_proc_ops = {
     .proc_open = fmac_uid_open,
     .proc_read = seq_read,
