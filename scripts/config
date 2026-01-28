@@ -1,8 +1,8 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-SRC_DIR="src/test"
-CONFIG_H="src/include/config.h"
+SRC_DIR="test"
+CONFIG_H="include/config.h"
 
 mkdir -p "$(dirname "$CONFIG_H")"
 echo "#ifndef _TEST_CONFIG_H" > "$CONFIG_H"
