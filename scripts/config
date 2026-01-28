@@ -26,7 +26,7 @@ MDIR := \$(realpath \$(dir \$(abspath \$(lastword \$(MAKEFILE_LIST)))))
 IDIR := \$(MDIR)/include
 
 all:
-	make -C \$(KDIR) M=$(tmpdir) modules 
+	make -C \$(KDIR) M=$tmpdir modules 
 EOF
 
  #   if make -C "$tmpdir" >/dev/null 2>&1; then
