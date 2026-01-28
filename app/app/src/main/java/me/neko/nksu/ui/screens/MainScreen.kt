@@ -24,6 +24,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.height
 import me.neko.nksu.ui.util.BottomNavItem
 import me.neko.nksu.ui.util.CheckUpdate
 
@@ -32,36 +36,56 @@ fun BottomNavigationBar(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar {
-        BottomNavItem.Companion.items.forEach { item ->
-            val selected = currentRoute == item.route
+    // 1. 定义圆角半径
+    val topCornerRadius = 24.dp 
+    val navBarHeight = 120.dp //
 
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.title,
-                    )
-                },
-                label = {
-                    if (selected) {
-                        Text(text = item.title)
-                    }
-                },
-                selected = selected,
-                onClick = {
-                    navController.navigate(item.route) {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+    // 2. 使用 Surface 或者直接在 NavigationBar 上应用 clip
+    androidx.compose.material3.Surface(
+        // 只设置左上和右上圆角
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+            topStart = topCornerRadius,
+            topEnd = topCornerRadius
+        ),
+        // 增加阴影或色调提升感（可选）
+        tonalElevation = 3.dp 
+    ) {
+        NavigationBar(
+            // 确保裁剪生效
+modifier = Modifier
+        .clip(RoundedCornerShape(topStart = topCornerRadius, topEnd = topCornerRadius))
+        .then(Modifier.height(navBarHeight)) // 使用 then() 链接
+        ) {
+            BottomNavItem.Companion.items.forEach { item ->
+                val selected = currentRoute == item.route
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.title,
+                        )
+                    },
+                    label = {
+                        if (selected) {
+                            Text(text = item.title)
                         }
-                    }
-                },
-            )
+                    },
+                    selected = selected,
+                    onClick = {
+                        navController.navigate(item.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                        }
+                    },
+                )
+            }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
