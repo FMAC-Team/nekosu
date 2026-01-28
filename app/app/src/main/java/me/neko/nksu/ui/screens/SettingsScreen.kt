@@ -84,7 +84,7 @@ fun SettingsScreen(navController: NavController) {
                 Modifier
                     .fillMaxWidth()
                     .clickable {
-                        LogUtils.exportLogs(mContext) // 调用导出逻辑
+                        LogUtils.exportLogs(mContext)
                     },
                 leadingContent = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
                 headlineContent = {

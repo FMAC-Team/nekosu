@@ -66,7 +66,7 @@ static int __init fmac_init(void)
         return ret;
     }
     fmac_anonfd_init();
-    
+
 #ifdef INIT_KPROBE
     fmac_kprobe_hook_init();
 #elif defined(INIT_TP)

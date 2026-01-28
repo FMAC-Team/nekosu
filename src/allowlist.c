@@ -15,7 +15,7 @@
 #include <linux/xarray.h>
 #include <fmac.h>
 
-DEFINE_XARRAY(fmac_uid_xa);
+static DEFINE_XARRAY(fmac_uid_xa);
 
 bool fmac_uid_allowed(void)
 {
@@ -36,9 +36,7 @@ static int fmac_uids_show(struct seq_file *m, void *v)
     }
 
     if (!first)
-    {
         seq_puts(m, "\n");
-    }
 
     return 0;
 }
@@ -53,15 +51,11 @@ static ssize_t proc_write(struct file *file, const char __user *buf, size_t coun
     char *kbuf, *tok, *p;
 
     if (count == 0 || count > 1024)
-    {
         return -EINVAL;
-    }
 
     kbuf = memdup_user_nul(buf, count);
     if (IS_ERR(kbuf))
-    {
         return PTR_ERR(kbuf);
-    }
 
     tok = strstrip(kbuf);
 
@@ -71,20 +65,14 @@ static ssize_t proc_write(struct file *file, const char __user *buf, size_t coun
         kuid_t uid;
 
         if (*p == '\0')
-        {
             continue;
-        }
 
         if (kstrtouint(p, 10, &id) < 0)
-        {
             continue;
-        }
 
         uid = make_kuid(&init_user_ns, id);
         if (!uid_valid(uid))
-        {
             continue;
-        }
 
         xa_store(&fmac_uid_xa, id, xa_mk_value(id), GFP_KERNEL);
     }
@@ -111,6 +99,22 @@ static const struct file_operations fmac_uid_proc_ops = {
     .release = single_release,
 };
 #endif
+
+int nksu_add_uid(int uid)
+{
+    int ret;
+    xa_lock(&fmac_uid_xa);
+    if (xa_load(&fmac_uid_xa, uid))
+    {
+        xa_unlock(&fmac_uid_xa);
+        return -EEXIST;
+    }
+
+    ret = xa_store(&fmac_uid_xa, uid, xa_mk_value(uid), GFP_KERNEL);
+    xa_unlock(&fmac_uid_xa);
+
+    return ret;
+}
 
 int fmac_uid_proc_init(void)
 {

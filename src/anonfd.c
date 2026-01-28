@@ -28,17 +28,9 @@ static int fmac_anon_mmap(struct file *file, struct vm_area_struct *vma)
         return -EINVAL;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
-    vm_flags_set(vma,
-        VM_READ | VM_WRITE |
-        VM_SHARED |
-        VM_DONTEXPAND |
-        VM_DONTDUMP);
+    vm_flags_set(vma, VM_READ | VM_WRITE | VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
 #else
-    vma->vm_flags |=
-        VM_READ | VM_WRITE |
-        VM_SHARED |
-        VM_DONTEXPAND |
-        VM_DONTDUMP;
+    vma->vm_flags |= VM_READ | VM_WRITE | VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP;
 #endif
 
     return remap_vmalloc_range(vma, shared_buffer, 0);
@@ -46,7 +38,7 @@ static int fmac_anon_mmap(struct file *file, struct vm_area_struct *vma)
 
 static const struct file_operations fmac_anon_fops = {
     .owner = THIS_MODULE,
-    .mmap  = fmac_anon_mmap,
+    .mmap = fmac_anon_mmap,
 };
 
 int fmac_anonfd_get(void)
@@ -54,12 +46,7 @@ int fmac_anonfd_get(void)
     if (!shared_buffer)
         return -ENODEV;
 
-    return anon_inode_getfd(
-        "[fmac_shm]",
-        &fmac_anon_fops,
-        NULL,
-        O_RDWR | O_CLOEXEC
-    );
+    return anon_inode_getfd("[fmac_shm]", &fmac_anon_fops, NULL, O_RDWR | O_CLOEXEC);
 }
 
 int fmac_anonfd_init(void)
@@ -74,7 +61,8 @@ int fmac_anonfd_init(void)
 
 void fmac_anonfd_exit(void)
 {
-    if (shared_buffer) {
+    if (shared_buffer)
+    {
         vfree(shared_buffer);
         shared_buffer = NULL;
     }
