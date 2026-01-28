@@ -1,0 +1,28 @@
+fmac-y := fm.o procfs.o check.o log.o
+ifdef CONFIG_FMAC_ROOT
+    fmac-y += root.o allowlist.o totp.o rsa_pub.o
+
+    ifeq ($(CONFIG_FMAC),m)
+        fmac-y += kprobe.o
+    endif
+
+    ifeq ($(CONFIG_FMAC),y)
+        fmac-y += tracepoint.o
+    endif
+endif
+
+obj-$(CONFIG_FMAC) += fmac.o
+
+ifeq ($(CONFIG_FMAC_ROOT_KPROBE), y)
+    ccflags-y += -DINIT_KPROBE
+else
+    ccflags-y += -DINIT_TP
+endif
+
+KDIR := $(KDIR)
+MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+IDIR := $(MDIR)/include
+
+ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
+ccflags-y += -I$(IDIR)
+ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
