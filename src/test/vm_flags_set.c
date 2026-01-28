@@ -5,5 +5,5 @@
 MODULE_LICENSE("test");
 
 void check_func(void) {
-(void)&vma_flags_set;
+(void)&vm_flags_set;
 }
