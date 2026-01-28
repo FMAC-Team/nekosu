@@ -102,7 +102,7 @@ static const struct file_operations fmac_uid_proc_ops = {
 
 int nksu_add_uid(int uid)
 {
-    int ret;
+    void *ret;
     xa_lock(&fmac_uid_xa);
     if (xa_load(&fmac_uid_xa, uid))
     {
@@ -112,8 +112,11 @@ int nksu_add_uid(int uid)
 
     ret = xa_store(&fmac_uid_xa, uid, xa_mk_value(uid), GFP_KERNEL);
     xa_unlock(&fmac_uid_xa);
+    
+    if (IS_ERR(ret))
+        return PTR_ERR(ret);
 
-    return ret;
+    return 0;
 }
 
 int fmac_uid_proc_init(void)
