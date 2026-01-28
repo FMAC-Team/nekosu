@@ -17,6 +17,7 @@ for srcfile in "$SRC_DIR"/*.c; do
     tmpdir=$(mktemp -d)
     tmpmake="$tmpdir/Makefile"
     rpath_src=$(realpath "$srcfile")
+    tmpsrc=$(basename "$srcfile" .c) 
     
     cp $srcfile $tmpdir
 
@@ -24,6 +25,8 @@ for srcfile in "$SRC_DIR"/*.c; do
 KDIR := \$(KDIR)
 MDIR := \$(realpath \$(dir \$(abspath \$(lastword \$(MAKEFILE_LIST)))))
 IDIR := \$(MDIR)/include
+
+obj-m := $tmpsrc.o
 
 all:
 	make -C \$(KDIR) M=$tmpdir modules 
