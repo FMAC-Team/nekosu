@@ -19,24 +19,18 @@ object KeyUtils {
 
     fun getKeyFilePath(context: Context): String = File(context.filesDir, KEY_FILE_NAME).absolutePath
 
-    fun saveKey(
-        context: Context,
-        key: String,
-    ) {
-        val MAX_SIZE = 4 * 1024
+    fun saveKey(context: Context, key: String) {
+        val maxSize = 4 * 1024
         try {
             val keyBytes = key.toByteArray(Charsets.UTF_8)
-            if (keyBytes.size > MAX_SIZE) return
+            if (keyBytes.size > maxSize) return
             File(context.filesDir, KEY_FILE_NAME).writeBytes(keyBytes)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun getTotpToken(
-        secretBase32: String,
-        timeInterval: Long = 30L,
-    ): String {
+    fun getTotpToken(secretBase32: String, timeInterval: Long = 30L): String {
         try {
             val secretBytes = decodeBase32(secretBase32)
 

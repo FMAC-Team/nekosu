@@ -32,10 +32,7 @@ object LogUtils {
         }
     }
 
-    private fun shareLogFile(
-        context: Context,
-        file: File,
-    ) {
+    private fun shareLogFile(context: Context, file: File) {
         // 注意：你需要在 AndroidManifest 中配置 FileProvider
         val authority = "${context.packageName}.fileprovider"
         val contentUri: Uri = FileProvider.getUriForFile(context, authority, file)

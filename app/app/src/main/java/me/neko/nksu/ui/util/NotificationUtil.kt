@@ -13,7 +13,7 @@ object NotificationUtil {
             NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW,
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 setShowBadge(false)
             }

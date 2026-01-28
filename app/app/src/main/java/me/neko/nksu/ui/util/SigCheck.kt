@@ -30,7 +30,7 @@ object SigCheck {
             0x6b,
             0x20,
             0x34,
-            0x32,
+            0x32
         )
 
     private const val APK_SIGNATURE_SCHEME_V2_BLOCK_ID = 0x7109871a
@@ -66,7 +66,9 @@ object SigCheck {
             for (certBytes in certs) {
                 val currentSignature = getSHA256(certBytes)
                 Log.d(TAG, "Found Signature: $currentSignature")
-                if (DEBUG_EXPECTED_SIGNATURE == currentSignature || RELEASE_EXPECTED_SIGNATURE == currentSignature) {
+                if (DEBUG_EXPECTED_SIGNATURE == currentSignature ||
+                    RELEASE_EXPECTED_SIGNATURE == currentSignature
+                ) {
                     return true
                 }
             }
@@ -81,10 +83,7 @@ object SigCheck {
         return false
     }
 
-    private fun findBlockById(
-        signingBlock: ByteBuffer,
-        blockId: Int,
-    ): ByteBuffer? {
+    private fun findBlockById(signingBlock: ByteBuffer, blockId: Int): ByteBuffer? {
         val buffer = signingBlock.duplicate()
         buffer.order(ByteOrder.LITTLE_ENDIAN)
 

@@ -84,25 +84,25 @@ fun AboutScreen(navController: NavHostController) {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
+                            contentDescription = "返回"
                         )
                     }
                 },
-                scrollBehavior = scrollBehavior,
+                scrollBehavior = scrollBehavior
             )
         },
         contentWindowInsets =
-            WindowInsets.safeDrawing
-                .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+        WindowInsets.safeDrawing
+            .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     ) { innerPadding ->
         LazyColumn(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top,
+            verticalArrangement = Arrangement.Top
         ) {
             item {
                 Spacer(Modifier.height(20.dp))
@@ -119,9 +119,9 @@ fun AboutScreen(navController: NavHostController) {
                     painter = icon,
                     contentDescription = null,
                     modifier =
-                        Modifier
-                            .size(90.dp)
-                            .clip(RoundedCornerShape(16.dp)),
+                    Modifier
+                        .size(90.dp)
+                        .clip(RoundedCornerShape(16.dp))
                 )
             }
             item {
@@ -131,7 +131,7 @@ fun AboutScreen(navController: NavHostController) {
             item {
                 Text(
                     text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge
                 )
             }
             item {
@@ -141,18 +141,18 @@ fun AboutScreen(navController: NavHostController) {
             item {
                 Text(
                     text = "版本: $versionName",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             item {
                 HorizontalDivider(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp, vertical = 24.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp, vertical = 24.dp),
                     thickness = DividerDefaults.Thickness,
-                    color = DividerDefaults.color,
+                    color = DividerDefaults.color
                 )
             }
 
@@ -160,22 +160,22 @@ fun AboutScreen(navController: NavHostController) {
                 val context = LocalContext.current
                 Row(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                val intent =
-                                    Intent(
-                                        Intent.ACTION_VIEW,
-                                        "https://github.com/aqnya/nekosu".toUri(),
-                                    )
-                                context.startActivity(intent)
-                            }.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val intent =
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://github.com/aqnya/nekosu".toUri()
+                                )
+                            context.startActivity(intent)
+                        }.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.code_24px),
                         contentDescription = null,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(24.dp)
                     )
 
                     Spacer(modifier = Modifier.width(16.dp))
@@ -183,11 +183,11 @@ fun AboutScreen(navController: NavHostController) {
                     Column {
                         Text(
                             text = "仓库",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleMedium
                         )
                         Text(
                             text = "在GitHub仓库查看源码",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
@@ -196,23 +196,23 @@ fun AboutScreen(navController: NavHostController) {
                 Column {
                     Row(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    navController.navigate("open_source")
-                                }.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                navController.navigate("open_source")
+                            }.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.source_code_24px),
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
                                 text = "开放源代码",
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleMedium
                             )
                         }
                     }
@@ -226,6 +226,6 @@ fun AboutScreen(navController: NavHostController) {
 @Composable
 fun AboutScreenPreview() {
     AboutScreen(
-        navController = rememberNavController(),
+        navController = rememberNavController()
     )
 }

@@ -23,53 +23,53 @@ fun InstallGuideSheet(onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Card(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
             shape = RoundedCornerShape(24.dp),
             colors =
-                CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
         ) {
             Column(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Filled.SystemUpdate,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Nksu安装指南",
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 Text(
                     text =
-                        """
+                    """
 要启用 nekosu，请注意以下信息：
 
 1. Nksu不支持lkm模式，请手动安装到内核
 2. 如发现重大bug请复制/proc/fmac/logs下的内容提交到issues  
-                        """.trimIndent(),
+                    """.trimIndent(),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // 安装命令卡片
@@ -114,7 +114,7 @@ fun InstallGuideSheet(onDismiss: () -> Unit) {
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(18.dp)
                 ) {
                     Text(text = "我已完成安装")
                 }

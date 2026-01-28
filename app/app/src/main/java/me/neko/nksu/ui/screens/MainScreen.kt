@@ -5,7 +5,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -16,18 +18,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.height
 import me.neko.nksu.ui.util.BottomNavItem
 import me.neko.nksu.ui.util.CheckUpdate
 
@@ -36,56 +36,43 @@ fun BottomNavigationBar(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // 1. 定义圆角半径
-    val topCornerRadius = 24.dp 
-    val navBarHeight = 120.dp //
+    val topCornerRadius = 24.dp
+    val navBarHeight = 110.dp
 
-    // 2. 使用 Surface 或者直接在 NavigationBar 上应用 clip
-    androidx.compose.material3.Surface(
-        // 只设置左上和右上圆角
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(
-            topStart = topCornerRadius,
-            topEnd = topCornerRadius
-        ),
-        // 增加阴影或色调提升感（可选）
-        tonalElevation = 3.dp 
+    NavigationBar(
+        modifier =
+        Modifier
+            .clip(RoundedCornerShape(topStart = topCornerRadius, topEnd = topCornerRadius))
+            .then(Modifier.height(navBarHeight))
     ) {
-        NavigationBar(
-            // 确保裁剪生效
-modifier = Modifier
-        .clip(RoundedCornerShape(topStart = topCornerRadius, topEnd = topCornerRadius))
-        .then(Modifier.height(navBarHeight)) // 使用 then() 链接
-        ) {
-            BottomNavItem.Companion.items.forEach { item ->
-                val selected = currentRoute == item.route
-                NavigationBarItem(
-                    icon = {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.title,
-                        )
-                    },
-                    label = {
-                        if (selected) {
-                            Text(text = item.title)
+        BottomNavItem.Companion.items.forEach { item ->
+            val selected = currentRoute == item.route
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.title
+                    )
+                },
+                label = {
+                    if (selected) {
+                        Text(text = item.title)
+                    }
+                },
+                selected = selected,
+                onClick = {
+                    navController.navigate(item.route) {
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
                         }
-                    },
-                    selected = selected,
-                    onClick = {
-                        navController.navigate(item.route) {
-                            launchSingleTop = true
-                            restoreState = true
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                        }
-                    },
-                )
-            }
+                    }
+                }
+            )
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,47 +82,47 @@ fun MainScreen() {
 
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = BottomNavItem.Home.route,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(innerPadding)
         ) {
             composable(
                 route = BottomNavItem.Home.route,
                 enterTransition = { fadeIn(animationSpec = tween(300)) },
                 exitTransition = { fadeOut(animationSpec = tween(300)) },
                 popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-                popExitTransition = { fadeOut(animationSpec = tween(300)) },
+                popExitTransition = { fadeOut(animationSpec = tween(300)) }
             ) { HomeScreen() }
             composable(
                 route = BottomNavItem.History.route,
                 enterTransition = { fadeIn(animationSpec = tween(300)) },
                 exitTransition = { fadeOut(animationSpec = tween(300)) },
                 popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-                popExitTransition = { fadeOut(animationSpec = tween(300)) },
+                popExitTransition = { fadeOut(animationSpec = tween(300)) }
             ) { HistoryScreen() }
             composable(
                 route = BottomNavItem.Settings.route,
                 enterTransition = { fadeIn(animationSpec = tween(300)) },
                 exitTransition = { fadeOut(animationSpec = tween(300)) },
                 popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-                popExitTransition = { fadeOut(animationSpec = tween(300)) },
+                popExitTransition = { fadeOut(animationSpec = tween(300)) }
             ) { SettingsScreen(navController) }
             composable(
                 route = "about",
                 enterTransition = { fadeIn(animationSpec = tween(300)) },
                 exitTransition = { fadeOut(animationSpec = tween(300)) },
                 popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-                popExitTransition = { fadeOut(animationSpec = tween(300)) },
+                popExitTransition = { fadeOut(animationSpec = tween(300)) }
             ) { AboutScreen(navController) }
             composable(
                 route = "open_source",
                 enterTransition = { fadeIn(animationSpec = tween(300)) },
                 exitTransition = { fadeOut(animationSpec = tween(300)) },
                 popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-                popExitTransition = { fadeOut(animationSpec = tween(300)) },
+                popExitTransition = { fadeOut(animationSpec = tween(300)) }
             ) { OpenSourceScreen(navController) }
         }
 

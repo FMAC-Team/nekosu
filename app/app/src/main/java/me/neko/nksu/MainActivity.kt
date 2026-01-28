@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
                 if (showDialog) {
                     KeyInputDialog(
                         show = showDialog,
-                        onDismiss = { showDialog = false },
+                        onDismiss = { showDialog = false }
                     )
                 }
             }
@@ -63,10 +63,7 @@ class MainActivity : ComponentActivity() {
 
 @Suppress("FunctionName")
 @Composable
-fun KeyInputDialog(
-    show: Boolean,
-    onDismiss: () -> Unit,
-) {
+fun KeyInputDialog(show: Boolean, onDismiss: () -> Unit) {
     val context = LocalContext.current
     var inputText by remember { mutableStateOf("") }
     var errorType by remember { mutableIntStateOf(0) } // 0-none, 1-empty, 2-invalid
@@ -74,8 +71,12 @@ fun KeyInputDialog(
 
     AnimatedVisibility(
         visible = show,
-        enter = fadeIn(animationSpec = tween(250)) + scaleIn(initialScale = 0.8f, animationSpec = tween(250)),
-        exit = fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 0.8f, animationSpec = tween(200)),
+        enter =
+        fadeIn(animationSpec = tween(250)) +
+            scaleIn(initialScale = 0.8f, animationSpec = tween(250)),
+        exit =
+        fadeOut(animationSpec = tween(200)) +
+            scaleOut(targetScale = 0.8f, animationSpec = tween(200))
     ) {
         AlertDialog(
             onDismissRequest = { onDismiss() },
@@ -83,9 +84,9 @@ fun KeyInputDialog(
             text = {
                 Column(
                     modifier =
-                        Modifier
-                            .verticalScroll(scrollState)
-                            .fillMaxWidth(),
+                    Modifier
+                        .verticalScroll(scrollState)
+                        .fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.dialog_key_please_input))
                     Spacer(modifier = Modifier.height(8.dp))
@@ -100,16 +101,22 @@ fun KeyInputDialog(
                         placeholder = { Text("-----BEGIN EC PRIVATE KEY-----...") },
                         singleLine = false,
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 120.dp, max = 240.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 120.dp, max = 240.dp),
                         isError = errorType != 0,
                         supportingText = {
                             when (errorType) {
-                                1 -> Text(stringResource(R.string.dialog_key_input_no_empty), color = MaterialTheme.colorScheme.error)
-                                2 -> Text(stringResource(R.string.dialog_key_input_invalid), color = MaterialTheme.colorScheme.error)
+                                1 -> Text(
+                                    stringResource(R.string.dialog_key_input_no_empty),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                2 -> Text(
+                                    stringResource(R.string.dialog_key_input_invalid),
+                                    color = MaterialTheme.colorScheme.error
+                                )
                             }
-                        },
+                        }
                     )
                 }
             },
@@ -127,14 +134,14 @@ fun KeyInputDialog(
                             KeyUtils.saveKey(context, trimmedKey)
                             onDismiss()
                         }
-                    },
+                    }
                 ) { Text(stringResource(R.string.dialog_key_save)) }
             },
             dismissButton = {
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(R.string.dialog_key_later))
                 }
-            },
+            }
         )
     }
 }

@@ -49,23 +49,23 @@ fun OpenSourceScreen(navController: NavHostController) {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
+                            contentDescription = "返回"
                         )
                     }
                 },
-                scrollBehavior = scrollBehavior,
+                scrollBehavior = scrollBehavior
             )
         },
         contentWindowInsets =
-            WindowInsets.safeDrawing
-                .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+        WindowInsets.safeDrawing
+            .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     ) { innerPadding ->
         LazyColumn(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
         ) {
             items(licenseList) { item ->
                 LicenseItemView(item) {
@@ -78,30 +78,27 @@ fun OpenSourceScreen(navController: NavHostController) {
 }
 
 @Composable
-fun LicenseItemView(
-    item: LicenseItem,
-    onClick: () -> Unit,
-) {
+fun LicenseItemView(item: LicenseItem, onClick: () -> Unit) {
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
     ) {
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             Text(text = "${item.name} - ${item.author}", style = MaterialTheme.typography.bodyLarge)
             Text(
                 text = item.url,
                 style =
-                    MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.primary,
-                        textDecoration = TextDecoration.Underline,
-                    ),
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline
+                )
             )
             Text(text = getLicense(item.type), style = MaterialTheme.typography.bodyMedium)
         }
@@ -114,64 +111,58 @@ private val licenseList =
             "Google",
             "Jetpack Compose",
             "https://github.com/androidx/androidx",
-            LicenseType.Apache2,
+            LicenseType.Apache2
         ),
         LicenseItem(
             "JetBrains",
             "Kotlin",
             "https://github.com/JetBrains/kotlin",
-            LicenseType.Apache2,
+            LicenseType.Apache2
         ),
         LicenseItem(
             "Google",
             "Material Design 3",
             "https://m3.material.io/",
-            LicenseType.Apache2,
+            LicenseType.Apache2
         ),
         LicenseItem(
             "Google",
             "Gson",
             "https://github.com/google/gson",
-            LicenseType.Apache2,
+            LicenseType.Apache2
         ),
         LicenseItem(
             "square",
             "Moshi",
             "https://github.com/square/moshi",
-            LicenseType.Apache2,
+            LicenseType.Apache2
         ),
         LicenseItem(
             "square",
             "okhttp",
             "https://github.com/square/okhttp",
-            LicenseType.Apache2,
-        ),
+            LicenseType.Apache2
+        )
     )
 
-data class LicenseItem(
-    val author: String,
-    val name: String,
-    val url: String,
-    val type: LicenseType,
-)
+data class LicenseItem(val author: String, val name: String, val url: String, val type: LicenseType)
 
 enum class LicenseType {
     Apache2,
     MIT,
-    GPL3,
+    GPL3
 }
 
-private fun getLicense(type: LicenseType): String =
-    when (type) {
-        LicenseType.Apache2 -> "Apache Software License 2.0"
-        LicenseType.MIT -> "MIT License"
-        LicenseType.GPL3 -> "GNU general public license Version 3"
-    }
+private fun getLicense(type: LicenseType): String = when (type) {
+    LicenseType.Apache2 -> "Apache Software License 2.0"
+    LicenseType.MIT -> "MIT License"
+    LicenseType.GPL3 -> "GNU general public license Version 3"
+}
 
 @Preview(showBackground = true)
 @Composable
 fun OpenSourceScreenPreview() {
     OpenSourceScreen(
-        navController = rememberNavController(),
+        navController = rememberNavController()
     )
 }

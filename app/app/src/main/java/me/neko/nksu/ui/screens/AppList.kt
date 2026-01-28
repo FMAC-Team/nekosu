@@ -41,21 +41,17 @@ data class AppInfo(
     val packageName: String,
     val uid: Int,
     val isSystem: Boolean,
-    val isLaunchable: Boolean,
+    val isLaunchable: Boolean
 )
 
-enum class FilterMode(
-    @param:StringRes val labelRes: Int,
-) {
+enum class FilterMode(@param:StringRes val labelRes: Int) {
     ALL(R.string.all_app),
     LAUNCHABLE(R.string.can_launch_app),
     SYSTEM(R.string.system_app),
-    USER(R.string.user_app),
+    USER(R.string.user_app)
 }
 
-class AppViewModel(
-    private val context: Context,
-) : ViewModel() {
+class AppViewModel(private val context: Context) : ViewModel() {
     private val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     private val gson = Gson()
 
@@ -89,7 +85,9 @@ class AppViewModel(
                                 packageName = pkg.packageName,
                                 uid = ai.uid,
                                 isSystem = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
-                                isLaunchable = pm.getLaunchIntentForPackage(pkg.packageName) != null,
+                                isLaunchable = pm.getLaunchIntentForPackage(
+                                    pkg.packageName
+                                ) != null
                             )
                         }
                     }.sortedBy { it.name.lowercase() }
@@ -101,9 +99,7 @@ class AppViewModel(
     }
 }
 
-class AppViewModelFactory(
-    private val context: Context,
-) : ViewModelProvider.Factory {
+class AppViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T = AppViewModel(context) as T
 }
@@ -159,7 +155,10 @@ fun HistoryScreen() {
                         FilterMode.USER -> !app.isSystem
                     }
                 val q = searchQuery.trim().lowercase()
-                val passSearch = q.isEmpty() || app.name.lowercase().contains(q) || app.packageName.lowercase().contains(q)
+                val passSearch =
+                    q.isEmpty() ||
+                        app.name.lowercase().contains(q) ||
+                        app.packageName.lowercase().contains(q)
                 passFilter && passSearch
             }
     }
@@ -174,7 +173,7 @@ fun HistoryScreen() {
                             onValueChange = { searchQuery = it },
                             placeholder = { Text(stringResource(R.string.search_hint)) },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
+                            singleLine = true
                         )
                     } else {
                         Text(stringResource(filterMode.labelRes))
@@ -207,29 +206,38 @@ fun HistoryScreen() {
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(Icons.Default.FilterList, contentDescription = null)
                         }
-                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenu(expanded = menuExpanded, onDismissRequest = {
+                            menuExpanded =
+                                false
+                        }) {
                             FilterMode.values().forEach { mode ->
                                 DropdownMenuItem(
                                     text = { Text(stringResource(mode.labelRes)) },
                                     onClick = {
                                         filterMode = mode
                                         menuExpanded = false
-                                    },
+                                    }
                                 )
                             }
                         }
                     }
-                },
+                }
             )
-        },
+        }
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentAlignment = Alignment.Center
+        ) {
             if (!viewModel.isLoaded) {
                 CircularProgressIndicator()
             } else if (apps.isEmpty()) {
                 Text(stringResource(R.string.no_app_found))
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
                     items(apps, key = { it.packageName }) { app ->
                         ListItem(
                             headlineContent = { Text(app.name) },
@@ -240,7 +248,7 @@ fun HistoryScreen() {
                                 }
                             },
                             leadingContent = { AppIcon(app.packageName) },
-                            modifier = Modifier.clickable { },
+                            modifier = Modifier.clickable { }
                         )
                         HorizontalDivider()
                     }

@@ -5,32 +5,28 @@ plugins {
     alias(libs.plugins.jlleitschuh.ktlint)
 }
 
-fun getGitOutput(
-    vararg args: String,
-    fallback: String,
-): String =
-    try {
-        val process =
-            ProcessBuilder(*args)
-                .redirectErrorStream(true)
-                .start()
+fun getGitOutput(vararg args: String, fallback: String): String = try {
+    val process =
+        ProcessBuilder(*args)
+            .redirectErrorStream(true)
+            .start()
 
-        val text =
-            process.inputStream
-                .bufferedReader()
-                .readText()
-                .trim()
+    val text =
+        process.inputStream
+            .bufferedReader()
+            .readText()
+            .trim()
 
-        if (text.contains("fatal") || text.contains("not a git repository", ignoreCase = true)) {
-            fallback
-        } else {
-            text
-                .replace("[^a-zA-Z0-9._-]".toRegex(), "")
-                .ifEmpty { fallback }
-        }
-    } catch (_: Exception) {
+    if (text.contains("fatal") || text.contains("not a git repository", ignoreCase = true)) {
         fallback
+    } else {
+        text
+            .replace("[^a-zA-Z0-9._-]".toRegex(), "")
+            .ifEmpty { fallback }
     }
+} catch (_: Exception) {
+    fallback
+}
 
 fun getGitCommitCount(): Int {
     val text = getGitOutput("git", "rev-list", "--count", "HEAD", fallback = "1")
@@ -95,7 +91,7 @@ android {
                     listOf(
                         "-DANDROID_STL=c++_shared",
                         "-DANDROID_PLATFORM=android-26",
-                        "-DCMAKE_CXX_FLAGS=-Os -flto",
+                        "-DCMAKE_CXX_FLAGS=-Os -flto"
                     )
             }
         }
@@ -107,7 +103,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
+                "proguard-rules.pro"
             )
 
             signingConfig = signingConfigs.getByName("release_sig")
@@ -154,7 +150,7 @@ android {
             pickFirsts +=
                 listOf(
                     "lib/arm64-v8a/libc++_shared.so",
-                    "lib/x86_64/libc++_shared.so",
+                    "lib/x86_64/libc++_shared.so"
                 )
         }
         resources {

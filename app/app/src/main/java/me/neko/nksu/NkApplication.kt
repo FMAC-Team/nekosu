@@ -3,10 +3,10 @@ package me.neko.nksu
 import android.app.Application
 import android.os.Process
 import android.util.Log
+import kotlin.system.exitProcess
 import me.neko.nksu.R
 import me.neko.nksu.ui.util.CrashHandler
 import me.neko.nksu.util.SigCheck
-import kotlin.system.exitProcess
 
 class NkApplication : Application() {
     override fun onCreate() {

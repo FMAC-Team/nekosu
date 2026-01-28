@@ -10,7 +10,7 @@ import okhttp3.Request
 
 data class GitHubRelease(
     @param:Json(name = "tag_name") val tagName: String,
-    @param:Json(name = "name") val releaseName: String,
+    @param:Json(name = "name") val releaseName: String
 )
 
 object UpdateChecker {
@@ -20,37 +20,33 @@ object UpdateChecker {
             .Builder()
             .add(
                 com.squareup.moshi.kotlin.reflect
-                    .KotlinJsonAdapterFactory(),
+                    .KotlinJsonAdapterFactory()
             ).build()
     private val adapter = moshi.adapter(GitHubRelease::class.java)
 
-    suspend fun fetchLatestVersion(
-        owner: String,
-        repo: String,
-    ): String? =
-        withContext(Dispatchers.IO) {
-            try {
-                val resp =
-                    client
-                        .newCall(
-                            Request
-                                .Builder()
-                                .url("https://api.github.com/repos/$owner/$repo/releases/latest")
-                                .header("User-Agent", "MyApp/1.0") // 避免 403
-                                .build(),
-                        ).execute()
+    suspend fun fetchLatestVersion(owner: String, repo: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val resp =
+                client
+                    .newCall(
+                        Request
+                            .Builder()
+                            .url("https://api.github.com/repos/$owner/$repo/releases/latest")
+                            .header("User-Agent", "MyApp/1.0") // 避免 403
+                            .build()
+                    ).execute()
 
-                if (!resp.isSuccessful) return@withContext null
+            if (!resp.isSuccessful) return@withContext null
 
-                val body =
-                    resp.body.string().also {
-                        Log.d("UpdateCheck", "GitHub raw JSON: $it")
-                    }
+            val body =
+                resp.body.string().also {
+                    Log.d("UpdateCheck", "GitHub raw JSON: $it")
+                }
 
-                adapter.fromJson(body)?.releaseName
-            } catch (e: Exception) {
-                Log.e("UpdateCheck", "Error checking update", e)
-                null
-            }
+            adapter.fromJson(body)?.releaseName
+        } catch (e: Exception) {
+            Log.e("UpdateCheck", "Error checking update", e)
+            null
         }
+    }
 }

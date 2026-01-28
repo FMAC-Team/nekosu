@@ -45,52 +45,57 @@ fun SettingsScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
-                scrollBehavior = scrollBehavior,
+                scrollBehavior = scrollBehavior
             )
         },
-        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
+        )
     ) { innerPadding ->
         Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
             ListItem(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            navController.navigate("about")
-                        },
+                Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        navController.navigate("about")
+                    },
                 leadingContent = {
                     Icon(
                         imageVector = Icons.Outlined.Info,
-                        contentDescription = null,
+                        contentDescription = null
                     )
                 },
                 headlineContent = {
                     Text(
                         text = stringResource(R.string.about),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleMedium
                     )
-                },
+                }
             )
 
             ListItem(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            LogUtils.exportLogs(mContext) // 调用导出逻辑
-                        },
+                Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        LogUtils.exportLogs(mContext) // 调用导出逻辑
+                    },
                 leadingContent = { Icon(Icons.Outlined.BugReport, contentDescription = null) },
                 headlineContent = {
-                    Text(text = stringResource(R.string.export_log), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = stringResource(R.string.export_log),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 },
                 supportingContent = {
                     Text(stringResource(R.string.export_log_describe))
-                },
+                }
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -102,6 +107,6 @@ fun SettingsScreen(navController: NavController) {
 @Composable
 fun SettingsScreenPreview() {
     SettingsScreen(
-        navController = rememberNavController(),
+        navController = rememberNavController()
     )
 }
