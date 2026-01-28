@@ -13,6 +13,7 @@
 #include <linux/anon_inodes.h>
 #include <linux/file.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include <fmac.h>
 
 static char *shared_buffer;
