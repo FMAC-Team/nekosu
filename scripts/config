@@ -19,11 +19,12 @@ for srcfile in "$SRC_DIR"/*.c; do
     rpath_src=$(realpath "$srcfile")
 
     cat > "$tmpmake" <<EOF
-CC ?= gcc
-CFLAGS ?= -Wall -Werror -I. -I$(KDIR)/include
+KDIR := $(KDIR)
+MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+IDIR := $(MDIR)/include
 
-all:
-	\$(CC) \$(CFLAGS) -fsyntax-only $rpath_src
+all: configure
+	make -C $(KDIR) M=$(MDIR) modules 
 EOF
 
     if make -C "$tmpdir" >/dev/null 2>&1; then
