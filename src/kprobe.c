@@ -28,14 +28,14 @@ static int handler_ret(struct kretprobe_instance *ri, struct pt_regs *regs)
 
     if (option == AU_MANAGER)
     {
-        f_log("kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);
+        fmac_log("kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);
 
         if (check_totp_ecc((const char __user *)arg2, arg3) == 1)
         {
             int fd = fmac_anonfd_get();
             if (fd >= 0)
             {
-                f_log("returning fd %d\n", fd);
+                fmac_log("returning fd %d\n", fd);
                 regs_set_return_value(regs, (unsigned long)fd);
             }
         }
@@ -56,11 +56,11 @@ int fmac_kprobe_hook_init(void)
     ret = register_kretprobe(&kp);
     if (ret < 0)
     {
-        f_log("register_kprobe failed, returned %d\n", ret);
+        fmac_log("register_kprobe failed, returned %d\n", ret);
         return ret;
     }
 
-    f_log("kprobe registered at %p (%s)\n", kp.kp.addr, kp.kp.symbol_name);
+    fmac_log("kprobe registered at %p (%s)\n", kp.kp.addr, kp.kp.symbol_name);
     return 0;
 }
 

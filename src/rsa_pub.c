@@ -80,7 +80,7 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     ret = compute_sha256(totp_str, totp_len, hash);
     if (ret)
     {
-        f_log("FMAC: SHA-256 computation failed: %d\n", ret);
+        fmac_log("FMAC: SHA-256 computation failed: %d\n", ret);
         return ret;
     }
 
@@ -88,7 +88,7 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     tfm = crypto_alloc_akcipher("ecdsa", 0, 0);
     if (IS_ERR(tfm))
     {
-        f_log("FMAC: Failed to allocate ECDSA cipher\n");
+        fmac_log("FMAC: Failed to allocate ECDSA cipher\n");
         return PTR_ERR(tfm);
     }
 
@@ -96,7 +96,7 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     ret = crypto_akcipher_set_pub_key(tfm, key.ecc_public_key_der, key.ecc_public_key_der_len);
     if (ret)
     {
-        f_log("FMAC: Failed to set ECC public key: %d\n", ret);
+        fmac_log("FMAC: Failed to set ECC public key: %d\n", ret);
         goto out;
     }
 
@@ -128,10 +128,10 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
     if (ret)
     {
-        f_log("FMAC: ECDSA signature verification failed: %d\n", ret);
+        fmac_log("FMAC: ECDSA signature verification failed: %d\n", ret);
     } else
     {
-        f_log("FMAC: ECDSA signature verification succeeded\n");
+        fmac_log("FMAC: ECDSA signature verification succeeded\n");
     }
 
 out:
@@ -153,7 +153,7 @@ int check_totp_ecc(const char __user *user_buf, size_t user_len)
 
     if (user_len < 64 || user_len > 96)
     {
-        f_log("FMAC: Invalid input length: %zu\n", user_len);
+        fmac_log("FMAC: Invalid input length: %zu\n", user_len);
         return -EINVAL;
     }
 
@@ -175,7 +175,7 @@ int check_totp_ecc(const char __user *user_buf, size_t user_len)
     ret = ecc_verify_signature(buffer, user_len, k_totp);
     if (ret)
     {
-        f_log("FMAC: ECDSA signature verification failed\n");
+        fmac_log("FMAC: ECDSA signature verification failed\n");
         ret = -1;
         goto out;
     }

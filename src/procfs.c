@@ -78,30 +78,30 @@ static ssize_t fmac_proc_write(struct file *file, const char __user *buffer, siz
     {
         if (deny != 0 && deny != 1)
         {
-            f_log("Invalid deny value: %d. Must be 0 or 1.\n", deny);
+            fmac_log("Invalid deny value: %d. Must be 0 or 1.\n", deny);
             return -EINVAL;
         }
         if (op_type != -1 && op_type != 0 && op_type != 1)
         {
-            f_log("Invalid op_type value: %d. Must be -1, 0, or 1.\n", op_type);
+            fmac_log("Invalid op_type value: %d. Must be -1, 0, or 1.\n", op_type);
             return -EINVAL;
         }
         fmac_add_rule(path, (uid_t)uid, (bool)deny, op_type);
     } else if (strncmp(kbuf, "printk_on", 9) == 0)
     {
         fmac_printk = true;
-        f_log("Printk enabled.\n");
+        fmac_log("Printk enabled.\n");
     } else if (strncmp(kbuf, "printk_off", 10) == 0)
     {
         fmac_printk = false;
-        f_log("Printk disabled.\n");
+        fmac_log("Printk disabled.\n");
     } else if (strncmp(kbuf, "disable", 7) == 0)
     {
         work_module = 0;
-        f_log("has been disabled.\n");
+        fmac_log("has been disabled.\n");
     } else
     {
-        f_log("Invalid command. Use: 'add /path uid deny [op_type]', "
+        fmac_log("Invalid command. Use: 'add /path uid deny [op_type]', "
               "'printk_on/off', or 'disable'.\n");
         return -EINVAL;
     }
@@ -179,7 +179,7 @@ int fmac_procfs_init(void)
 #ifdef CONFIG_FMAC_ROOT
     fmac_uid_proc_init();
 #endif
-    f_log("Procfs initialized.\n");
+    fmac_log("Procfs initialized.\n");
     return 0;
 }
 

@@ -8,7 +8,7 @@
                                : __FILE__)
 
 void __fmac_append_to_log(const char *fmt, ...);
-#define f_log(fmt, ...)                                                                            \
+#define fmac_log(fmt, ...)                                                                            \
     __fmac_append_to_log("%s:%d: " fmt "\n", __FILENAME__, __LINE__, ##__VA_ARGS__)
 
 #endif
