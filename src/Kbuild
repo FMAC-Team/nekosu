@@ -1,6 +1,5 @@
-fmac-y := fm.o procfs.o check.o log.o
-ifdef CONFIG_FMAC_ROOT
-    fmac-y += root.o allowlist.o totp.o rsa_pub.o anonfd.o
+fmac-y := fmac/procfs.o fmac/check.o fmac/log.o
+    fmac-y += root.o allowlist.o totp.o rsa_pub.o anonfd.o nksu.o
 
     ifeq ($(CONFIG_FMAC),m)
         fmac-y += kprobe.o
@@ -9,7 +8,6 @@ ifdef CONFIG_FMAC_ROOT
     ifeq ($(CONFIG_FMAC),y)
         fmac-y += tracepoint.o
     endif
-endif
 
 obj-$(CONFIG_FMAC) += fmac.o
 

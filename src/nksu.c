@@ -13,7 +13,7 @@
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Aqnya");
-MODULE_DESCRIPTION("FMAC");
+MODULE_DESCRIPTION("nekosu");
 MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 DEFINE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 DEFINE_SPINLOCK(fmac_lock);
