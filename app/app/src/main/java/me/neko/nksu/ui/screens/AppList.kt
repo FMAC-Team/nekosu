@@ -75,19 +75,22 @@ class AppViewModel(private val context: Context) : ViewModel() {
             }
 
             val pm = context.packageManager
-            val installed = pm.getInstalledPackages(PackageManager.GET_META_DATA)
-                .mapNotNull { pkg ->
-                    pkg.applicationInfo?.let { ai ->
-                        AppInfo(
-                            name = ai.loadLabel(pm).toString(),
-                            packageName = pkg.packageName,
-                            uid = ai.uid,
-                            isSystem = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
-                            isLaunchable = pm.getLaunchIntentForPackage(pkg.packageName) != null
-                        )
-                    }
-                }
-                .sortedBy { it.name.lowercase() }
+            val installed =
+                pm
+                    .getInstalledPackages(PackageManager.GET_META_DATA)
+                    .mapNotNull { pkg ->
+                        pkg.applicationInfo?.let { ai ->
+                            AppInfo(
+                                name = ai.loadLabel(pm).toString(),
+                                packageName = pkg.packageName,
+                                uid = ai.uid,
+                                isSystem = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
+                                isLaunchable = pm.getLaunchIntentForPackage(
+                                    pkg.packageName
+                                ) != null
+                            )
+                        }
+                    }.sortedBy { it.name.lowercase() }
 
             allApps = installed
             isLoaded = true
@@ -105,13 +108,17 @@ class AppViewModelFactory(private val context: Context) : ViewModelProvider.Fact
 fun AppIcon(packageName: String) {
     val context = LocalContext.current
     val iconBitmap by produceState<ImageBitmap?>(null, packageName) {
-        value = withContext(Dispatchers.IO) {
-            try {
-                context.packageManager.getApplicationIcon(packageName).toBitmap().asImageBitmap()
-            } catch (e: Exception) {
-                null
+        value =
+            withContext(Dispatchers.IO) {
+                try {
+                    context.packageManager
+                        .getApplicationIcon(packageName)
+                        .toBitmap()
+                        .asImageBitmap()
+                } catch (e: Exception) {
+                    null
+                }
             }
-        }
     }
 
     if (iconBitmap != null) {
@@ -138,17 +145,22 @@ fun HistoryScreen() {
     }
 
     LaunchedEffect(viewModel.allApps, filterMode, searchQuery) {
-        apps = viewModel.allApps.filter { app ->
-            val passFilter = when (filterMode) {
-                FilterMode.ALL -> true
-                FilterMode.LAUNCHABLE -> app.isLaunchable
-                FilterMode.SYSTEM -> app.isSystem
-                FilterMode.USER -> !app.isSystem
+        apps =
+            viewModel.allApps.filter { app ->
+                val passFilter =
+                    when (filterMode) {
+                        FilterMode.ALL -> true
+                        FilterMode.LAUNCHABLE -> app.isLaunchable
+                        FilterMode.SYSTEM -> app.isSystem
+                        FilterMode.USER -> !app.isSystem
+                    }
+                val q = searchQuery.trim().lowercase()
+                val passSearch =
+                    q.isEmpty() ||
+                        app.name.lowercase().contains(q) ||
+                        app.packageName.lowercase().contains(q)
+                passFilter && passSearch
             }
-            val q = searchQuery.trim().lowercase()
-            val passSearch = q.isEmpty() || app.name.lowercase().contains(q) || app.packageName.lowercase().contains(q)
-            passFilter && passSearch
-        }
     }
 
     Scaffold(
@@ -194,7 +206,10 @@ fun HistoryScreen() {
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(Icons.Default.FilterList, contentDescription = null)
                         }
-                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenu(expanded = menuExpanded, onDismissRequest = {
+                            menuExpanded =
+                                false
+                        }) {
                             FilterMode.values().forEach { mode ->
                                 DropdownMenuItem(
                                     text = { Text(stringResource(mode.labelRes)) },
@@ -210,13 +225,19 @@ fun HistoryScreen() {
             )
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentAlignment = Alignment.Center
+        ) {
             if (!viewModel.isLoaded) {
                 CircularProgressIndicator()
             } else if (apps.isEmpty()) {
                 Text(stringResource(R.string.no_app_found))
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
                     items(apps, key = { it.packageName }) { app ->
                         ListItem(
                             headlineContent = { Text(app.name) },

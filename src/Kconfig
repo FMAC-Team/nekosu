@@ -19,6 +19,13 @@ config FMAC_ROOT
 	default y
 	help
 	  Enable FMAC root feature.
+	  
+config FMAC_ROOT_KPROBE
+	bool "FMAC ROOT feature by KPROBE"
+	depends on KRETPROBES && FMAC_ROOT
+	default y
+	help
+	  Enable FMAC root feature by kprobe.
 
 config FMAC_ROOT_TRACEPOINT
 	bool "FMAC ROOT feature by tracepoint"

@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Nekosu</string>
+    <string name="all_app">全部应用</string>
+    <string name="can_launch_app">可用应用</string>
+    <string name="system_app">系统应用</string>
+    <string name="user_app">用户应用</string>
+
+    <string name="search">搜索</string>
+    <string name="filter">过滤</string>
+    <string name="export_log">导出调试日志</string>
+    <string name="export_log_describe">收集系统日志用于故障排查</string>
+    <string name="close_search">关闭</string>
+    <string name="search_hint">搜索应用或包名</string>
+    <string name="no_app_found">未找到应用</string>
+    <string name="sig_check_failed">
+        签名校验失败，可能被篡改或非官方应用，退出
+    </string>
+    <string name="settings_title">设置</string>
+    <string name="about">关于</string>
+    <string name="dialog_key_title">设置密钥</string>
+    <string name="dialog_key_desc">请输入密钥</string>
+    <string name="dialog_key_label">密钥</string>
+    <string name="dialog_key_error">密钥不允许为空</string>
+    <string name="dialog_key_save">保存</string>
+    <string name="dialog_key_later">稍候设置</string>
+    <string name="dialog_key_please_input">请输入 OpenSSL 生成的椭圆曲线私钥 (PEM 格式):</string>
+     <string name="dialog_key_set">配置 ECC 密钥</string>
+    <string name="dialog_key_input_no_empty">错误：密钥不能为空</string>
+        <string name="dialog_key_input_invalid">错误：无效密钥格式</string>
+</resources>

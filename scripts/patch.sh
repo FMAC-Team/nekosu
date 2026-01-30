@@ -15,7 +15,6 @@ TARGET_DIR="$KERNEL_DIR/drivers/fmac"
 KCONFIG="$KERNEL_DIR/drivers/Kconfig"
 MAKEFILE="$KERNEL_DIR/drivers/Makefile"
 
-
 print_info() {
     echo -e "\033[1;32m[INFO]\033[0m $*"
 }
@@ -34,7 +33,6 @@ check_kernel_tree() {
         exit 1
     }
 }
-
 
 apply_version_patches() {
     local MAJOR MINOR PATCHFILES
@@ -65,7 +63,6 @@ apply_version_patches() {
         print_warn "No patches found for kernel $MAJOR.$MINOR in $PATCH_DIR"
     fi
 }
-
 
 install_patch() {
     check_kernel_tree

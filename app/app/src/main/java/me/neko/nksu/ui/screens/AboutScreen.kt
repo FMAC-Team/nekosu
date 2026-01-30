@@ -56,26 +56,25 @@ import me.neko.nksu.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutScreen(
-    navController: NavHostController
-) {
+fun AboutScreen(navController: NavHostController) {
     val scrollBehavior = pinnedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
     val isInPreview = LocalInspectionMode.current
-    val versionName = remember(context, isInPreview) {
-        if (isInPreview) {
-            "预览版"
-        } else {
-            try {
-                context.packageManager
-                    .getPackageInfo(context.packageName, 0)
-                    .versionName
-                    ?: "未知版本"
-            } catch (_: PackageManager.NameNotFoundException) {
-                "未知版本"
+    val versionName =
+        remember(context, isInPreview) {
+            if (isInPreview) {
+                "预览版"
+            } else {
+                try {
+                    context.packageManager
+                        .getPackageInfo(context.packageName, 0)
+                        .versionName
+                        ?: "未知版本"
+                } catch (_: PackageManager.NameNotFoundException) {
+                    "未知版本"
+                }
             }
         }
-    }
 
     Scaffold(
         topBar = {
@@ -92,11 +91,13 @@ fun AboutScreen(
                 scrollBehavior = scrollBehavior
             )
         },
-        contentWindowInsets = WindowInsets.safeDrawing
+        contentWindowInsets =
+        WindowInsets.safeDrawing
             .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
+            modifier =
+            Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -109,14 +110,16 @@ fun AboutScreen(
 
             item {
                 val context = LocalContext.current
-                val icon = remember {
-                    val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher)!!
-                    BitmapPainter(drawable.toBitmap().asImageBitmap())
-                }
+                val icon =
+                    remember {
+                        val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher)!!
+                        BitmapPainter(drawable.toBitmap().asImageBitmap())
+                    }
                 Image(
                     painter = icon,
                     contentDescription = null,
-                    modifier = Modifier
+                    modifier =
+                    Modifier
                         .size(90.dp)
                         .clip(RoundedCornerShape(16.dp))
                 )
@@ -138,32 +141,35 @@ fun AboutScreen(
             item {
                 Text(
                     text = "版本: $versionName",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             item {
                 HorizontalDivider(
-                    modifier = Modifier
+                    modifier =
+                    Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 32.dp, vertical = 24.dp),
-                    thickness = DividerDefaults.Thickness, color = DividerDefaults.color
+                    thickness = DividerDefaults.Thickness,
+                    color = DividerDefaults.color
                 )
             }
 
             item {
                 val context = LocalContext.current
                 Row(
-                    modifier = Modifier
+                    modifier =
+                    Modifier
                         .fillMaxWidth()
                         .clickable {
-                            val intent = Intent(
-                                Intent.ACTION_VIEW,
-                                "https://github.com/aqnya/nekosu".toUri()
-                            )
+                            val intent =
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://github.com/aqnya/nekosu".toUri()
+                                )
                             context.startActivity(intent)
-                        }
-                        .padding(16.dp),
+                        }.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -189,12 +195,12 @@ fun AboutScreen(
             item {
                 Column {
                     Row(
-                        modifier = Modifier
+                        modifier =
+                        Modifier
                             .fillMaxWidth()
                             .clickable {
                                 navController.navigate("open_source")
-                            }
-                            .padding(16.dp),
+                            }.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(

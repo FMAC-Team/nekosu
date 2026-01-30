@@ -36,9 +36,7 @@ static int fmac_uids_show(struct seq_file *m, void *v)
     }
 
     if (!first)
-    {
         seq_puts(m, "\n");
-    }
 
     return 0;
 }
@@ -53,15 +51,11 @@ static ssize_t proc_write(struct file *file, const char __user *buf, size_t coun
     char *kbuf, *tok, *p;
 
     if (count == 0 || count > 1024)
-    {
         return -EINVAL;
-    }
 
     kbuf = memdup_user_nul(buf, count);
     if (IS_ERR(kbuf))
-    {
         return PTR_ERR(kbuf);
-    }
 
     tok = strstrip(kbuf);
 
@@ -71,20 +65,14 @@ static ssize_t proc_write(struct file *file, const char __user *buf, size_t coun
         kuid_t uid;
 
         if (*p == '\0')
-        {
             continue;
-        }
 
         if (kstrtouint(p, 10, &id) < 0)
-        {
             continue;
-        }
 
         uid = make_kuid(&init_user_ns, id);
         if (!uid_valid(uid))
-        {
             continue;
-        }
 
         xa_store(&fmac_uid_xa, id, xa_mk_value(id), GFP_KERNEL);
     }
@@ -93,7 +81,7 @@ static ssize_t proc_write(struct file *file, const char __user *buf, size_t coun
     return count;
 }
 
-#ifdef FMAC_USE_PROC_OPS
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 static const struct proc_ops fmac_uid_proc_ops = {
     .proc_open = fmac_uid_open,
     .proc_read = seq_read,
@@ -111,6 +99,25 @@ static const struct file_operations fmac_uid_proc_ops = {
     .release = single_release,
 };
 #endif
+
+int nksu_add_uid(int uid)
+{
+    void *ret;
+    xa_lock(&fmac_uid_xa);
+    if (xa_load(&fmac_uid_xa, uid))
+    {
+        xa_unlock(&fmac_uid_xa);
+        return -EEXIST;
+    }
+
+    ret = xa_store(&fmac_uid_xa, uid, xa_mk_value(uid), GFP_KERNEL);
+    xa_unlock(&fmac_uid_xa);
+    
+    if (IS_ERR(ret))
+        return PTR_ERR(ret);
+
+    return 0;
+}
 
 int fmac_uid_proc_init(void)
 {

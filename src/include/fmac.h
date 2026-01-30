@@ -16,21 +16,14 @@
 
 #include "init.h"
 #include "op_code.h"
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-    #define FMAC_USE_PROC_OPS
-#endif
+#include "anonfd.h"
+#include "allowlist.h"
+#include "log.h"
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)
 #define FMAC_HASH_BITS 8
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
-
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : \
-                     strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
-
-void __fmac_append_to_log(const char *fmt, ...);
-#define f_log(fmt, ...) __fmac_append_to_log("%s:%d: " fmt "\n", __FILENAME__, __LINE__, ##__VA_ARGS__)
 
 enum fmac_op_type
 {
@@ -66,7 +59,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
 int transive_to_domain(const char *domain);
 
 // totp.c
-u32 generate_totp(const u8 *key, int key_len);
+u32 generate_totp_base32(const char *base32_secret);
 
 // rsa_pub.c
 int check_totp_ecc(const char __user *user_buf, size_t user_len);

@@ -28,6 +28,46 @@ static u64 get_kernel_current_time(void)
 #endif
 }
 
+static int base32_char_val(char c)
+{
+    if (c >= 'A' && c <= 'Z')
+        return c - 'A';
+    if (c >= 'a' && c <= 'z')
+        return c - 'a';
+    if (c >= '2' && c <= '7')
+        return c - '2' + 26;
+    return -1;
+}
+
+static int base32_decode(const char *encoded, u8 *out, int out_len)
+{
+    int buffer = 0;
+    int bits_left = 0;
+    int count = 0;
+    int val;
+
+    while (*encoded && *encoded != '=')
+    {
+        val = base32_char_val(*encoded++);
+        if (val < 0)
+            continue;
+
+        buffer = (buffer << 5) | val;
+        bits_left += 5;
+
+        if (bits_left >= 8)
+        {
+            if (count >= out_len)
+                return -EINVAL;
+
+            out[count++] = (buffer >> (bits_left - 8)) & 0xFF;
+            bits_left -= 8;
+        }
+    }
+
+    return count;
+}
+
 static int calc_hmac_sha1(const u8 *key, int key_len, const u8 *data, int data_len, u8 *output)
 {
     struct crypto_shash *tfm;
@@ -64,7 +104,7 @@ out:
     return ret;
 }
 
-u32 generate_totp(const u8 *key, int key_len)
+static u32 generate_totp(const u8 *key, int key_len)
 {
     u64 current_time;
     u64 time_counter;
@@ -94,4 +134,19 @@ u32 generate_totp(const u8 *key, int key_len)
     otp = binary % 1000000;
 
     return otp;
+}
+
+u32 generate_totp_base32(const char *base32_secret)
+{
+    u8 key[64];
+    int key_len;
+
+    key_len = base32_decode(base32_secret, key, sizeof(key));
+    if (key_len <= 0)
+    {
+        printk(KERN_ERR "TOTP: Base32 decode failed\n");
+        return 0;
+    }
+
+    return generate_totp(key, key_len);
 }

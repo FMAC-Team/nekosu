@@ -2,25 +2,30 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.jlleitschuh.ktlint)
 }
 
-fun getGitOutput(vararg args: String, fallback: String): String {
-    return try {
-        val process = ProcessBuilder(*args)
+fun getGitOutput(vararg args: String, fallback: String): String = try {
+    val process =
+        ProcessBuilder(*args)
             .redirectErrorStream(true)
             .start()
 
-        val text = process.inputStream.bufferedReader().readText().trim()
+    val text =
+        process.inputStream
+            .bufferedReader()
+            .readText()
+            .trim()
 
-        if (text.contains("fatal") || text.contains("not a git repository", ignoreCase = true)) {
-            fallback
-        } else {
-            text.replace("[^a-zA-Z0-9._-]".toRegex(), "")
-                .ifEmpty { fallback }
-        }
-    } catch (_: Exception) {
+    if (text.contains("fatal") || text.contains("not a git repository", ignoreCase = true)) {
         fallback
+    } else {
+        text
+            .replace("[^a-zA-Z0-9._-]".toRegex(), "")
+            .ifEmpty { fallback }
     }
+} catch (_: Exception) {
+    fallback
 }
 
 fun getGitCommitCount(): Int {
@@ -28,10 +33,20 @@ fun getGitCommitCount(): Int {
     return text.toIntOrNull() ?: 1
 }
 
-fun getGitShortHash(): String {
-    return getGitOutput("git", "rev-parse", "--short", "HEAD", fallback = "unknown")
-}
+fun getGitShortHash(): String = getGitOutput("git", "rev-parse", "--short", "HEAD", fallback = "unknown")
 
+ktlint {
+    android.set(true)
+    ignoreFailures.set(false)
+    reporters {
+        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)
+    }
+    filter {
+        exclude("**/generated/**")
+        include("src/**/*.kt")
+        include("*.kts")
+    }
+}
 
 android {
     namespace = "me.neko.nksu"
@@ -50,34 +65,34 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
-        
+
         signingConfigs {
-         create("debug_sig") {
-            storeFile=file("testkeys/debug.keystore") 
-            storePassword="android"
-            keyAlias="androiddebugkey"
-            keyPassword="android"
+            create("debug_sig") {
+                storeFile = file("testkeys/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+            create("release_sig") {
+                storeFile = file("testkeys/release.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
         }
-        create("release_sig") {
-            storeFile=file("testkeys/release.keystore") 
-            storePassword="android"
-            keyAlias="androiddebugkey"
-            keyPassword="android"
-        }
-       }
 
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++17"
-                arguments += listOf(
-                    "-DANDROID_STL=c++_shared",
-                    "-DANDROID_PLATFORM=android-26",
-                    "-DCMAKE_CXX_FLAGS=-Os -flto"
-                )
+                arguments +=
+                    listOf(
+                        "-DANDROID_STL=c++_shared",
+                        "-DANDROID_PLATFORM=android-26",
+                        "-DCMAKE_CXX_FLAGS=-Os -flto"
+                    )
             }
         }
     }
@@ -90,8 +105,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            
-            signingConfig = signingConfigs.getByName("release_sig") 
+
+            signingConfig = signingConfigs.getByName("release_sig")
 
             ndk {
                 debugSymbolLevel = "FULL"
@@ -99,18 +114,17 @@ android {
         }
 
         debug {
-        signingConfig = signingConfigs.getByName("debug_sig") 
+            signingConfig = signingConfigs.getByName("debug_sig")
             ndk {
                 debugSymbolLevel = "FULL"
             }
         }
     }
 
-
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-           // version = "3.22.1"
+            version = "4.1.2"
         }
     }
 
@@ -133,10 +147,11 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
-            pickFirsts += listOf(
-                "lib/arm64-v8a/libc++_shared.so",
-                "lib/x86_64/libc++_shared.so"
-            )
+            pickFirsts +=
+                listOf(
+                    "lib/arm64-v8a/libc++_shared.so",
+                    "lib/x86_64/libc++_shared.so"
+                )
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -149,11 +164,11 @@ android {
             if (this is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
                 val config = project.android.defaultConfig
                 val versionName = config.versionName
-                this.outputFileName = "Nekosu_v${versionName}.apk"
+                this.outputFileName = "Nekosu_v$versionName.apk"
             }
         }
     }
- //   ndkVersion = "27.1.12297006"
+    ndkVersion = "29.0.14206865"
 }
 
 dependencies {
@@ -172,7 +187,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
-    
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

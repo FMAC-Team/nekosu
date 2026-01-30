@@ -48,18 +48,18 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
 
     if (option == CODE_AUTH)
     {
-        f_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
+        fmac_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
         auth_ret = check_totp_ecc((const char __user *)arg2, arg3);
 
         if (auth_ret == 1)
         {
-            f_log("FMAC: >>> AUTH SUCCESS <<<\n");
+            fmac_log("FMAC: >>> AUTH SUCCESS <<<\n");
             elevate_to_root();
         }
     }
 }
 
-int fmac_hook_init(void)
+int fmac_tp_hook_init(void)
 {
     int ret;
 

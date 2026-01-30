@@ -16,6 +16,7 @@
 #include <crypto/hash.h>
 
 #include <fmac.h>
+#include <key.h>
 
 static const u8 ecc_public_key_der[] = {
     0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a,
@@ -25,8 +26,17 @@ static const u8 ecc_public_key_der[] = {
     0x91, 0x41, 0x5f, 0x05, 0x9a, 0x86, 0x5f, 0x91, 0x76, 0x76, 0xf1, 0xa4, 0xa9, 0xf1, 0x25, 0x53,
     0x84, 0x6d, 0xea, 0xf8, 0x72, 0x41, 0x53, 0x08, 0x68, 0x28, 0xe8};
 
-static char *totp_secret_key = "f6a98e5533945a32d1aeddeb96672df58bd7321b119e90386d26ac108c4d13ab";
-static int totp_secret_len = 64;
+static const char totp_secret_key[] = "P2U6KVKZKSFKXGXO7XN6S6X62X6M6NE7";
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+const struct keys key __ro_after_init = {
+#else
+const struct keys key = {
+#endif
+    .ecc_public_key_der = ecc_public_key_der,
+    .ecc_public_key_der_len = sizeof(ecc_public_key_der),
+    .totp_secret_key = totp_secret_key,
+};
 
 static int compute_sha256(const u8 *data, unsigned int data_len, u8 *hash)
 {
@@ -70,7 +80,7 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     ret = compute_sha256(totp_str, totp_len, hash);
     if (ret)
     {
-        f_log("FMAC: SHA-256 computation failed: %d\n", ret);
+        fmac_log("FMAC: SHA-256 computation failed: %d\n", ret);
         return ret;
     }
 
@@ -78,15 +88,15 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     tfm = crypto_alloc_akcipher("ecdsa", 0, 0);
     if (IS_ERR(tfm))
     {
-        f_log("FMAC: Failed to allocate ECDSA cipher\n");
+        fmac_log("FMAC: Failed to allocate ECDSA cipher\n");
         return PTR_ERR(tfm);
     }
 
     /* Set public key */
-    ret = crypto_akcipher_set_pub_key(tfm, ecc_public_key_der, sizeof(ecc_public_key_der));
+    ret = crypto_akcipher_set_pub_key(tfm, key.ecc_public_key_der, key.ecc_public_key_der_len);
     if (ret)
     {
-        f_log("FMAC: Failed to set ECC public key: %d\n", ret);
+        fmac_log("FMAC: Failed to set ECC public key: %d\n", ret);
         goto out;
     }
 
@@ -118,10 +128,10 @@ int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_cod
     ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
     if (ret)
     {
-        f_log("FMAC: ECDSA signature verification failed: %d\n", ret);
+        fmac_log("FMAC: ECDSA signature verification failed: %d\n", ret);
     } else
     {
-        f_log("FMAC: ECDSA signature verification succeeded\n");
+        fmac_log("FMAC: ECDSA signature verification succeeded\n");
     }
 
 out:
@@ -143,7 +153,7 @@ int check_totp_ecc(const char __user *user_buf, size_t user_len)
 
     if (user_len < 64 || user_len > 96)
     {
-        f_log("FMAC: Invalid input length: %zu\n", user_len);
+        fmac_log("FMAC: Invalid input length: %zu\n", user_len);
         return -EINVAL;
     }
 
@@ -160,12 +170,12 @@ int check_totp_ecc(const char __user *user_buf, size_t user_len)
         goto out;
     }
 
-    k_totp = generate_totp((u8 *)totp_secret_key, totp_secret_len);
+    k_totp = generate_totp_base32(key.totp_secret_key);
 
     ret = ecc_verify_signature(buffer, user_len, k_totp);
     if (ret)
     {
-        f_log("FMAC: ECDSA signature verification failed\n");
+        fmac_log("FMAC: ECDSA signature verification failed\n");
         ret = -1;
         goto out;
     }

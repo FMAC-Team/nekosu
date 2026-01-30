@@ -30,22 +30,20 @@ fun CheckUpdate(owner: String, repo: String) {
     // --- 版本比较逻辑 ---
 
     /** 从版本字符串中去除前缀和连字符后的内容，仅保留数字部分。 */
-    fun stripSuffix(version: String): String =
-        version.trimStart('v', 'V').substringBefore('-')
+    fun stripSuffix(version: String): String = version.trimStart('v', 'V').substringBefore('-')
 
     /** 将版本字符串解析为三位整数列表 (Major, Minor, Patch)。 */
-    fun parseNumbers(version: String): List<Int> =
-        stripSuffix(version)
-            .split('.')
-            .map { it.toIntOrNull() ?: 0 }
-            .let {
-                when {
-                    it.size >= 3 -> it.take(3)
-                    it.size == 2 -> it + listOf(0)
-                    it.size == 1 -> it + listOf(0, 0)
-                    else -> listOf(0, 0, 0)
-                }
+    fun parseNumbers(version: String): List<Int> = stripSuffix(version)
+        .split('.')
+        .map { it.toIntOrNull() ?: 0 }
+        .let {
+            when {
+                it.size >= 3 -> it.take(3)
+                it.size == 2 -> it + listOf(0)
+                it.size == 1 -> it + listOf(0, 0)
+                else -> listOf(0, 0, 0)
             }
+        }
 
     /** 比较远程版本是否大于本地版本。 */
     fun isRemoteGreater(local: String, remote: String): Boolean {
@@ -78,17 +76,18 @@ fun CheckUpdate(owner: String, repo: String) {
             text = {
                 Text(
                     "当前版本：${BuildConfig.VERSION_NAME}\n" +
-                            "最新版本：$latestTag\n\n" +
-                            "针对你的牛牛进行了一些优化，是否前往 GitHub 下载？"
+                        "最新版本：$latestTag\n\n" +
+                        "针对你的牛牛进行了一些优化，是否前往 GitHub 下载？"
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     showUpdateDialog = false
-                    val intent = Intent(
-                        Intent.ACTION_VIEW,
-                        "https://github.com/$owner/$repo/releases/latest".toUri()
-                    )
+                    val intent =
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            "https://github.com/$owner/$repo/releases/latest".toUri()
+                        )
                     context.startActivity(intent)
                 }) { Text("去下载") }
             },
