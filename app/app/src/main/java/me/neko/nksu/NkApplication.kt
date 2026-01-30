@@ -10,13 +10,12 @@ import me.neko.nksu.util.SigCheck
 
 class NkApplication : Application() {
     override fun onCreate() {
+        CrashHandler.init(this)
         super.onCreate()
         if (!SigCheck.validate(this)) {
             Log.w("NkApplication", getString(R.string.sig_check_failed))
             Process.killProcess(Process.myPid())
             exitProcess(1)
         }
-        //      NotificationUtil.createChannel(this)
-        CrashHandler.init(this)
     }
 }
