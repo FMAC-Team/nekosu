@@ -1,5 +1,5 @@
 fmac-y := fmac/procfs.o fmac/check.o fmac/log.o
-    fmac-y += root.o allowlist.o totp.o rsa_pub.o anonfd.o nksu.o
+    fmac-y += root.o allowlist.o totp.o anonfd.o nksu.o
 
     ifeq ($(CONFIG_FMAC),m)
         fmac-y += kprobe.o

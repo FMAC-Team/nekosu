@@ -30,15 +30,15 @@ static int handler_ret(struct kretprobe_instance *ri, struct pt_regs *regs)
     {
         fmac_log("kprobe hit prctl! option=0x%lx, arg2=0x%lx\n", option, arg2);
 
-        if (check_totp_ecc((const char __user *)arg2, arg3) == 1)
-        {
+       /* if (check_totp_ecc((const char __user *)arg2, arg3) == 1)
+        {*/
             int fd = fmac_anonfd_get();
             if (fd >= 0)
             {
                 fmac_log("returning fd %d\n", fd);
                 regs_set_return_value(regs, (unsigned long)fd);
             }
-        }
+       // }
     }
 
     return 0;
