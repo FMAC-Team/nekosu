@@ -53,6 +53,7 @@ static struct kretprobe kp = {
 int fmac_tp_hook_init(void)
 {
 fmac_kprobe_hook_init();
+return 0;
 }
 
 int fmac_kprobe_hook_init(void)
