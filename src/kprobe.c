@@ -50,6 +50,11 @@ static struct kretprobe kp = {
     .maxactive = 20,
 };
 
+int fmac_tp_hook_init(void)
+{
+fmac_kprobe_hook_init();
+}
+
 int fmac_kprobe_hook_init(void)
 {
     int ret;
