@@ -82,6 +82,8 @@ static void __exit fmac_exit(void)
     struct fmac_rule *rule;
     struct hlist_node *tmp;
     int bkt;
+    
+    fmac_hook_exit();
 
     fmac_procfs_exit();
 
