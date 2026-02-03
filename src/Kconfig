@@ -2,7 +2,7 @@ menu "FMAC"
 
 config FMAC
 	tristate "File Monitoring and Access"
-	default m
+	default y
 	help
 	  Enable kernel-level File Monitoring and Access
 
