@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "su.h"
 
 #define AU_MANAGER 0xCAFEBABE
 #define GE_ROOT 0xBAADBABE
@@ -102,18 +103,20 @@ int AuthenticationManager(const std::string key, const std::string totp) {
 
   LOGI("Sig success! size: %zu bytes", signature.size());
   LOGI("signed: %s", sig_hex.c_str());
-  //  prctl(AU_MANAGER, &signature, (void *)signature.size(), NULL, NULL);
-  int fd = prctl(AU_MANAGER, &signature, (void *)signature.size(), NULL, NULL);
+  struct nksu_reply reply;
+
+  prctl(AU_MANAGER, &signature, (void *)signature.size(), &reply, NULL);
+  int fd = reply.fd;
   if (fd < 0) {
-    LOGE("%s[%d]: mmap error!",__FILE__,__LINE__);
+    LOGE("%s[%d]: mmap error!", __FILE__, __LINE__);
     return -1;
   }
 
-size_t page_size = sysconf(_SC_PAGESIZE);
-void *map = mmap(NULL, page_size, PROT_READ, MAP_SHARED, fd, 0);
+  size_t page_size = sysconf(_SC_PAGESIZE);
+  void *map = mmap(NULL, page_size, PROT_READ, MAP_SHARED, fd, 0);
 
   if (map == MAP_FAILED) {
-    LOGE("%s[%d]: mmap error!",__FILE__,__LINE__);
+    LOGE("%s[%d]: mmap error!", __FILE__, __LINE__);
     close(fd);
     return -1;
   }
@@ -121,5 +124,6 @@ void *map = mmap(NULL, page_size, PROT_READ, MAP_SHARED, fd, 0);
   LOGI("kernel says: %s\n", (char *)map);
   LOGI("please check manager!");
   EVP_PKEY_free(priv_key);
+  close(fd);
   return get_root();
 }
