@@ -20,7 +20,11 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     unsigned long args[6], option, arg2, arg3, arg4;
     int fd;
-    struct nksu_reply reply;
+    struct nksu_reply reply = {
+        .fd = fd,
+        .version = NKSU_API_VERSION,
+        .flags = 0,
+    };
 
     syscall_get_arguments(current, regs, args);
 
@@ -46,12 +50,6 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     fd = fmac_anonfd_get();
     if (fd < 0)
         return 0;
-
-    reply = {
-        .fd = fd,
-        .version = NKSU_API_VERSION,
-        .flags = 0,
-    };
 
     if (copy_to_user((void __user *)arg4, &reply, sizeof(reply)) == 0)
     {
