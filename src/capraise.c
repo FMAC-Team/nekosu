@@ -41,8 +41,7 @@ static int apply_selinux_domain(struct cred *new_cred, const char *domain)
         return -EINVAL;
 
     tsec = new_cred->security;
-    if (unlikely(!tsec))
-    {
+    if (unlikely(!tsec)) {
         fmac_log("[FMAC] Warning: new_cred->security is NULL. SELinux disabled?\n");
         return -EOPNOTSUPP;
     }
@@ -50,8 +49,7 @@ static int apply_selinux_domain(struct cred *new_cred, const char *domain)
     domain_len = strlen(domain);
 
     error = security_secctx_to_secid(domain, domain_len, &sid);
-    if (error)
-    {
+    if (error) {
         fmac_log("[FMAC] Failed to resolve context '%s': err=%d\n", domain, error);
         return error;
     }
@@ -77,8 +75,7 @@ static void disable_seccomp(void)
     spin_lock_irq(&task->sighand->siglock);
 
     #ifdef CONFIG_SECCOMP_FILTER
-    if (task->seccomp.mode != SECCOMP_MODE_DISABLED)
-    {
+    if (task->seccomp.mode != SECCOMP_MODE_DISABLED) {
         task->seccomp.mode = SECCOMP_MODE_DISABLED;
 
         #if defined(TIF_SECCOMP)
@@ -105,23 +102,19 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
     bool needs_commit = false;
 
     if ((flags & FMAC_PRIV_SECCOMP) &&
-        !(flags & (FMAC_PRIV_ROOT | FMAC_PRIV_CAPS | FMAC_PRIV_SELINUX)))
-    {
+        !(flags & (FMAC_PRIV_ROOT | FMAC_PRIV_CAPS | FMAC_PRIV_SELINUX))) {
         disable_seccomp();
         return;
     }
 
     new_cred = prepare_creds();
-    if (!new_cred)
-    {
+    if (!new_cred) {
         fmac_log("[FMAC] prepare_creds failed! OOM?\n");
         return;
     }
 
-    if (flags & FMAC_PRIV_ROOT)
-    {
-        if (new_cred->euid.val != 0)
-        {
+    if (flags & FMAC_PRIV_ROOT) {
+        if (new_cred->euid.val != 0) {
             new_cred->uid.val = 0;
             new_cred->euid.val = 0;
             new_cred->suid.val = 0;
@@ -138,8 +131,7 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
         }
     }
 
-    if (flags & FMAC_PRIV_CAPS)
-    {
+    if (flags & FMAC_PRIV_CAPS) {
         new_cred->cap_effective = cap_combine(new_cred->cap_effective, caps_to_raise);
         new_cred->cap_permitted = cap_combine(new_cred->cap_permitted, caps_to_raise);
         new_cred->cap_bset = cap_combine(new_cred->cap_bset, caps_to_raise);
@@ -147,11 +139,9 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
         needs_commit = true;
     }
 
-    if ((flags & FMAC_PRIV_SELINUX) && target_domain)
-    {
+    if ((flags & FMAC_PRIV_SELINUX) && target_domain) {
         err = apply_selinux_domain(new_cred, target_domain);
-        if (err)
-        {
+        if (err) {
             fmac_log("[FMAC] SELinux setup failed (%d), aborting privilege escalation.\n", err);
             abort_creds(new_cred);
             return;
@@ -159,17 +149,14 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
         needs_commit = true;
     }
 
-    if (needs_commit)
-    {
+    if (needs_commit) {
         commit_creds(new_cred);
         fmac_log("[FMAC] Privileges committed for PID %d.\n", current->pid);
-    } else
-    {
+    } else {
         abort_creds(new_cred);
     }
 
-    if (flags & FMAC_PRIV_SECCOMP)
-    {
+    if (flags & FMAC_PRIV_SECCOMP) {
         disable_seccomp();
     }
 }

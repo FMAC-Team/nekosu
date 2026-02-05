@@ -37,8 +37,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     if (check_totp_ecc((const char __user *)arg2, arg3) != 1)
         return 0;
 
-    if (!access_ok((void __user *)arg3, sizeof(struct nksu_reply)))
-    {
+    if (!access_ok((void __user *)arg3, sizeof(struct nksu_reply))) {
         fmac_log("invalid user pointer: %lx\n", arg3);
         return 0;
     }
@@ -52,8 +51,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     reply.version = NKSU_API_VERSION;
     reply.flags = 0;
 
-    if (copy_to_user((void __user *)arg4, &reply, sizeof(reply)) == 0)
-    {
+    if (copy_to_user((void __user *)arg4, &reply, sizeof(reply)) == 0) {
 
         fmac_log("fmac fd %d delivered via copy_to_user\n", fd);
     }
@@ -66,13 +64,12 @@ static struct kprobe kp = {
     .pre_handler = handler_pre,
 };
 
-int fmac_kprobe_hook_init(void)
+int fmac_hook_init(void)
 {
     int ret;
 
     ret = register_kprobe(&kp);
-    if (ret < 0)
-    {
+    if (ret < 0) {
         fmac_log("register_kprobe failed: %d\n", ret);
         return ret;
     }

@@ -39,23 +39,20 @@ int fmac_crypto_init(void)
     int ret;
 
     tfm_sha256 = crypto_alloc_shash("sha256", 0, 0);
-    if (IS_ERR(tfm_sha256))
-    {
+    if (IS_ERR(tfm_sha256)) {
         pr_err("FMAC: Failed to alloc sha256 tfm\n");
         return PTR_ERR(tfm_sha256);
     }
 
     tfm_ecdsa = crypto_alloc_akcipher("ecdsa", 0, 0);
-    if (IS_ERR(tfm_ecdsa))
-    {
+    if (IS_ERR(tfm_ecdsa)) {
         pr_err("FMAC: Failed to alloc ecdsa tfm\n");
         crypto_free_shash(tfm_sha256);
         return PTR_ERR(tfm_ecdsa);
     }
 
     ret = crypto_akcipher_set_pub_key(tfm_ecdsa, ecc_public_key_der, sizeof(ecc_public_key_der));
-    if (ret)
-    {
+    if (ret) {
         pr_err("FMAC: Failed to set public key\n");
         crypto_free_akcipher(tfm_ecdsa);
         crypto_free_shash(tfm_sha256);
@@ -85,8 +82,7 @@ static inline u32 get_cached_totp(void)
         return totp_cache.code;
 
     spin_lock(&totp_cache.lock);
-    if (time_after_eq(now, totp_cache.expires))
-    {
+    if (time_after_eq(now, totp_cache.expires)) {
         totp_cache.code = generate_totp_base32(totp_secret_key);
         totp_cache.expires = now + msecs_to_jiffies(5000);
     }
@@ -158,8 +154,7 @@ int check_totp_ecc(const char __user *user_buf, size_t user_len)
     u32 k_totp;
     int ret;
 
-    if (user_len < 64 || user_len > sizeof(buffer))
-    {
+    if (user_len < 64 || user_len > sizeof(buffer)) {
         fmac_log("FMAC: Invalid length: %zu\n", user_len);
         return -EINVAL;
     }

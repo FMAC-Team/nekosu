@@ -59,8 +59,7 @@ static ssize_t proc_write(struct file *file, const char __user *buf, size_t coun
 
     tok = strstrip(kbuf);
 
-    while ((p = strsep(&tok, ",")) != NULL)
-    {
+    while ((p = strsep(&tok, ",")) != NULL) {
         unsigned int id;
         kuid_t uid;
 
@@ -104,8 +103,7 @@ int nksu_add_uid(int uid)
 {
     void *ret;
     xa_lock(&fmac_uid_xa);
-    if (xa_load(&fmac_uid_xa, uid))
-    {
+    if (xa_load(&fmac_uid_xa, uid)) {
         xa_unlock(&fmac_uid_xa);
         return -EEXIST;
     }
@@ -124,8 +122,7 @@ int fmac_uid_proc_init(void)
     struct proc_dir_entry *entry;
 
     entry = proc_create("uids", 0600, fmac_proc_dir, &fmac_uid_proc_ops);
-    if (!entry)
-    {
+    if (!entry) {
         return -ENOMEM;
     }
 
