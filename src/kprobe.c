@@ -20,6 +20,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     unsigned long args[6], option, arg2, arg3, arg4;
     int fd;
+    struct nksu_reply reply;
 
     syscall_get_arguments(current, regs, args);
 
@@ -46,7 +47,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     if (fd < 0)
         return 0;
 
-    struct nksu_reply reply = {
+    reply = {
         .fd = fd,
         .version = NKSU_API_VERSION,
         .flags = 0,
