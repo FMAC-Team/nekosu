@@ -112,7 +112,7 @@ int nksu_add_uid(int uid)
 
     ret = xa_store(&fmac_uid_xa, uid, xa_mk_value(uid), GFP_KERNEL);
     xa_unlock(&fmac_uid_xa);
-    
+
     if (IS_ERR(ret))
         return PTR_ERR(ret);
 

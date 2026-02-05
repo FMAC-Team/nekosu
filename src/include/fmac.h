@@ -25,12 +25,20 @@
 #define FMAC_HASH_BITS 8
 #define FMAC_HASH_TABLE_SIZE (1 << FMAC_HASH_BITS)
 
+#define NKSU_API_VERSION 1
+
 enum fmac_op_type
 {
     FMAC_OP_MKDIRAT = 0,
     FMAC_OP_OPENAT = 1,
     FMAC_OP_UNLINK = 2,
     FMAC_OP_RENAME = 3,
+};
+
+struct nksu_reply {
+    int fd;
+    u32 version;
+    u32 flags;
 };
 
 struct fmac_rule

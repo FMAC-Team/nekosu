@@ -11,10 +11,6 @@
 #include <linux/string.h>
 #include <fmac.h>
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Aqnya");
-MODULE_DESCRIPTION("nekosu");
-MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 DEFINE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 DEFINE_SPINLOCK(fmac_lock);
 bool fmac_printk = true;
@@ -82,7 +78,7 @@ static void __exit fmac_exit(void)
     struct fmac_rule *rule;
     struct hlist_node *tmp;
     int bkt;
-    
+
     fmac_hook_exit();
 
     fmac_procfs_exit();
@@ -102,3 +98,7 @@ static void __exit fmac_exit(void)
 
 module_init(fmac_init);
 module_exit(fmac_exit);
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Aqnya");
+MODULE_DESCRIPTION("nekosu");
+MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);

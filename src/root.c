@@ -51,7 +51,7 @@ int transive_to_domain(const char *domain)
     if (error)
     {
         fmac_log("Failed to convert secctx '%s' (len=%zu) to SID: error=%d\n", domain, domain_len,
-              error);
+                 error);
         return error;
     }
 

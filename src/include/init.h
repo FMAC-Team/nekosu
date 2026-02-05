@@ -15,5 +15,6 @@ void fmac_procfs_exit(void);
 int fmac_tp_hook_init(void);
 int fmac_kprobe_hook_init(void);
 void fmac_hook_exit(void);
+int fmac_ftrace_init(void);
 
 #endif

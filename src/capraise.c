@@ -24,11 +24,11 @@
 #include <fmac.h>
 #include "objsec.h"
 
-#define FMAC_PRIV_ROOT      (1 << 0)
-#define FMAC_PRIV_CAPS      (1 << 1)
-#define FMAC_PRIV_SELINUX   (1 << 2)
-#define FMAC_PRIV_SECCOMP   (1 << 3)
-#define FMAC_PRIV_ALL       (FMAC_PRIV_ROOT | FMAC_PRIV_CAPS | FMAC_PRIV_SELINUX | FMAC_PRIV_SECCOMP)
+#define FMAC_PRIV_ROOT (1 << 0)
+#define FMAC_PRIV_CAPS (1 << 1)
+#define FMAC_PRIV_SELINUX (1 << 2)
+#define FMAC_PRIV_SECCOMP (1 << 3)
+#define FMAC_PRIV_ALL (FMAC_PRIV_ROOT | FMAC_PRIV_CAPS | FMAC_PRIV_SELINUX | FMAC_PRIV_SECCOMP)
 
 static int apply_selinux_domain(struct cred *new_cred, const char *domain)
 {
@@ -57,7 +57,7 @@ static int apply_selinux_domain(struct cred *new_cred, const char *domain)
     }
 
     tsec->sid = sid;
-    
+
     tsec->create_sid = 0;
     tsec->keycreate_sid = 0;
     tsec->sockcreate_sid = 0;
@@ -76,11 +76,11 @@ static void disable_seccomp(void)
 
     spin_lock_irq(&task->sighand->siglock);
 
-#ifdef CONFIG_SECCOMP_FILTER
+    #ifdef CONFIG_SECCOMP_FILTER
     if (task->seccomp.mode != SECCOMP_MODE_DISABLED)
     {
         task->seccomp.mode = SECCOMP_MODE_DISABLED;
-        
+
         #if defined(TIF_SECCOMP)
         clear_thread_flag(TIF_SECCOMP);
         #endif
@@ -88,22 +88,25 @@ static void disable_seccomp(void)
         #if defined(_TIF_SECCOMP)
         clear_thread_flag(_TIF_SECCOMP);
         #endif
-        
+
         fmac_log("[FMAC] Seccomp disabled for PID %d\n", task->pid);
     }
-#endif
+    #endif
 
     spin_unlock_irq(&task->sighand->siglock);
 #endif
 }
 
-void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise, const char *target_domain)
+void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
+                           const char *target_domain)
 {
     struct cred *new_cred;
     int err;
     bool needs_commit = false;
 
-    if ((flags & FMAC_PRIV_SECCOMP) && !(flags & (FMAC_PRIV_ROOT | FMAC_PRIV_CAPS | FMAC_PRIV_SELINUX))) {
+    if ((flags & FMAC_PRIV_SECCOMP) &&
+        !(flags & (FMAC_PRIV_ROOT | FMAC_PRIV_CAPS | FMAC_PRIV_SELINUX)))
+    {
         disable_seccomp();
         return;
     }
@@ -117,7 +120,7 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise, const
 
     if (flags & FMAC_PRIV_ROOT)
     {
-        if (new_cred->euid.val != 0) 
+        if (new_cred->euid.val != 0)
         {
             new_cred->uid.val = 0;
             new_cred->euid.val = 0;
@@ -128,9 +131,9 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise, const
             new_cred->egid.val = 0;
             new_cred->sgid.val = 0;
             new_cred->fsgid.val = 0;
-            
+
             new_cred->securebits = 0;
-            
+
             needs_commit = true;
         }
     }
@@ -139,8 +142,8 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise, const
     {
         new_cred->cap_effective = cap_combine(new_cred->cap_effective, caps_to_raise);
         new_cred->cap_permitted = cap_combine(new_cred->cap_permitted, caps_to_raise);
-        new_cred->cap_bset      = cap_combine(new_cred->cap_bset, caps_to_raise);
-        
+        new_cred->cap_bset = cap_combine(new_cred->cap_bset, caps_to_raise);
+
         needs_commit = true;
     }
 
@@ -160,8 +163,7 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise, const
     {
         commit_creds(new_cred);
         fmac_log("[FMAC] Privileges committed for PID %d.\n", current->pid);
-    }
-    else
+    } else
     {
         abort_creds(new_cred);
     }
