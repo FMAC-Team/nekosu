@@ -18,7 +18,8 @@
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-    unsigned long args[6], option, arg2, arg3;
+    unsigned long args[6], option, arg2, arg3, arg4;
+    int fd;
 
     syscall_get_arguments(current, regs, args);
 
@@ -35,13 +36,13 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     if (check_totp_ecc((const char __user *)arg2, arg3) != 1)
         return 0;
 
-    if (!access_ok((void __user *)arg3, sizeof(struct fmac_reply)))
+    if (!access_ok((void __user *)arg3, sizeof(struct nksu_reply)))
     {
         fmac_log("invalid user pointer: %lx\n", arg3);
         return 0;
     }
 
-    int fd = fmac_anonfd_get();
+    fd = fmac_anonfd_get();
     if (fd < 0)
         return 0;
 
