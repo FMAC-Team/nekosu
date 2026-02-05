@@ -53,7 +53,7 @@ void __fmac_append_to_log(const char *fmt, ...)
 
     if (READ_ONCE(fmac_log_mode) == FMAC_LOG_KLOG)
     {
-        printk(KERN_INFO "fmac: %s", buf);
+        pr_info("fmac: %s", buf);
         return;
     }
 
