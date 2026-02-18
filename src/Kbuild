@@ -1,13 +1,5 @@
 fmac-y := fmac/procfs.o fmac/check.o fmac/log.o
-    fmac-y += capraise.o allowlist.o totp.o rsa_pub.o anonfd.o nksu.o
-
-    ifeq ($(CONFIG_FMAC),m)
-        fmac-y += kprobe.o
-    endif
-
-    ifeq ($(CONFIG_FMAC),y)
-        fmac-y += tracepoint.o
-    endif
+fmac-y += capraise.o allowlist.o totp.o rsa_pub.o anonfd.o nksu.o kprobe.o
 
 obj-$(CONFIG_FMAC) += fmac.o
 
