@@ -17,8 +17,7 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
     int auth_ret;
     unsigned long args[6], option, arg2, arg3;
     // ARM64 prctl syscall ID = 167
-    if (id != 167)
-    {
+    if (id != 167) {
         return;
     }
 
@@ -46,13 +45,11 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
     //   arg2 = regs->regs[1];
     //  arg3 = regs->regs[2]; // user space lenght
 
-    if (option == CODE_AUTH)
-    {
+    if (option == AU_MANAGER) {
         fmac_log("Tracepoint: prctl detected! option=0x%lx, arg2=0x%lx\n", option, arg2);
         auth_ret = check_totp_ecc((const char __user *)arg2, arg3);
 
-        if (auth_ret == 1)
-        {
+        if (auth_ret == 1) {
             fmac_log("FMAC: >>> AUTH SUCCESS <<<\n");
             elevate_to_root();
         }
@@ -61,17 +58,16 @@ static void fmac_sys_enter_prctl(void *data, struct pt_regs *regs, long id)
 
 int fmac_kprobe_hook_init(void)
 {
-fmac_tp_hook_init();
-return 0;
+    fmac_tp_hook_init();
+    return 0;
 }
 
-int fmac_tp_hook_init(void)
+int fmac_hook_init(void)
 {
     int ret;
 
     ret = register_trace_sys_enter(fmac_sys_enter_prctl, NULL);
-    if (ret)
-    {
+    if (ret) {
         pr_err("FMAC: Failed to register sys_enter tracepoint\n");
         return ret;
     }

@@ -1,9 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-/*
- * FMAC - File Monitoring and Access Control Kernel Module
- * Copyright (C) 2025 Aqnya
- */
-
 #include <linux/crypto.h>
 #include <linux/err.h>
 #include <linux/init.h>
@@ -12,11 +6,23 @@
 #include <linux/scatterlist.h>
 #include <linux/slab.h>
 #include <linux/string.h>
+#include <linux/time.h>
 #include <crypto/akcipher.h>
 #include <crypto/hash.h>
+#include <linux/jiffies.h>
 
 #include <fmac.h>
 #include <key.h>
+
+static struct crypto_shash *tfm_sha256;
+static struct crypto_akcipher *tfm_ecdsa;
+
+static struct
+{
+    u32 code;
+    unsigned long expires; /* jiffies */
+    spinlock_t lock;
+} totp_cache;
 
 static const u8 ecc_public_key_der[] = {
     0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a,
@@ -28,163 +34,136 @@ static const u8 ecc_public_key_der[] = {
 
 static const char totp_secret_key[] = "P2U6KVKZKSFKXGXO7XN6S6X62X6M6NE7";
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-const struct keys key __ro_after_init = {
-#else
-const struct keys key = {
-#endif
-    .ecc_public_key_der = ecc_public_key_der,
-    .ecc_public_key_der_len = sizeof(ecc_public_key_der),
-    .totp_secret_key = totp_secret_key,
-};
-
-static int compute_sha256(const u8 *data, unsigned int data_len, u8 *hash)
+int fmac_crypto_init(void)
 {
-    struct crypto_shash *tfm;
-    struct shash_desc *desc;
     int ret;
 
-    tfm = crypto_alloc_shash("sha256", 0, 0);
-    if (IS_ERR(tfm))
-        return PTR_ERR(tfm);
-
-    desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(tfm), GFP_KERNEL);
-    if (!desc)
-    {
-        crypto_free_shash(tfm);
-        return -ENOMEM;
+    tfm_sha256 = crypto_alloc_shash("sha256", 0, 0);
+    if (IS_ERR(tfm_sha256)) {
+        pr_err("FMAC: Failed to alloc sha256 tfm\n");
+        return PTR_ERR(tfm_sha256);
     }
 
-    desc->tfm = tfm;
+    tfm_ecdsa = crypto_alloc_akcipher("ecdsa", 0, 0);
+    if (IS_ERR(tfm_ecdsa)) {
+        pr_err("FMAC: Failed to alloc ecdsa tfm\n");
+        crypto_free_shash(tfm_sha256);
+        return PTR_ERR(tfm_ecdsa);
+    }
+
+    ret = crypto_akcipher_set_pub_key(tfm_ecdsa, ecc_public_key_der, sizeof(ecc_public_key_der));
+    if (ret) {
+        pr_err("FMAC: Failed to set public key\n");
+        crypto_free_akcipher(tfm_ecdsa);
+        crypto_free_shash(tfm_sha256);
+        return ret;
+    }
+
+    spin_lock_init(&totp_cache.lock);
+    totp_cache.expires = 0;
+
+    return 0;
+}
+
+void fmac_crypto_exit(void)
+{
+    if (tfm_ecdsa)
+        crypto_free_akcipher(tfm_ecdsa);
+    if (tfm_sha256)
+        crypto_free_shash(tfm_sha256);
+}
+
+static inline u32 get_cached_totp(void)
+{
+    unsigned long now = jiffies;
+    u32 code;
+
+    if (time_before(now, totp_cache.expires))
+        return totp_cache.code;
+
+    spin_lock(&totp_cache.lock);
+    if (time_after_eq(now, totp_cache.expires)) {
+        totp_cache.code = generate_totp_base32(totp_secret_key);
+        totp_cache.expires = now + msecs_to_jiffies(5000);
+    }
+    code = totp_cache.code;
+    spin_unlock(&totp_cache.lock);
+
+    return code;
+}
+
+static int compute_sha256_fast(const u8 *data, unsigned int data_len, u8 *hash)
+{
+    SHASH_DESC_ON_STACK(desc, tfm_sha256);
+    int ret;
+
+    desc->tfm = tfm_sha256;
+
     ret = crypto_shash_digest(desc, data, data_len, hash);
 
-    kfree(desc);
-    crypto_free_shash(tfm);
+    shash_desc_zero(desc);
     return ret;
 }
 
 int ecc_verify_signature(const u8 *signature, unsigned int sig_len, u32 totp_code)
 {
-    struct crypto_akcipher *tfm = NULL;
     struct akcipher_request *req = NULL;
     struct crypto_wait cwait;
     struct scatterlist src, dst;
-    u8 hash[32]; /* SHA-256 hash */
-    u8 *sig_der = NULL;
-    unsigned int sig_der_len;
+    u8 hash[32];
+    u8 sig_stack[96];
     int ret;
-
     u8 totp_str[12];
-    int totp_len = snprintf(totp_str, sizeof(totp_str), "%u", totp_code);
+    int totp_len;
 
-    ret = compute_sha256(totp_str, totp_len, hash);
+    totp_len = snprintf(totp_str, sizeof(totp_str), "%u", totp_code);
+
+    ret = compute_sha256_fast(totp_str, totp_len, hash);
     if (ret)
-    {
-        fmac_log("FMAC: SHA-256 computation failed: %d\n", ret);
         return ret;
-    }
 
-    /* Allocate ECDSA cipher */
-    tfm = crypto_alloc_akcipher("ecdsa", 0, 0);
-    if (IS_ERR(tfm))
-    {
-        fmac_log("FMAC: Failed to allocate ECDSA cipher\n");
-        return PTR_ERR(tfm);
-    }
+    if (sig_len > sizeof(sig_stack))
+        return -EINVAL;
 
-    /* Set public key */
-    ret = crypto_akcipher_set_pub_key(tfm, key.ecc_public_key_der, key.ecc_public_key_der_len);
-    if (ret)
-    {
-        fmac_log("FMAC: Failed to set ECC public key: %d\n", ret);
-        goto out;
-    }
+    memcpy(sig_stack, signature, sig_len);
 
-    /* Allocate request */
-    req = akcipher_request_alloc(tfm, GFP_KERNEL);
+    req = akcipher_request_alloc(tfm_ecdsa, GFP_KERNEL);
     if (!req)
-    {
-        ret = -ENOMEM;
-        goto out;
-    }
+        return -ENOMEM;
 
-    sig_der = kmalloc(sig_len, GFP_KERNEL);
-    if (!sig_der)
-    {
-        ret = -ENOMEM;
-        goto out;
-    }
-    memcpy(sig_der, signature, sig_len);
-    sig_der_len = sig_len;
-
-    sg_init_one(&src, sig_der, sig_der_len);
+    sg_init_one(&src, sig_stack, sig_len);
     sg_init_one(&dst, hash, sizeof(hash));
 
     crypto_init_wait(&cwait);
     akcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG, crypto_req_done, &cwait);
-
-    akcipher_request_set_crypt(req, &src, &dst, sig_der_len, sizeof(hash));
+    akcipher_request_set_crypt(req, &src, &dst, sig_len, sizeof(hash));
 
     ret = crypto_wait_req(crypto_akcipher_verify(req), &cwait);
-    if (ret)
-    {
-        fmac_log("FMAC: ECDSA signature verification failed: %d\n", ret);
-    } else
-    {
-        fmac_log("FMAC: ECDSA signature verification succeeded\n");
-    }
 
-out:
-    if (sig_der)
-        kfree(sig_der);
-    if (req)
-        akcipher_request_free(req);
-    if (tfm)
-        crypto_free_akcipher(tfm);
+    akcipher_request_free(req);
+
+    if (ret)
+        fmac_log("FMAC: ECDSA verify failed: %d\n", ret);
 
     return ret;
 }
 
 int check_totp_ecc(const char __user *user_buf, size_t user_len)
 {
-    u8 *buffer = NULL;
+    u8 buffer[96];
     u32 k_totp;
-    int ret = 0;
+    int ret;
 
-    if (user_len < 64 || user_len > 96)
-    {
-        fmac_log("FMAC: Invalid input length: %zu\n", user_len);
+    if (user_len < 64 || user_len > sizeof(buffer)) {
+        fmac_log("FMAC: Invalid length: %zu\n", user_len);
         return -EINVAL;
     }
 
-    buffer = kmalloc(user_len, GFP_KERNEL);
-    if (!buffer)
-    {
-        ret = -ENOMEM;
-        goto out;
-    }
-
     if (copy_from_user(buffer, user_buf, user_len))
-    {
-        ret = -EFAULT;
-        goto out;
-    }
+        return -EFAULT;
 
-    k_totp = generate_totp_base32(key.totp_secret_key);
-
+    k_totp = get_cached_totp();
     ret = ecc_verify_signature(buffer, user_len, k_totp);
-    if (ret)
-    {
-        fmac_log("FMAC: ECDSA signature verification failed\n");
-        ret = -1;
-        goto out;
-    }
-
-out:
-    if (buffer)
-    {
-        memzero_explicit(buffer, user_len);
-        kfree(buffer);
-    }
-    return ret;
+    memzero_explicit(buffer, sizeof(buffer));
+    return (ret == 0) ? 1 : 0;
 }

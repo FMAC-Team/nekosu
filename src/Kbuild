@@ -1,5 +1,5 @@
 fmac-y := fmac/procfs.o fmac/check.o fmac/log.o
-    fmac-y += root.o allowlist.o totp.o rsa_pub.o anonfd.o nksu.o
+    fmac-y += capraise.o allowlist.o totp.o rsa_pub.o anonfd.o nksu.o
 
     ifeq ($(CONFIG_FMAC),m)
         fmac-y += kprobe.o
@@ -10,12 +10,6 @@ fmac-y := fmac/procfs.o fmac/check.o fmac/log.o
     endif
 
 obj-$(CONFIG_FMAC) += fmac.o
-
-ifeq ($(CONFIG_FMAC_ROOT_KPROBE), y)
-    ccflags-y += -DINIT_KPROBE
-else
-    ccflags-y += -DINIT_TP
-endif
 
 KDIR := $(KDIR)
 MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))

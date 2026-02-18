@@ -61,8 +61,7 @@ int fmac_anonfd_init(void)
 
 void fmac_anonfd_exit(void)
 {
-    if (shared_buffer)
-    {
+    if (shared_buffer) {
         vfree(shared_buffer);
         shared_buffer = NULL;
     }

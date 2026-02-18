@@ -7,7 +7,6 @@
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
 #include <linux/string.h>
-
 #include <linux/version.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
@@ -42,29 +41,23 @@ void __fmac_append_to_log(const char *fmt, ...)
     va_end(args);
 
     if (len <= 0)
-    {
         return;
-    }
 
-    if (unlikely(len >= sizeof(buf)))
-    {
+    if (unlikely(len >= sizeof(buf))) {
         len = sizeof(buf) - 1;
     }
 
-    if (READ_ONCE(fmac_log_mode) == FMAC_LOG_KLOG)
-    {
-        printk(KERN_INFO "fmac: %s", buf);
+    if (READ_ONCE(fmac_log_mode) == FMAC_LOG_KLOG) {
+        pr_info("fmac: %s", buf);
         return;
     }
 
     spin_lock_irqsave(&fmac_log_lock, flags);
 
-    if (fmac_log_len + len < MAX_LOG_SIZE)
-    {
+    if (fmac_log_len + len < MAX_LOG_SIZE) {
         memcpy(fmac_log_buffer + fmac_log_len, buf, len);
         fmac_log_len += len;
-    } else
-    {
+    } else {
         fmac_log_len = 0;
         memcpy(fmac_log_buffer, buf, len);
         fmac_log_len = len;

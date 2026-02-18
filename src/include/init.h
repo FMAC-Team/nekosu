@@ -12,7 +12,7 @@ int fmac_procfs_init(void);
 void fmac_procfs_exit(void);
 
 // tracepoint.c and kprobe.c
-int fmac_tp_hook_init(void);
-int fmac_kprobe_hook_init(void);
+int fmac_hook_init(void);
+void fmac_hook_exit(void);
 
 #endif

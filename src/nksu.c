@@ -11,10 +11,6 @@
 #include <linux/string.h>
 #include <fmac.h>
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Aqnya");
-MODULE_DESCRIPTION("nekosu");
-MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 DEFINE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 DEFINE_SPINLOCK(fmac_lock);
 bool fmac_printk = true;
@@ -32,8 +28,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
     u32 key;
 
     rule = kmalloc(sizeof(*rule), GFP_KERNEL);
-    if (!rule)
-    {
+    if (!rule) {
         fmac_log("Failed to allocate rule\n");
         return;
     }
@@ -60,18 +55,12 @@ static int __init fmac_init(void)
     hash_init(fmac_rule_ht);
 
     ret = fmac_procfs_init();
-    if (ret)
-    {
+    if (ret) {
         fmac_log("Failed to initialize procfs\n");
         return ret;
     }
     fmac_anonfd_init();
-
-#ifdef INIT_KPROBE
-    fmac_kprobe_hook_init();
-#elif defined(INIT_TP)
-    fmac_tp_hook_init();
-#endif
+    fmac_hook_init();
 
     fmac_log("File Monitoring and Access Control initialized.\n");
     return 0;
@@ -82,7 +71,8 @@ static void __exit fmac_exit(void)
     struct fmac_rule *rule;
     struct hlist_node *tmp;
     int bkt;
-    
+
+    fmac_anonfd_exit();
     fmac_hook_exit();
 
     fmac_procfs_exit();
@@ -102,3 +92,7 @@ static void __exit fmac_exit(void)
 
 module_init(fmac_init);
 module_exit(fmac_exit);
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Aqnya");
+MODULE_DESCRIPTION("nekosu");
+MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);

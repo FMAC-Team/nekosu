@@ -10,7 +10,7 @@ ColumnLimit: 100
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: true
-  AfterControlStatement: Always
+  AfterControlStatement: false
   AfterEnum: true
   AfterFunction: true
   AfterNamespace: true
