@@ -163,16 +163,15 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 
 void elevate_to_root(void)
 {
-    kernel_cap_t all_caps;
-    CAP_EMPTY(all_caps);
-    CAP_RAISE(all_caps, CAP_SYS_ADMIN);
-    CAP_RAISE(all_caps, CAP_DAC_OVERRIDE);
-    CAP_RAISE(all_caps, CAP_SETUID);
-    CAP_RAISE(all_caps, CAP_SETGID);
-    CAP_RAISE(all_caps, CAP_NET_ADMIN);
-    CAP_RAISE(all_caps, CAP_SYS_PTRACE);
-    CAP_RAISE(all_caps, CAP_SYS_MODULE);
-    CAP_RAISE(all_caps, CAP_DAC_READ_SEARCH);
+    kernel_cap_t all_caps = CAP_EMPTY_SET;
+    cap_raise(all_caps, CAP_SYS_ADMIN);
+    cap_raise(all_caps, CAP_DAC_OVERRIDE);
+    cap_raise(all_caps, CAP_SETUID);
+    cap_raise(all_caps, CAP_SETGID);
+    cap_raise(all_caps, CAP_NET_ADMIN);
+    cap_raise(all_caps, CAP_SYS_PTRACE);
+    cap_raise(all_caps, CAP_SYS_MODULE);
+    cap_raise(all_caps, CAP_DAC_READ_SEARCH);
 
     fmac_grant_privileges(FMAC_PRIV_ALL, all_caps, "u:r:su:s0");
 }
