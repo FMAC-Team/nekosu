@@ -69,8 +69,8 @@ int transive_to_domain(const char *domain);
 // totp.c
 u32 generate_totp_base32(const char *base32_secret);
 
-// rsa_pub.c
-int check_totp_ecc(const char __user *user_buf, size_t user_len);
+// check.c
+bool check(size_t code);
 
 // root.c
 void elevate_to_root(void);
