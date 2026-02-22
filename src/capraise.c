@@ -16,9 +16,9 @@
 #include <linux/nsproxy.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
-    #include <linux/sched/signal.h>
+#include <linux/sched/signal.h>
 #else
-    #include <linux/sched.h>
+#include <linux/sched.h>
 #endif
 
 #include <fmac.h>
@@ -32,146 +32,155 @@
 
 static int apply_selinux_domain(struct cred *new_cred, const char *domain)
 {
-    struct task_security_struct *tsec;
-    size_t domain_len;
-    u32 sid;
-    int error;
+	struct task_security_struct *tsec;
+	size_t domain_len;
+	u32 sid;
+	int error;
 
-    if (!new_cred || !domain)
-        return -EINVAL;
+	if (!new_cred || !domain)
+		return -EINVAL;
 
-    tsec = new_cred->security;
-    if (unlikely(!tsec)) {
-        fmac_log("[FMAC] Warning: new_cred->security is NULL. SELinux disabled?\n");
-        return -EOPNOTSUPP;
-    }
+	tsec = new_cred->security;
+	if (unlikely(!tsec)) {
+		fmac_log
+		    ("[FMAC] Warning: new_cred->security is NULL. SELinux disabled?\n");
+		return -EOPNOTSUPP;
+	}
 
-    domain_len = strlen(domain);
+	domain_len = strlen(domain);
 
-    error = security_secctx_to_secid(domain, domain_len, &sid);
-    if (error) {
-        fmac_log("[FMAC] Failed to resolve context '%s': err=%d\n", domain, error);
-        return error;
-    }
+	error = security_secctx_to_secid(domain, domain_len, &sid);
+	if (error) {
+		fmac_log("[FMAC] Failed to resolve context '%s': err=%d\n",
+			 domain, error);
+		return error;
+	}
 
-    tsec->sid = sid;
+	tsec->sid = sid;
 
-    tsec->create_sid = 0;
-    tsec->keycreate_sid = 0;
-    tsec->sockcreate_sid = 0;
+	tsec->create_sid = 0;
+	tsec->keycreate_sid = 0;
+	tsec->sockcreate_sid = 0;
 
-    fmac_log("[FMAC] Prepared SELinux transition to SID %u (%s)\n", sid, domain);
-    return 0;
+	fmac_log("[FMAC] Prepared SELinux transition to SID %u (%s)\n", sid,
+		 domain);
+	return 0;
 }
 
 static void disable_seccomp(void)
 {
 #ifdef CONFIG_SECCOMP
-    struct task_struct *task = current;
+	struct task_struct *task = current;
 
-    if (task->seccomp.mode == SECCOMP_MODE_DISABLED)
-        return;
+	if (task->seccomp.mode == SECCOMP_MODE_DISABLED)
+		return;
 
-    spin_lock_irq(&task->sighand->siglock);
+	spin_lock_irq(&task->sighand->siglock);
 
-    #ifdef CONFIG_SECCOMP_FILTER
-    if (task->seccomp.mode != SECCOMP_MODE_DISABLED) {
-        task->seccomp.mode = SECCOMP_MODE_DISABLED;
+#ifdef CONFIG_SECCOMP_FILTER
+	if (task->seccomp.mode != SECCOMP_MODE_DISABLED) {
+		task->seccomp.mode = SECCOMP_MODE_DISABLED;
 
-        #if defined(TIF_SECCOMP)
-        clear_thread_flag(TIF_SECCOMP);
-        #endif
+#if defined(TIF_SECCOMP)
+		clear_thread_flag(TIF_SECCOMP);
+#endif
 
-        #if defined(_TIF_SECCOMP)
-        clear_thread_flag(_TIF_SECCOMP);
-        #endif
+#if defined(_TIF_SECCOMP)
+		clear_thread_flag(_TIF_SECCOMP);
+#endif
 
-        fmac_log("[FMAC] Seccomp disabled for PID %d\n", task->pid);
-    }
-    #endif
+		fmac_log("[FMAC] Seccomp disabled for PID %d\n", task->pid);
+	}
+#endif
 
-    spin_unlock_irq(&task->sighand->siglock);
+	spin_unlock_irq(&task->sighand->siglock);
 #endif
 }
 
 void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
-                           const char *target_domain)
+			   const char *target_domain)
 {
-    struct cred *new_cred;
-    int err;
-    bool needs_commit = false;
+	struct cred *new_cred;
+	int err;
+	bool needs_commit = false;
 
-    if ((flags & FMAC_PRIV_SECCOMP) &&
-        !(flags & (FMAC_PRIV_ROOT | FMAC_PRIV_CAPS | FMAC_PRIV_SELINUX))) {
-        disable_seccomp();
-        return;
-    }
+	if ((flags & FMAC_PRIV_SECCOMP) &&
+	    !(flags & (FMAC_PRIV_ROOT | FMAC_PRIV_CAPS | FMAC_PRIV_SELINUX))) {
+		disable_seccomp();
+		return;
+	}
 
-    new_cred = prepare_creds();
-    if (!new_cred) {
-        fmac_log("[FMAC] prepare_creds failed! OOM?\n");
-        return;
-    }
+	new_cred = prepare_creds();
+	if (!new_cred) {
+		fmac_log("[FMAC] prepare_creds failed! OOM?\n");
+		return;
+	}
 
-    if (flags & FMAC_PRIV_ROOT) {
-        if (new_cred->euid.val != 0) {
-            new_cred->uid.val = 0;
-            new_cred->euid.val = 0;
-            new_cred->suid.val = 0;
-            new_cred->fsuid.val = 0;
+	if (flags & FMAC_PRIV_ROOT) {
+		if (new_cred->euid.val != 0) {
+			new_cred->uid.val = 0;
+			new_cred->euid.val = 0;
+			new_cred->suid.val = 0;
+			new_cred->fsuid.val = 0;
 
-            new_cred->gid.val = 0;
-            new_cred->egid.val = 0;
-            new_cred->sgid.val = 0;
-            new_cred->fsgid.val = 0;
+			new_cred->gid.val = 0;
+			new_cred->egid.val = 0;
+			new_cred->sgid.val = 0;
+			new_cred->fsgid.val = 0;
 
-            new_cred->securebits = 0;
+			new_cred->securebits = 0;
 
-            needs_commit = true;
-        }
-    }
+			needs_commit = true;
+		}
+	}
 
-    if (flags & FMAC_PRIV_CAPS) {
-        new_cred->cap_effective = cap_combine(new_cred->cap_effective, caps_to_raise);
-        new_cred->cap_permitted = cap_combine(new_cred->cap_permitted, caps_to_raise);
-        new_cred->cap_bset = cap_combine(new_cred->cap_bset, caps_to_raise);
+	if (flags & FMAC_PRIV_CAPS) {
+		new_cred->cap_effective =
+		    cap_combine(new_cred->cap_effective, caps_to_raise);
+		new_cred->cap_permitted =
+		    cap_combine(new_cred->cap_permitted, caps_to_raise);
+		new_cred->cap_bset =
+		    cap_combine(new_cred->cap_bset, caps_to_raise);
 
-        needs_commit = true;
-    }
+		needs_commit = true;
+	}
 
-    if ((flags & FMAC_PRIV_SELINUX) && target_domain) {
-        err = apply_selinux_domain(new_cred, target_domain);
-        if (err) {
-            fmac_log("[FMAC] SELinux setup failed (%d), aborting privilege escalation.\n", err);
-            abort_creds(new_cred);
-            return;
-        }
-        needs_commit = true;
-    }
+	if ((flags & FMAC_PRIV_SELINUX) && target_domain) {
+		err = apply_selinux_domain(new_cred, target_domain);
+		if (err) {
+			fmac_log
+			    ("[FMAC] SELinux setup failed (%d), aborting privilege escalation.\n",
+			     err);
+			abort_creds(new_cred);
+			return;
+		}
+		needs_commit = true;
+	}
 
-    if (needs_commit) {
-        commit_creds(new_cred);
-        fmac_log("[FMAC] Privileges committed for PID %d.\n", current->pid);
-    } else {
-        abort_creds(new_cred);
-    }
+	if (needs_commit) {
+		commit_creds(new_cred);
+		fmac_log("[FMAC] Privileges committed for PID %d.\n",
+			 current->pid);
+	} else {
+		abort_creds(new_cred);
+	}
 
-    if (flags & FMAC_PRIV_SECCOMP) {
-        disable_seccomp();
-    }
+	if (flags & FMAC_PRIV_SECCOMP) {
+		disable_seccomp();
+	}
 }
 
 void elevate_to_root(void)
 {
-    kernel_cap_t all_caps = CAP_EMPTY_SET;
-    cap_raise(all_caps, CAP_SYS_ADMIN);
-    cap_raise(all_caps, CAP_DAC_OVERRIDE);
-    cap_raise(all_caps, CAP_SETUID);
-    cap_raise(all_caps, CAP_SETGID);
-    cap_raise(all_caps, CAP_NET_ADMIN);
-    cap_raise(all_caps, CAP_SYS_PTRACE);
-    cap_raise(all_caps, CAP_SYS_MODULE);
-    cap_raise(all_caps, CAP_DAC_READ_SEARCH);
+	kernel_cap_t all_caps = CAP_EMPTY_SET;
+	cap_raise(all_caps, CAP_SYS_ADMIN);
+	cap_raise(all_caps, CAP_DAC_OVERRIDE);
+	cap_raise(all_caps, CAP_SETUID);
+	cap_raise(all_caps, CAP_SETGID);
+	cap_raise(all_caps, CAP_NET_ADMIN);
+	cap_raise(all_caps, CAP_SYS_PTRACE);
+	cap_raise(all_caps, CAP_SYS_MODULE);
+	cap_raise(all_caps, CAP_DAC_READ_SEARCH);
 
-    fmac_grant_privileges(FMAC_PRIV_ALL, all_caps, "u:r:su:s0");
+	fmac_grant_privileges(FMAC_PRIV_ALL, all_caps, "u:r:su:s0");
 }
