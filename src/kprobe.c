@@ -16,11 +16,11 @@
 #include <linux/vmalloc.h>
 #include <fmac.h>
 
-struct {
+struct
+{
     int authenticate;
     int get_root;
 } const opcode = {1, 2};
-
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -35,16 +35,18 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     arg3 = args[2];
     arg4 = args[3];
 
-    if (option != (opcode.authenticate + 200))
+    if (option != 201) {
+        pr_err("prctl code err\n");
         return 0;
+    }
 
-    fmac_log("prctl hit: option=0x%lx arg2=0x%lx arg3=0x%lx\n", option, arg2, arg3);
+    pr_info("prctl hit: option=0x%lx arg2=0x%lx arg3=0x%lx\n", option, arg2, arg3);
 
     if (check(arg2) == false)
         return 0;
 
     if (!access_ok((void __user *)arg3, sizeof(struct nksu_reply))) {
-        fmac_log("invalid user pointer: %lx\n", arg3);
+        pr_err("invalid user pointer: %lx\n", arg3);
         return 0;
     }
 
@@ -59,7 +61,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 
     if (copy_to_user((void __user *)arg3, &reply, sizeof(reply)) == 0) {
 
-        fmac_log("fmac fd %d delivered via copy_to_user\n", fd);
+        pr_info("fmac fd %d delivered via copy_to_user\n", fd);
     }
 
     return 0;
@@ -76,11 +78,11 @@ int fmac_hook_init(void)
 
     ret = register_kprobe(&kp);
     if (ret < 0) {
-        fmac_log("register_kprobe failed: %d\n", ret);
+        pr_err("register_kprobe failed: %d\n", ret);
         return ret;
     }
 
-    fmac_log("kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
+    pr_info("kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
     return 0;
 }
 

@@ -5,9 +5,10 @@
 #include <linux/types.h>
 
 #include <fmac.h>
-#include <key.h>          
+#include <key.h>
 
-static struct {
+static struct
+{
     u32 code;
     unsigned long expires;
     bool used;
@@ -16,8 +17,7 @@ static struct {
 
 static const char totp_secret_key[] = "P2U6KVKZKSFKXGXO7XN6S6X62X6M6NE7";
 
-    static inline u32
-    get_cached_totp(void)
+static inline u32 get_cached_totp(void)
 {
     unsigned long now = jiffies;
     u32 code;
@@ -36,7 +36,8 @@ static const char totp_secret_key[] = "P2U6KVKZKSFKXGXO7XN6S6X62X6M6NE7";
     return code;
 }
 
-bool check(size_t code) {
+bool check(size_t code)
+{
     bool ok = false;
     spin_lock(&totp_cache.lock);
     if (!totp_cache.used && totp_cache.code == code && time_before(jiffies, totp_cache.expires)) {
