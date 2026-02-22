@@ -23,7 +23,6 @@ struct {
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-	unsigned long args[6], option, arg2, arg3;
 	int fd;
 #ifdef CONFIG_X86_64
 	unsigned long option = regs->di;
@@ -37,9 +36,8 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 #error Unsupported architecture
 #endif
 
-	if (option != 201) {
+	if (option != 201)
 		return 0;
-	}
 
 	if (!access_ok((void __user *)arg3, sizeof(int)))
 		return 0;
@@ -54,10 +52,8 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 	if (fd < 0)
 		return 0;
 
-	if (copy_to_user((int __user *)arg3, &fd, sizeof(fd)) == 0) {
-
+	if (copy_to_user((int __user *)arg3, &fd, sizeof(fd)) == 0)
 		pr_info("fmac fd %d delivered via copy_to_user\n", fd);
-	}
 
 	return 0;
 }
