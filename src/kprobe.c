@@ -16,6 +16,12 @@
 #include <linux/vmalloc.h>
 #include <fmac.h>
 
+struct {
+    int authenticate;
+    int get_root;
+} const opcode = {1, 2};
+
+
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     unsigned long args[6], option, arg2, arg3, arg4;
@@ -29,7 +35,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     arg3 = args[2];
     arg4 = args[3];
 
-    if (option != AU_MANAGER)
+    if (option != (opcode.authenticate + 200))
         return 0;
 
     fmac_log("prctl hit: option=0x%lx arg2=0x%lx arg3=0x%lx\n", option, arg2, arg3);
