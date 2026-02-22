@@ -26,7 +26,6 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     unsigned long args[6], option, arg2, arg3, arg4;
     int fd;
-    struct nksu_reply reply;
 
     syscall_get_arguments(current, regs, args);
 
@@ -45,21 +44,11 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     if (check(arg2) == false)
         return 0;
 
-    if (!access_ok((void __user *)arg3, sizeof(struct nksu_reply))) {
-        pr_err("invalid user pointer: %lx\n", arg3);
-        return 0;
-    }
-
     fd = fmac_anonfd_get();
     if (fd < 0)
         return 0;
 
-    memset(&reply, 0, sizeof(reply));
-    reply.fd = fd;
-    reply.version = NKSU_API_VERSION;
-    reply.flags = 0;
-
-    if (copy_to_user((void __user *)arg3, &reply, sizeof(reply)) == 0) {
+    if (copy_to_user((int __user *)arg3, &fd, sizeof(fd)) == 0) {
 
         pr_info("fmac fd %d delivered via copy_to_user\n", fd);
     }
