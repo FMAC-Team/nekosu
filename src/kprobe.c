@@ -35,7 +35,6 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     arg4 = args[3];
 
     if (option != 201) {
-        pr_err("prctl code err\n");
         return 0;
     }
 
