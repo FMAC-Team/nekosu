@@ -24,16 +24,30 @@ struct {
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
 	int fd;
-	unsigned long option, arg2, arg3;
+    unsigned long option, arg2, arg3;
+	struct pt_regs *real_regs;
 
-	struct pt_regs *real_regs = (struct pt_regs *)regs->regs[0];
+#if defined(__aarch64__)
+	real_regs = (struct pt_regs *)regs->regs[0];
+#elif defined(__x86_64__)
+	real_regs = (struct pt_regs *)regs->di;
+#else
+	return 0;
+#endif
 
 	if (!real_regs)
 		return 0;
 
-	unsigned long option = real_regs->regs[0];
-	unsigned long arg2 = real_regs->regs[1];
-	unsigned long arg3 = real_regs->regs[2];
+#if defined(__aarch64__)
+	option = real_regs->regs[0];
+	arg2   = real_regs->regs[1];
+	arg3   = real_regs->regs[2];
+#elif defined(__x86_64__)
+	option = real_regs->di;
+	arg2   = real_regs->si;
+	arg3   = real_regs->dx;
+#endif
+
 
 	if ((int)option != 201) {
 		if ((current_euid().val) == 10142) {
@@ -64,7 +78,11 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 }
 
 static struct kprobe kp = {
+#if defined(__aarch64__)
 	.symbol_name = "__arm64_sys_prctl",
+#elif defined(__x86_64__)
+	.symbol_name = "__x64_sys_prctl",
+#endif
 	.pre_handler = handler_pre,
 };
 
