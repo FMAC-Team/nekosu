@@ -39,9 +39,9 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 	if (option != 201)
 		return 0;
 
-	if (!access_ok((void __user *)arg3, sizeof(int)))
+/*	if (!access_ok((void __user *)arg3, sizeof(int)))
 		return 0;
-
+*/
 	pr_alert("prctl hit: option=0x%lx arg2=0x%lx arg3=0x%lx\n", option, arg2,
 		arg3);
 
