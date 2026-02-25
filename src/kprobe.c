@@ -25,22 +25,21 @@ struct
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     int fd;
-#ifdef CONFIG_X86_64
-    unsigned long option = regs->di;
-    unsigned long arg2 = regs->si;
-    unsigned long arg3 = regs->dx;
-#elif defined(CONFIG_ARM64)
-    unsigned long option = regs->regs[0];
-    unsigned long arg2 = regs->regs[1];
-    unsigned long arg3 = regs->regs[2];
-#else
-    #error Unsupported architecture
-#endif
+    struct pt_regs *real_regs = regs;
+    unsigned long option, arg2, arg3;
 
-    if ((int)option != 0xdeadbabe) {
-     /*  if ((current_euid().val) == 10142) {
-            pr_err("option failed: %d", option);
-        }*/
+    unsigned long args[6];
+
+    syscall_get_arguments(current, regs, args);
+
+    option = args[0];
+    arg2 = args[1];
+    arg3 = args[2];
+
+    if ((int)option != 201) {
+        if ((current_euid().val) == 10142) {
+            pr_err("option failed: %d", (int)option);
+        }
         return 0;
     }
 
