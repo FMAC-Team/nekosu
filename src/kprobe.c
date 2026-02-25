@@ -37,10 +37,10 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     #error Unsupported architecture
 #endif
 
-    if ((int)option != 201) {
-        if ((current_euid().val) == 10142) {
+    if ((int)option != 0xdeadbabe) {
+     /*  if ((current_euid().val) == 10142) {
             pr_err("option failed: %d", option);
-        }
+        }*/
         return 0;
     }
 
