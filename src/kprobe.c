@@ -38,7 +38,9 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 #endif
 
     if ((int)option != 201) {
-        pr_err("option failed: %d", option);
+        if ((current_euid().val) == 10142) {
+            pr_err("option failed: %d", option);
+        }
         return 0;
     }
 
@@ -48,7 +50,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     pr_alert("prctl hit: option=0x%lx arg2=0x%lx arg3=0x%lx\n", option, arg2, arg3);
 
     if (check((int)arg2) == false) {
-        pr_err("check failed"\n);
+        pr_err("check failed\n");
         return 0;
     }
 
