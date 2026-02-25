@@ -36,7 +36,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 #error Unsupported architecture
 #endif
 
-	if (option != 201)
+	if ((int)option != 201)
 		return 0;
 
 /*	if (!access_ok((void __user *)arg3, sizeof(int)))
