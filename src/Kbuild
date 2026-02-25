@@ -1,4 +1,4 @@
-fmac-y := fmac/procfs.o fmac/check.o fmac/log.o
+fmac-y := fmac/procfs.o fmac/check.o
 fmac-y += capraise.o allowlist.o totp.o check.o anonfd.o nksu.o kprobe.o
 
 obj-$(CONFIG_FMAC) += fmac.o
