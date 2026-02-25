@@ -59,7 +59,7 @@ int fmac_anonfd_init(void)
 	if (!shared_buffer)
 		return -ENOMEM;
 
-	fmac_log("anonfd shared buffer allocated: %p\n", shared_buffer);
+	pr_info("anonfd shared buffer allocated: %p\n", shared_buffer);
 	return 0;
 }
 
@@ -70,5 +70,5 @@ void fmac_anonfd_exit(void)
 		shared_buffer = NULL;
 	}
 
-	fmac_log("anonfd resources released\n");
+	pr_info("anonfd resources released\n");
 }

@@ -30,7 +30,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
 
 	rule = kmalloc(sizeof(*rule), GFP_KERNEL);
 	if (!rule) {
-		fmac_log("Failed to allocate rule\n");
+		pr_err("Failed to allocate rule\n");
 		return;
 	}
 
@@ -46,8 +46,8 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
 	hash_add_rcu(fmac_rule_ht, &rule->node, key);
 	spin_unlock(&fmac_lock);
 
-	fmac_log("added rule: path=%s, uid=%u, deny=%d, op_type=%d\n",
-		 path_prefix, uid, deny, op_type);
+	pr_info("added rule: path=%s, uid=%u, deny=%d, op_type=%d\n",
+		path_prefix, uid, deny, op_type);
 }
 
 static int __init fmac_init(void)
@@ -58,13 +58,13 @@ static int __init fmac_init(void)
 
 	ret = fmac_procfs_init();
 	if (ret) {
-		fmac_log("Failed to initialize procfs\n");
+		pr_err("Failed to initialize procfs\n");
 		return ret;
 	}
 	fmac_anonfd_init();
 	fmac_hook_init();
 
-	fmac_log("File Monitoring and Access Control initialized.\n");
+	pr_info("File Monitoring and Access Control initialized.\n");
 	return 0;
 }
 

@@ -42,8 +42,7 @@ static int apply_selinux_domain(struct cred *new_cred, const char *domain)
 
 	tsec = new_cred->security;
 	if (unlikely(!tsec)) {
-		fmac_log
-		    ("[FMAC] Warning: new_cred->security is NULL. SELinux disabled?\n");
+		pr_warn("new_cred->security is NULL. SELinux disabled?\n");
 		return -EOPNOTSUPP;
 	}
 
@@ -51,8 +50,8 @@ static int apply_selinux_domain(struct cred *new_cred, const char *domain)
 
 	error = security_secctx_to_secid(domain, domain_len, &sid);
 	if (error) {
-		fmac_log("[FMAC] Failed to resolve context '%s': err=%d\n",
-			 domain, error);
+		pr_err("failed to resolve context '%s': err=%d\n",
+		       domain, error);
 		return error;
 	}
 
@@ -62,8 +61,7 @@ static int apply_selinux_domain(struct cred *new_cred, const char *domain)
 	tsec->keycreate_sid = 0;
 	tsec->sockcreate_sid = 0;
 
-	fmac_log("[FMAC] Prepared SELinux transition to SID %u (%s)\n", sid,
-		 domain);
+	pr_info("prepared SELinux transition to SID %u (%s)\n", sid, domain);
 	return 0;
 }
 
@@ -89,7 +87,7 @@ static void disable_seccomp(void)
 		clear_thread_flag(_TIF_SECCOMP);
 #endif
 
-		fmac_log("[FMAC] Seccomp disabled for PID %d\n", task->pid);
+		pr_info("seccomp disabled for PID %d\n", task->pid);
 	}
 #endif
 
@@ -112,7 +110,7 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 
 	new_cred = prepare_creds();
 	if (!new_cred) {
-		fmac_log("[FMAC] prepare_creds failed! OOM?\n");
+		pr_err("prepare_creds failed! OOM?\n");
 		return;
 	}
 
@@ -148,8 +146,8 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 	if ((flags & FMAC_PRIV_SELINUX) && target_domain) {
 		err = apply_selinux_domain(new_cred, target_domain);
 		if (err) {
-			fmac_log
-			    ("[FMAC] SELinux setup failed (%d), aborting privilege escalation.\n",
+			pr_err
+			    ("SELinux setup failed (%d), aborting privilege escalation.\n",
 			     err);
 			abort_creds(new_cred);
 			return;
@@ -159,8 +157,7 @@ void fmac_grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 
 	if (needs_commit) {
 		commit_creds(new_cred);
-		fmac_log("[FMAC] Privileges committed for PID %d.\n",
-			 current->pid);
+		pr_info("privileges committed for PID %d.\n", current->pid);
 	} else {
 		abort_creds(new_cred);
 	}

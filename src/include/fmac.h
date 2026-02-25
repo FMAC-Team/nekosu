@@ -12,7 +12,6 @@
 #endif
 #define pr_fmt(fmt) "[ncore]: " fmt
 
-
 #include <linux/hashtable.h>
 #include <linux/jhash.h>
 #include <linux/rcupdate.h>
@@ -24,7 +23,6 @@
 #include "op_code.h"
 #include "anonfd.h"
 #include "allowlist.h"
-#include "log.h"
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)
@@ -58,13 +56,9 @@ struct fmac_rule {
 
 extern DECLARE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
 extern spinlock_t fmac_lock;
-extern bool fmac_printk;
 extern int work_module;
 
 extern struct proc_dir_entry *fmac_proc_dir;
-extern char *fmac_log_buffer;
-extern size_t fmac_log_len;
-extern spinlock_t fmac_log_lock;
 
 void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
 
