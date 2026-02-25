@@ -7,7 +7,11 @@
 #ifndef _LINUX_FMAC_H
 #define _LINUX_FMAC_H
 
+#ifdef pr_fmt
+#undef pr_fmt
+#endif
 #define pr_fmt(fmt) "[ncore]: " fmt
+
 
 #include <linux/hashtable.h>
 #include <linux/jhash.h>
