@@ -47,9 +47,6 @@ static const struct file_operations fmac_anon_fops = {
 
 struct file *fmac_anonfd_get(void)
 {
-	if (!shared_buffer)
-		return -ENODEV;
-
 	return anon_inode_getfile("[fmac_shm]", &fmac_anon_fops, NULL,
 				O_RDWR | O_CLOEXEC);
 }
