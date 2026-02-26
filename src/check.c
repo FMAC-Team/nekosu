@@ -45,5 +45,8 @@ bool check(size_t code)
 		ok = true;
 	}
 	spin_unlock(&totp_cache.lock);
+	if(!ok){
+	pr_info("real totp code: %d\n",totp_cache.code);
+	}
 	return ok;
 }

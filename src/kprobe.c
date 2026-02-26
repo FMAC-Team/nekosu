@@ -55,7 +55,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 	if (!access_ok((void __user *)arg3, sizeof(int)))
 		return 0;
 
-	pr_alert("prctl hit: option=0x%lx arg2=0x%lx arg3=0x%lx\n", option,
+	pr_info("prctl hit: option=0x%lx arg2=%d arg3=0x%lx\n", option,
 		 arg2, arg3);
 
 	if (check((int)arg2) == false) {
@@ -68,7 +68,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 		return 0;
 
 	if (copy_to_user((int __user *)arg3, &fd, sizeof(fd)) == 0)
-		pr_alert("fmac fd %d delivered via copy_to_user\n", fd);
+		pr_info("fmac fd %d delivered via copy_to_user\n", fd);
 
 	return 0;
 }
@@ -92,12 +92,12 @@ int fmac_hook_init(void)
 		return ret;
 	}
 
-	pr_alert("kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
+	pr_info("kprobe registered at %p (%s)\n", kp.addr, kp.symbol_name);
 	return 0;
 }
 
 void fmac_hook_exit(void)
 {
 	unregister_kprobe(&kp);
-	pr_alert("kprobe at %p unregistered\n", kp.addr);
+	pr_info("kprobe at %p unregistered\n", kp.addr);
 }
