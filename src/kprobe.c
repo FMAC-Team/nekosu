@@ -14,6 +14,7 @@
 #include <linux/file.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
+#include <linux/task_work.h>
 #include <fmac.h>
 
 struct fmac_fd_tw {
