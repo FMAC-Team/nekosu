@@ -10,6 +10,7 @@
 #include <linux/anon_inodes.h>
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
+#include <linux/file.h>
 #include <linux/version.h>
 #include <fmac.h>
 
@@ -44,12 +45,12 @@ static const struct file_operations fmac_anon_fops = {
 	.mmap = fmac_anon_mmap,
 };
 
-int fmac_anonfd_get(void)
+struct file *fmac_anonfd_get(void)
 {
 	if (!shared_buffer)
 		return -ENODEV;
 
-	return anon_inode_getfd("[fmac_shm]", &fmac_anon_fops, NULL,
+	return anon_inode_getfile("[fmac_shm]", &fmac_anon_fops, NULL,
 				O_RDWR | O_CLOEXEC);
 }
 

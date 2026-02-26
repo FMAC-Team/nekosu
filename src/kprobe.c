@@ -16,16 +16,48 @@
 #include <linux/vmalloc.h>
 #include <fmac.h>
 
-struct {
-	int authenticate;
-	int get_root;
-} const opcode = { 1, 2 };
+struct fmac_fd_tw {
+	struct callback_head cb;
+	int __user *outp;
+};
+
+static void fmac_fd_tw_func(struct callback_head *cb)
+{
+	struct fmac_fd_tw *tw = container_of(cb, struct fmac_fd_tw, cb);
+	int fd;
+	struct file *file;
+
+	file = fmac_anonfd_get();
+	if (IS_ERR(file)) {
+		pr_err("fmac: failed to get anon file\n");
+		goto out;
+	}
+
+	fd = get_unused_fd_flags(O_CLOEXEC);
+	if (fd < 0) {
+		fput(file);
+		goto out;
+	}
+
+	if (copy_to_user(tw->outp, &fd, sizeof(fd))) {
+		pr_err("copy fd err");
+		put_unused_fd(fd);
+		fput(file);
+	} else {
+		fd_install(fd, file);
+		pr_info("fmac fd %d delivered safely\n", fd);
+	}
+
+out:
+	kfree(tw);
+}
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-	int fd;
+//      int fd;
 	unsigned long option, arg2, arg3;
 	struct pt_regs *real_regs;
+	struct fmac_fd_tw *tw;
 
 #if defined(__aarch64__)
 	real_regs = (struct pt_regs *)regs->regs[0];
@@ -56,19 +88,21 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 		return 0;
 
 	pr_info("prctl hit: option=0x%lx arg2=%lu arg3=0x%lx\n", option,
-		 arg2, arg3);
+		arg2, arg3);
 
-	if (check((int)arg2) == false) {
-		pr_err("check failed\n");
+	tw = kzalloc(sizeof(*tw), GFP_ATOMIC);
+	if (!tw)
 		return 0;
+
+	tw->outp = (int __user *)arg3;
+	tw->cb.func = fmac_fd_tw_func;
+	
+	// direct install fd will ramoops
+
+	if (task_work_add(current, &tw->cb, TWA_RESUME)) {
+		kfree(tw);
+		pr_warn("task_work_add failed\n");
 	}
-
-	fd = fmac_anonfd_get();
-	if (fd < 0)
-		return 0;
-
-	if (copy_to_user((int __user *)arg3, &fd, sizeof(fd)) == 0)
-		pr_info("fmac fd %d delivered via copy_to_user\n", fd);
 
 	return 0;
 }
