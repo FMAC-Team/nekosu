@@ -55,7 +55,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 	if (!access_ok((void __user *)arg3, sizeof(int)))
 		return 0;
 
-	pr_info("prctl hit: option=0x%lx arg2=%d arg3=0x%lx\n", option,
+	pr_info("prctl hit: option=0x%lx arg2=%lu arg3=0x%lx\n", option,
 		 arg2, arg3);
 
 	if (check((int)arg2) == false) {
