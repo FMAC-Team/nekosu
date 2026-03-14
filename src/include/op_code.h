@@ -1,0 +1,2 @@
+#define AU_MANAGER 0xCAFEBABE
+#define GE_ROOT 0xBAADBABE

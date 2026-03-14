@@ -1,0 +1,37 @@
+menu "FMAC"
+
+config FMAC
+	tristate "File Monitoring and Access"
+	default y
+	help
+	  Enable kernel-level File Monitoring and Access
+
+config FMAC_DEBUG
+	bool "FMAC debug mode"
+	depends on FMAC
+	default y
+	help
+	  Enable FMAC debug mode.
+	  
+config FMAC_ROOT
+	bool "FMAC ROOT feature"
+	depends on FMAC
+	default y
+	help
+	  Enable FMAC root feature.
+	  
+config FMAC_ROOT_KPROBE
+	bool "FMAC ROOT feature by KPROBE"
+	depends on KRETPROBES && FMAC_ROOT
+	default y
+	help
+	  Enable FMAC root feature by kprobe.
+
+config FMAC_ROOT_TRACEPOINT
+	bool "FMAC ROOT feature by tracepoint"
+	depends on TRACING && FMAC_ROOT
+	default n
+	help
+	  Enable FMAC root feature by trace point.
+
+endmenu
