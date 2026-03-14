@@ -61,10 +61,9 @@ static void disable_seccomp(void)
 }
 
 void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
-			   const char *target_domain)
+		      const char *target_domain)
 {
 	struct cred *new_cred;
-	int err;
 	bool needs_commit = false;
 
 	if ((flags & PRIV_SECCOMP) &&
@@ -109,7 +108,7 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 	}
 
 	if ((flags & PRIV_SELINUX) && target_domain) {
-		setup_selinux(new_cred, target_domain);
+		setup_selinux(target_domain, new_cred);
 		needs_commit = true;
 	}
 
