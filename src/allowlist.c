@@ -48,36 +48,7 @@ static int fmac_uid_open(struct inode *inode, struct file *file)
 static ssize_t proc_write(struct file *file, const char __user *buf,
 			  size_t count, loff_t *ppos)
 {
-	char *kbuf, *tok, *p;
-
-	if (count == 0 || count > 1024)
-		return -EINVAL;
-
-	kbuf = memdup_user_nul(buf, count);
-	if (IS_ERR(kbuf))
-		return PTR_ERR(kbuf);
-
-	tok = strstrip(kbuf);
-
-	while ((p = strsep(&tok, ",")) != NULL) {
-		unsigned int id;
-		kuid_t uid;
-
-		if (*p == '\0')
-			continue;
-
-		if (kstrtouint(p, 10, &id) < 0)
-			continue;
-
-		uid = make_kuid(&init_user_ns, id);
-		if (!uid_valid(uid))
-			continue;
-
-		xa_store(&fmac_uid_xa, id, xa_mk_value(id), GFP_KERNEL);
-	}
-
-	kfree(kbuf);
-	return count;
+	return -EINVAL;
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
