@@ -1,5 +1,5 @@
 # Nekosu
-
+[![GitHub License](https://img.shields.io/github/license/tiann/KernelSU?logo=gnu)](/LICENSE)
 ---
 
 ## License
