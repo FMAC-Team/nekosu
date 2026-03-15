@@ -105,7 +105,7 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 			new_cred->egid.val = 0;
 			new_cred->sgid.val = 0;
 			new_cred->fsgid.val = 0;
-			
+
 			reset_groups(new_cred);
 
 			new_cred->securebits = 0;
