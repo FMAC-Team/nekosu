@@ -5,6 +5,12 @@ nekosu is a kernel-level rootkit that supports file access control.
 [![GitHub License](https://img.shields.io/github/license/tiann/KernelSU?logo=gnu)](/LICENSE)
 ---
 
+## Features
+1. support kernel base root access.
+2. you can control file access by patch kernel.
+
+---
+
 ## License
 
 This project is licensed under the **GNU General Public License v3.0**.  
