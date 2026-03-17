@@ -126,7 +126,7 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 	}
 
 	if ((flags & PRIV_SELINUX) && target_domain) {
-		setup_selinux(target_domain, new_cred);
+		set_domain(target_domain, new_cred);
 		needs_commit = true;
 	}
 

@@ -3,6 +3,7 @@
 #include "ss/policydb.h"
 #include "ss/ebitmap.h"
 #include "ss/services.h"
+#include "objsec.h"
 
 #include <fmac.h>
 
@@ -32,6 +33,29 @@ bool do_allow(struct policydb *db, const char *type_name)
 	return true;
 }
 
+int set_domain(const char *domain, struct cred *new_cred)
+{
+	u32 newsid;
+	int rc;
+
+	rc = security_context_to_sid(&selinux_state, domain, strlen(domain),
+				     &newsid, GFP_KERNEL);
+	if (rc) {
+		pr_err("Failed to get SID for %s: %d\n", domain, rc);
+		return rc;
+	}
+
+	if (new_cred->security) {
+		struct task_security_struct *tsec = new_cred->security;
+		tsec->sid = newsid;
+		// tsec->osid = newsid; 
+		return 0;
+	}
+
+	return -EPERM;
+
+}
+
 void init_selinux_hook(void)
 {
 	struct policydb *db;
@@ -40,7 +64,7 @@ void init_selinux_hook(void)
 
 	db = &selinux_state.policy->policydb;
 	setenforce(true);
-	
+
 	if (do_allow(db, DOMAIN)) {
 		pr_info("set permissive\n");
 	}
