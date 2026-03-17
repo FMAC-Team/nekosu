@@ -42,7 +42,7 @@ void init_selinux_hook(void)
 	setenforce(true);
 	
 	if (do_allow(db, DOMAIN)) {
-		pr_info("set permissive");
+		pr_info("set permissive\n");
 	}
 
 }
