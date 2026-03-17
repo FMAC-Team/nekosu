@@ -14,6 +14,8 @@
 #include <linux/uidgid.h>
 #include <linux/version.h>
 #include <linux/nsproxy.h>
+#include <linux/slab.h>
+#include <linux/uidgid.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 #include <linux/sched/signal.h>
@@ -60,11 +62,24 @@ static void disable_seccomp(void)
 #endif
 }
 
+static void reset_groups(struct cred *cred)
+{
+	struct group_info *gi;
+
+	gi = groups_alloc(1);
+	if (!gi)
+		return;
+
+	gi->gid[0] = GLOBAL_ROOT_GID;
+
+	set_groups(cred, gi);
+	put_group_info(gi);
+}
+
 void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
-			   const char *target_domain)
+		      const char *target_domain)
 {
 	struct cred *new_cred;
-	int err;
 	bool needs_commit = false;
 
 	if ((flags & PRIV_SECCOMP) &&
@@ -91,6 +106,8 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 			new_cred->sgid.val = 0;
 			new_cred->fsgid.val = 0;
 
+			reset_groups(new_cred);
+
 			new_cred->securebits = 0;
 
 			needs_commit = true;
@@ -109,7 +126,7 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 	}
 
 	if ((flags & PRIV_SELINUX) && target_domain) {
-		setup_selinux(new_cred, target_domain);
+		setup_selinux(target_domain, new_cred);
 		needs_commit = true;
 	}
 

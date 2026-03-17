@@ -24,8 +24,7 @@
 #include "anonfd.h"
 #include "allowlist.h"
 #include "eventfd.h"
-
-#include "../selinux/selinux.h"
+#include "selinux.h"
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)

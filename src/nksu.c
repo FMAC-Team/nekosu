@@ -53,8 +53,8 @@ static int __init fmac_init(void)
 {
 	int ret;
 
-	// selinux
-	apply_kernelsu_rules();
+	/*selinux */
+	init_selinux_hook();
 
 	hash_init(fmac_rule_ht);
 

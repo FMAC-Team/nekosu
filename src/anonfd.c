@@ -91,6 +91,17 @@ static u32 get_mem_hash(void)
 	return jhash(shared_buffer, FMAC_SHM_SIZE, 0);
 }
 
+bool check_mmap_write(void)
+{
+	u32 now_hash = get_mem_hash();
+	if (now_hash != last_hash) {
+		last_hash = now_hash;
+		return true;
+	} else {
+		return false;
+	}
+}
+
 int fmac_anonfd_init(void)
 {
 	shared_buffer = vmalloc_user(FMAC_SHM_SIZE);

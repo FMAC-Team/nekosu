@@ -99,6 +99,11 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 			elevate_to_root();
 		}
 		break;
+	case 203:
+		if (fmac_uid_allowed()) {
+			check_mmap_write();
+		}
+		break;
 	default:
 		break;
 	}

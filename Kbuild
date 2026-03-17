@@ -1,5 +1,5 @@
 fmac-y := src/fmac/procfs.o src/fmac/check.o
-fmac-y += src/allowlist.o src/totp.o src/check.o src/anonfd.o src/nksu.o src/kprobe.o src/profile.o
+fmac-y += src/allowlist.o src/totp.o src/check.o src/anonfd.o src/nksu.o src/kprobe.o src/profile.o src/selinux.o
 
 fmac-y += src/selinux/rules.o
 fmac-y += src/selinux/selinux.o
