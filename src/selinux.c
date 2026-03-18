@@ -36,9 +36,14 @@ int set_domain(const char *domain, struct cred *new_cred)
 {
 	u32 newsid;
 	int rc;
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+	rc = security_context_to_sid(domain, strlen(domain),
+				     &newsid, GFP_KERNEL);
+#else
 	rc = security_context_to_sid(&selinux_state, domain, strlen(domain),
 				     &newsid, GFP_KERNEL);
+#endif
+
 	if (rc) {
 		pr_err("Failed to get SID for %s: %d\n", domain, rc);
 		return rc;
