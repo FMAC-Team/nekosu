@@ -24,7 +24,6 @@
 #endif
 
 #include <fmac.h>
-#include "objsec.h"
 
 #define PRIV_ROOT (1 << 0)
 #define PRIV_CAPS (1 << 1)
