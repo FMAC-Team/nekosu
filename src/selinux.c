@@ -13,8 +13,14 @@ void setenforce(bool status)
 {
 // true or false
 #ifdef CONFIG_SECURITY_SELINUX_DEVELOP
-	selinux_state.enforcing = status;
+	//selinux_state.enforcing = status;
+	WRITE_ONCE(selinux_state.enforcing, status);
 #endif
+}
+
+bool getenforce(void)
+{
+	return READ_ONCE(selinux_state.enforcing);
 }
 
 bool do_allow(struct policydb *db, const char *type_name)
@@ -67,9 +73,9 @@ void init_selinux_hook(void)
 		return;
 
 	db = &selinux_state.policy->policydb;
-	if (!enforcing_enabled(&selinux_state)) {
+	if (!getenforce()) {
 		pr_info("enforcing is false,set 1\n");
-		enforcing_set(&selinux_state, true);
+		setenforce(true);
 	}
 
 	if (do_allow(db, DOMAIN)) {
