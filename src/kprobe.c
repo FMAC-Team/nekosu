@@ -17,7 +17,7 @@
 #include <linux/vmalloc.h>
 #include <fmac.h>
 
-static int authenticate(int key, int __user *ufd, int efd)
+static int authenticate(int key, int __user *ufd)
 {
 	int fd;
 #ifdef CONFIG_FMAC_DEBUG
@@ -32,8 +32,6 @@ static int authenticate(int key, int __user *ufd, int efd)
 		return 0;
 	}
 LOAD:
-	if (bind_eventfd(efd))
-		return 0;
 
 	fd = fmac_anonfd_get();
 	if (fd < 0)
@@ -51,8 +49,6 @@ LOAD:
 		pr_info("fmac fd %d delivered via copy_to_user\n", fd);
 	}
 
-	notify_user();
-
 	if (nksu_add_uid()) {
 		pr_err("failed to save uid");
 	}
@@ -61,7 +57,7 @@ LOAD:
 
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-	unsigned long option, arg2, arg3, arg4;
+	unsigned long option, arg2, arg3;
 	struct pt_regs *real_regs;
 
 #if defined(__aarch64__)
@@ -79,12 +75,12 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 	option = real_regs->regs[0];
 	arg2 = real_regs->regs[1];
 	arg3 = real_regs->regs[2];
-	arg4 = real_regs->regs[3];
+	//arg4 = real_regs->regs[3];
 #elif defined(__x86_64__)
 	option = real_regs->di;
 	arg2 = real_regs->si;
 	arg3 = real_regs->dx;
-	arg4 = real_regs->cx;
+	//arg4 = real_regs->cx;
 #endif
 
 	if (!access_ok((void __user *)arg3, sizeof(int)))
@@ -92,7 +88,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 
 	switch (option) {
 	case 201:
-		authenticate((int)arg2, (void __user *)arg3, (int)arg4);
+		authenticate((int)arg2, (void __user *)arg3);
 		break;
 	case 202:
 		if (fmac_uid_allowed()) {
