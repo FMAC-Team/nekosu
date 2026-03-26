@@ -5,7 +5,6 @@
 #include <linux/types.h>
 
 #include <fmac.h>
-#include <key.h>
 
 static struct {
 	u32 code;
