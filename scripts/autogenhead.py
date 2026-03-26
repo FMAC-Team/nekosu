@@ -8,6 +8,13 @@ import os
 NO_EXPORT = re.compile(r'//\s*no\s+export\s*\n')
 
 
+def strip_preprocessor(source: str) -> str:
+    """Remove #if/#ifdef/#ifndef...#endif blocks and other preprocessor lines."""
+    source = re.sub(r'^\s*#\s*(if|ifdef|ifndef|elif|else|endif)\b.*$', '',
+                    source, flags=re.MULTILINE)
+    return source
+
+
 def extract_defines(source: str) -> list[str]:
     results = []
     for m in re.finditer(r'(' + NO_EXPORT.pattern + r')?(\s*#define\s+(\S+).*)', source):
@@ -68,9 +75,11 @@ def generate_header(c_path: str) -> str:
     stem       = os.path.splitext(basename)[0]
     guard_name = re.sub(r'[^a-zA-Z0-9]', '_', stem).upper() + '_H'
 
+    clean = strip_preprocessor(source)
+
     defines   = extract_defines(source)
     structs   = extract_structs(source)
-    functions = extract_public_functions(source)
+    functions = extract_public_functions(clean)
 
     lines = []
     lines.append(f"#ifndef {guard_name}")
@@ -118,3 +127,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
