@@ -6,6 +6,8 @@
 #include <linux/version.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
+#include <linux/compiler.h>
+#include <linux/string.h>
 
 #include <fmac.h>
 
@@ -18,24 +20,25 @@
 // no export
 #define MAX_PATH_LEN 256
 
-static const char *const exact_paths[] = {
-	"/system/bin/su",
-	"/system/xbin/su",
-	"/sbin/su",
-	NULL,
-};
+static const char exact_paths[] = "/system/bin/su";
 
 static syscall_fn_t orig_execveat = NULL;
+static syscall_fn_t orig_execve = NULL;
 static syscall_fn_t orig_faccessat = NULL;
 static syscall_fn_t orig_newfstatat = NULL;
 
 static bool is_exact_match(const char *path)
 {
-	const char *const *p;
-	for (p = exact_paths; *p; p++)
-		if (strcmp(path, *p) == 0)
-			return true;
-	return false;
+    if (!path)
+        return false;
+
+    if (unlikely(memcmp(path, exact_paths, sizeof(exact_paths) - 1) == 0)) {
+        if (path[sizeof(exact_paths) - 1] == '\0') {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 static unsigned long push_to_stack(const struct pt_regs *regs,
@@ -64,7 +67,7 @@ static long hooked_execveat(const struct pt_regs *regs)
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
 	struct pt_regs patched;
-	
+
 	if (!fmac_uid_allowed()) {
 		goto passthrough;
 	}
@@ -92,13 +95,47 @@ passthrough:
 	return orig_execveat(regs);
 }
 
+static long hooked_execve(const struct pt_regs *regs)
+{
+	const char __user *upath = (const char __user *)regs->regs[0];
+	char kpath[MAX_PATH_LEN];
+	unsigned long uaddr;
+	struct pt_regs patched;
+
+	if (!fmac_uid_allowed()) {
+		goto passthrough;
+	}
+
+	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
+		goto passthrough;
+	kpath[sizeof(kpath) - 1] = '\0';
+
+	if (!is_exact_match(kpath))
+		goto passthrough;
+
+	uaddr = push_redirect(regs);
+	if (!uaddr)
+		goto passthrough;
+
+	pr_info("execve_redirect: %s -> " REDIRECT_TARGET " (stack @%lx)\n",
+		kpath, uaddr);
+
+	patched = *regs;
+	patched.regs[1] = uaddr;
+	elevate_to_root();
+	return orig_execve(&patched);
+
+passthrough:
+	return orig_execve(regs);
+}
+
 static long hooked_faccessat(const struct pt_regs *regs)
 {
 	const char __user *upath = (const char __user *)regs->regs[1];
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
 	struct pt_regs patched;
-	
+
 	if (!fmac_uid_allowed()) {
 		goto passthrough;
 	}
@@ -131,7 +168,7 @@ static long hooked_newfstatat(const struct pt_regs *regs)
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
 	struct pt_regs patched;
-	
+
 	if (!fmac_uid_allowed()) {
 		goto passthrough;
 	}
@@ -173,7 +210,7 @@ static int hook_one(int nr, syscall_fn_t fn, syscall_fn_t *orig,
 	return 0;
 }
 
-int load_execv_hook(void)
+int load_hijack_hook(void)
 {
 	int ret;
 
@@ -185,6 +222,12 @@ int load_execv_hook(void)
 	ret =
 	    hook_one(__NR_execveat, hooked_execveat, &orig_execveat,
 		     "execveat");
+	if (ret)
+		return ret;
+		
+	ret =
+	    hook_one(__NR_execve, hooked_execve, &orig_execve,
+		     "execve");
 	if (ret)
 		return ret;
 
@@ -201,19 +244,4 @@ int load_execv_hook(void)
 		return ret;
 
 	return 0;
-}
-
-void unload_execv_hook(void)
-{
-	if (orig_execveat)
-		syscalltable_unhook((unsigned long)
-				    &syscall_table[__NR_execveat]);
-
-	if (orig_faccessat)
-		syscalltable_unhook((unsigned long)
-				    &syscall_table[__NR_faccessat]);
-
-	if (orig_newfstatat)
-		syscalltable_unhook((unsigned long)
-				    &syscall_table[__NR_newfstatat]);
 }
