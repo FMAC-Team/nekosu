@@ -149,6 +149,24 @@ int syscalltable_unhook(unsigned long addr)
 	return ret;
 }
 
+syscall_fn_t syscalltable_get_original(unsigned long addr)
+{
+    int i;
+    unsigned long flags;
+    syscall_fn_t orig = NULL;
+
+    spin_lock_irqsave(&hook_lock, flags);
+    for (i = 0; i < hook_count; i++) {
+        if (hook_table[i].addr == addr) {
+            orig = hook_table[i].original;
+            break;
+        }
+    }
+    spin_unlock_irqrestore(&hook_lock, flags);
+
+    return orig;
+}
+
 int syscalltable_init(void)
 {
 	init_mm_ptr = (struct mm_struct *)kallsyms_lookup_name("init_mm");

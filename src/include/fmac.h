@@ -28,6 +28,7 @@
 #include "profile.h"
 #include "kprobe.h"
 #include "check.h"
+#include "hijack.h"
 
 #include "fmac/procfs.h"
 #include "fmac/check.h"
