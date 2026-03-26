@@ -113,7 +113,7 @@ int load_execv_hook(void)
 	ret = syscalltable_hook(oexecve, hooked_execve);
 
 	if (ret == 0) {
-		orig_execve = syscalltable_get_original(oprctl);
+		orig_execve = syscalltable_get_original(oexecve);
 		pr_info("successfully hooked prctl\n");
 	} else {
 		pr_err("failed to hook prctl, ret: %d\n", ret);
