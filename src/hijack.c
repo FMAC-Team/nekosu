@@ -1,5 +1,6 @@
 #include <asm/unistd.h>
 #include <linux/ptrace.h>
+#include <asm/syscall.h>
 #include <fmac.h>
 
 static syscall_fn_t orig_prctl = NULL;
