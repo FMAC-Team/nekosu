@@ -24,7 +24,7 @@ bool fmac_uid_allowed(void)
     kuid_t uid = current_uid();
 	unsigned int id = __kuid_val(uid);
 
-	if (unlikely(id > FMAC_MAX_UID))
+	if (unlikely(id > MAX_UID))
 		return false;
 
 	return test_bit(id, uid_bitmap);
@@ -81,7 +81,7 @@ int nksu_add_uid(void)
 	kuid_t uid = current_uid();
 	unsigned long id = __kuid_val(uid);
 
-    if (id <= FMAC_MAX_UID) {
+    if (id <= MAX_UID) {
 		set_bit(id, uid_bitmap);
 	}
 	return 0;
