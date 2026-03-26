@@ -18,6 +18,7 @@
 #include <linux/spinlock.h>
 #include <linux/types.h>
 #include <linux/version.h>
+#include <asm/syscall.h>
 
 #include "init.h"
 #include "op_code.h"
