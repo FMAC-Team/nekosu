@@ -26,6 +26,7 @@
 #include "syscall.h"
 #include "totp.h"
 #include "profile.h"
+#include "kprobe.h"
 
 #include "fmac/procfs.h"
 #include "fmac/check.h"
