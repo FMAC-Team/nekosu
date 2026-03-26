@@ -46,11 +46,6 @@ int pud_huge(pud_t pud)
 #endif
 }
 
-struct page_change_data {
-    pgprot_t set_mask;
-    pgprot_t clear_mask;
-};
-
 static int change_page_range(pte_t *ptep, unsigned long addr, void *data)
 {
     struct page_change_data *cdata = data;
