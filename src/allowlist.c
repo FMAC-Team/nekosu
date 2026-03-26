@@ -27,7 +27,7 @@ bool fmac_uid_allowed(void)
 	if (unlikely(id > FMAC_MAX_UID))
 		return false;
 
-	return test_bit(id, fmac_uid_bitmap);
+	return test_bit(id, uid_bitmap);
 }
 
 static int fmac_uids_show(struct seq_file *m, void *v)
@@ -35,7 +35,7 @@ static int fmac_uids_show(struct seq_file *m, void *v)
 	unsigned long id;
 	bool first = true;
 
-	for_each_set_bit(id, fmac_uid_bitmap, MAX_UID + 1) {
+	for_each_set_bit(id, uid_bitmap, MAX_UID + 1) {
 		seq_printf(m, "%s%lu", first ? "" : ",", id);
 		first = false;
 	}
@@ -82,7 +82,7 @@ int nksu_add_uid(void)
 	unsigned long id = __kuid_val(uid);
 
     if (id <= FMAC_MAX_UID) {
-		set_bit(id, fmac_uid_bitmap);
+		set_bit(id, uid_bitmap);
 	}
 	return 0;
 }
