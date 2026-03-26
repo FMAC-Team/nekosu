@@ -5,26 +5,31 @@ import re
 import sys
 import os
 
-# Marker comment on the line immediately before a definition to suppress export.
-NO_EXPORT_RE = re.compile(r'//\s*no\s+export\s*[\r\n]')
+
+def _has_no_export_before(source: str, match_start: int) -> bool:
+    """Return True if the line immediately preceding match_start is '// no export'."""
+    preceding = source[:match_start]
+    # 修复：获取所有匹配项，并选择最后一个
+    matches = list(re.finditer(r'//\s*no\s+export\s*$', preceding, re.MULTILINE))
+    if not matches:
+        return False
+        
+    last_comment = matches[-1]
+    between = preceding[last_comment.end():]
+    
+    # If there is a blank line between the comment and the definition,
+    # the comment is not attached to this definition.
+    return not bool(re.search(r'\n[ \t]*\n', between))
 
 
 def extract_defines(source: str) -> list[str]:
     results = []
-    # Walk matches; check whether the character just before the match is
-    # preceded by a no-export comment on the previous line.
-    for m in re.finditer(r'([ \t]*#define[ \t]+\S+[^\\\n]*(?:\\\n[^\n]*)*)',
-                         source, re.MULTILINE):
-        start = m.start()
-        preceding = source[:start]
-        # Check if the line immediately before is a no-export comment.
-        prev_line_match = re.search(r'//\s*no\s+export\s*$', preceding,
-                                    re.MULTILINE)
-        if prev_line_match:
-            # Make sure there's no blank line between the comment and define.
-            between = preceding[prev_line_match.end():]
-            if not re.search(r'\n[ \t]*\n', between):
-                continue
+    for m in re.finditer(
+        r'([ \t]*#define[ \t]+\S+[^\\\n]*(?:\\\n[^\n]*)*)',
+        source, re.MULTILINE
+    ):
+        if _has_no_export_before(source, m.start()):
+            continue
         results.append(m.group(1).strip())
     return results
 
@@ -32,32 +37,24 @@ def extract_defines(source: str) -> list[str]:
 def extract_structs(source: str) -> list[str]:
     results = []
     pattern = re.compile(
-        r'(struct\s+\w+\s*\{[^}]*\}\s*;)',
+        r'(?:typedef\s+)?struct\s+\w+\s*\{[^}]*\}(?:\s*\w+)?\s*;',
         re.DOTALL
     )
     for m in pattern.finditer(source):
-        start = m.start()
-        preceding = source[:start]
-        prev_line = re.search(r'//\s*no\s+export\s*$', preceding, re.MULTILINE)
-        if prev_line:
-            between = preceding[prev_line.end():]
-            if not re.search(r'\n[ \t]*\n', between):
-                continue
-        results.append(m.group(1).strip())
+        if _has_no_export_before(source, m.start()):
+            continue
+        results.append(m.group(0).strip())
     return results
 
 
 def extract_public_functions(source: str) -> list[str]:
-    # Match: [no-export comment\n] [static] return-type func-name(params) {
-    # Return type may be multi-word (e.g. "unsigned long", "long __must_check").
-    # We anchor on the opening brace so we don't match declarations.
     pattern = re.compile(
         r'^'
-        r'((?:[ \t]*//[^\n]*\n)*?)'        # group 1: optional preceding comments
-        r'((?:static|inline)\s+)*'          # group 2: storage qualifiers (skip)
-        r'((?:[a-zA-Z_]\w*(?:\s+|\s*\*\s*))+)'  # group 3: return type
-        r'\s*(\w+)'                          # group 4: function name
-        r'\s*\(([^)]*)\)'                    # group 5: params
+        r'((?:[ \t]*//[^\n]*\n)*?)'
+        r'((?:(?:static|inline)\s+)*)'
+        r'((?:[a-zA-Z_]\w*(?:\s+|\s*\*\s*))+)'
+        r'\s*(\w+)'
+        r'\s*\(([^)]*)\)'
         r'\s*\n?\s*\{',
         re.MULTILINE
     )
@@ -70,14 +67,13 @@ def extract_public_functions(source: str) -> list[str]:
         name               = m.group(4).strip()
         params             = m.group(5).strip()
 
-        if NO_EXPORT_RE.search(preceding_comments):
+        if re.search(r'//\s*no\s+export', preceding_comments):
             continue
         if 'static' in qualifiers or 'inline' in qualifiers:
             continue
         if name == 'main':
             continue
 
-        # Normalise multiple spaces in return type.
         ret_type = re.sub(r'\s+', ' ', ret_type)
         declarations.append(f"{ret_type} {name}({params});")
 
@@ -96,10 +92,11 @@ def generate_header(c_path: str) -> str:
     structs   = extract_structs(source)
     functions = extract_public_functions(source)
 
-    lines = []
-    lines.append(f"#ifndef {guard_name}")
-    lines.append(f"#define {guard_name}")
-    lines.append("")
+    lines = [
+        f"#ifndef {guard_name}",
+        f"#define {guard_name}",
+        "",
+    ]
 
     if defines:
         lines.extend(defines)
@@ -116,7 +113,6 @@ def generate_header(c_path: str) -> str:
         lines.append("")
 
     lines.append(f"#endif /* {guard_name} */")
-
     return "\n".join(lines)
 
 
@@ -134,10 +130,8 @@ def main():
               else re.sub(r'\.c$', '.h', c_path))
 
     header = generate_header(c_path)
-
     with open(h_path, 'w') as f:
         f.write(header)
-
     print(f"Generated: {h_path}")
 
 
