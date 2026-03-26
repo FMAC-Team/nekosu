@@ -60,13 +60,14 @@ static unsigned long push_sh(const struct pt_regs *regs)
 
 static long hooked_execveat(const struct pt_regs *regs)
 {
-	if (!fmac_uid_allowed()) {
-		goto passthrough;
-	}
 	const char __user *upath = (const char __user *)regs->regs[1];
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
 	struct pt_regs patched;
+	
+	if (!fmac_uid_allowed()) {
+		goto passthrough;
+	}
 
 	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
 		goto passthrough;
@@ -93,13 +94,14 @@ passthrough:
 
 static long hooked_faccessat(const struct pt_regs *regs)
 {
-	if (!fmac_uid_allowed()) {
-		goto passthrough;
-	}
 	const char __user *upath = (const char __user *)regs->regs[1];
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
 	struct pt_regs patched;
+	
+	if (!fmac_uid_allowed()) {
+		goto passthrough;
+	}
 
 	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
 		goto passthrough;
@@ -125,13 +127,14 @@ passthrough:
 
 static long hooked_newfstatat(const struct pt_regs *regs)
 {
-	if (!fmac_uid_allowed()) {
-		goto passthrough;
-	}
 	const char __user *upath = (const char __user *)regs->regs[1];
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
 	struct pt_regs patched;
+	
+	if (!fmac_uid_allowed()) {
+		goto passthrough;
+	}
 
 	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
 		goto passthrough;
