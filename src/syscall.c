@@ -62,6 +62,8 @@ static int __change_memory_common(unsigned long start, unsigned long size,
 static int set_page_rw(unsigned long addr)
 {
     vm_unmap_aliases();    
+    pr_info("setting page RW at VA: 0x%lx (PA: 0x%llx)\n", 
+            addr, (unsigned long long)virt_to_phys((void *)addr));
 	return __change_memory_common(addr, PAGE_SIZE, __pgprot(PTE_WRITE),
 				      __pgprot(PTE_RDONLY));
 }
@@ -69,6 +71,7 @@ static int set_page_rw(unsigned long addr)
 static int set_page_ro(unsigned long addr)
 {
     vm_unmap_aliases();    
+    pr_info("setting page RO at VA: 0x%lx\n", addr);
 	return __change_memory_common(addr, PAGE_SIZE, __pgprot(PTE_RDONLY),
 				      __pgprot(PTE_WRITE));
 }
