@@ -21,7 +21,7 @@ static DECLARE_BITMAP(uid_bitmap, MAX_UID + 1);
 
 bool fmac_uid_allowed(void)
 {
-    kuid_t uid = current_uid();
+	kuid_t uid = current_uid();
 	unsigned int id = __kuid_val(uid);
 
 	if (unlikely(id > MAX_UID))
@@ -81,7 +81,7 @@ int nksu_add_uid(void)
 	kuid_t uid = current_uid();
 	unsigned long id = __kuid_val(uid);
 
-    if (id <= MAX_UID) {
+	if (id <= MAX_UID) {
 		set_bit(id, uid_bitmap);
 	}
 	return 0;

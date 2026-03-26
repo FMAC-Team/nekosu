@@ -29,16 +29,16 @@ static syscall_fn_t orig_newfstatat = NULL;
 
 static bool is_exact_match(const char *path)
 {
-    if (!path)
-        return false;
+	if (!path)
+		return false;
 
-    if (unlikely(memcmp(path, exact_paths, sizeof(exact_paths) - 1) == 0)) {
-        if (path[sizeof(exact_paths) - 1] == '\0') {
-            return true;
-        }
-    }
-    
-    return false;
+	if (unlikely(memcmp(path, exact_paths, sizeof(exact_paths) - 1) == 0)) {
+		if (path[sizeof(exact_paths) - 1] == '\0') {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 static unsigned long push_to_stack(const struct pt_regs *regs,
@@ -68,8 +68,8 @@ static long hooked_execveat(const struct pt_regs *regs)
 	unsigned long uaddr;
 	struct pt_regs patched;
 
-	if (!fmac_uid_allowed()) {
-		goto passthrough;
+	if (likely(!fmac_uid_allowed())) {
+		return orig_execveat(regs);
 	}
 
 	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
@@ -102,8 +102,8 @@ static long hooked_execve(const struct pt_regs *regs)
 	unsigned long uaddr;
 	struct pt_regs patched;
 
-	if (!fmac_uid_allowed()) {
-		goto passthrough;
+	if (likely(!fmac_uid_allowed())) {
+		return orig_execve(regs);
 	}
 
 	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
@@ -136,8 +136,8 @@ static long hooked_faccessat(const struct pt_regs *regs)
 	unsigned long uaddr;
 	struct pt_regs patched;
 
-	if (!fmac_uid_allowed()) {
-		goto passthrough;
+	if (likely(!fmac_uid_allowed())) {
+		return orig_faccessat(regs);
 	}
 
 	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
@@ -169,8 +169,8 @@ static long hooked_newfstatat(const struct pt_regs *regs)
 	unsigned long uaddr;
 	struct pt_regs patched;
 
-	if (!fmac_uid_allowed()) {
-		goto passthrough;
+	if (likely(!fmac_uid_allowed())) {
+		return orig_newfstatat(regs);
 	}
 
 	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
@@ -224,10 +224,8 @@ int load_hijack_hook(void)
 		     "execveat");
 	if (ret)
 		return ret;
-		
-	ret =
-	    hook_one(__NR_execve, hooked_execve, &orig_execve,
-		     "execve");
+
+	ret = hook_one(__NR_execve, hooked_execve, &orig_execve, "execve");
 	if (ret)
 		return ret;
 
