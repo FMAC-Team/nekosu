@@ -22,6 +22,7 @@ static const char *const exact_paths[] = {
 
 static syscall_fn_t orig_execve = NULL;
 
+// no export
 #define MAX_PATH_LEN 256
 
 static bool is_exact_match(const char *path)
@@ -99,7 +100,7 @@ passthrough:
 	return orig_execve(regs);
 }
 
-int load_execv_hook()
+int load_execv_hook(void)
 {
 	int ret;
 	unsigned long oexecve;
