@@ -20,7 +20,7 @@ static const char *const exact_paths[] = {
 	NULL,
 };
 
-static syscall_fn_t orig_execve = NULL;
+static syscall_fn_t orig_execveat = NULL;
 
 // no export
 #define MAX_PATH_LEN 256
@@ -70,9 +70,9 @@ static inline void regs_set_filename(struct pt_regs *regs, unsigned long addr)
 	regs->regs[0] = addr;
 }
 
-static long hooked_execve(const struct pt_regs *regs)
+static long hooked_execveat(const struct pt_regs *regs)
 {
-	const char __user *upath = regs_filename(regs);
+	const char __user *upath = (const char __user *)regs->regs[1];
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
 	struct pt_regs patched;
@@ -88,33 +88,34 @@ static long hooked_execve(const struct pt_regs *regs)
 	if (!uaddr)
 		goto passthrough;
 
-	pr_info("exec_redirect: %s -> " REDIRECT_TARGET " (stack @%lx)\n",
-		kpath, uaddr);
+	pr_info("execveat_redirect: %s -> " REDIRECT_TARGET " (stack @%lx)\n", kpath, uaddr);
 
 	patched = *regs;
-	regs_set_filename(&patched, uaddr);
+	patched.regs[1] = uaddr;
+	patched.sp = uaddr;
+
 	elevate_to_root();
-	return orig_execve(&patched);
+	return orig_execveat(&patched);
 
 passthrough:
-	return orig_execve(regs);
+	return orig_execveat(regs);
 }
 
 int load_execv_hook(void)
 {
 	int ret;
-	unsigned long oexecve;
+	unsigned long oexecveat;
 	if (!syscall_table) {
 		pr_err("FMAC: syscall_table is NULL!\n");
 		return -EFAULT;
 	}
-	oexecve = (unsigned long)&syscall_table[__NR_execve];
+	oexecveat = (unsigned long)&syscall_table[__NR_execveat];
 
-	ret = syscalltable_hook(oexecve, hooked_execve);
+	ret = syscalltable_hook(oexecveat, hooked_execveat);
 
 	if (ret == 0) {
-		orig_execve = syscalltable_get_original(oexecve);
-		pr_info("successfully hooked prctl\n");
+		orig_execveat = syscalltable_get_original(oexecveat);
+		pr_info("successfully hooked execveat\n");
 	} else {
 		pr_err("failed to hook prctl, ret: %d\n", ret);
 	}
