@@ -20,13 +20,15 @@
 #include <linux/version.h>
 #include <asm/syscall.h>
 
-#include "init.h"
-#include "op_code.h"
 #include "anonfd.h"
 #include "allowlist.h"
-#include "eventfd.h"
 #include "selinux.h"
 #include "syscall.h"
+#include "totp.h"
+#include "profile.h"
+
+#include "fmac/procfs.h"
+#include "fmac/check.h"
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)
@@ -66,15 +68,8 @@ extern struct proc_dir_entry *fmac_proc_dir;
 
 void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
 
-// totp.c
-u32 generate_totp_base32(const char *base32_secret);
-int init_totp_crypto(void);
-void cleanup_totp_crypto(void);
-
-// check.c
-bool check(size_t code);
-
-// root.c
-void elevate_to_root(void);
+// procfs.c
+int fmac_procfs_init(void);
+void fmac_procfs_exit(void);
 
 #endif /* _LINUX_FMAC_H */

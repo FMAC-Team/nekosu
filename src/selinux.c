@@ -23,7 +23,7 @@ bool getenforce(void)
 	return READ_ONCE(selinux_state.enforcing);
 }
 
-bool do_allow(struct policydb *db, const char *type_name)
+static bool do_allow(struct policydb *db, const char *type_name)
 {
 	struct type_datum *type;
 	type = (struct type_datum *)symtab_search(&db->p_types, type_name);
