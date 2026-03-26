@@ -67,7 +67,7 @@ static int __init fmac_init(void)
 	init_totp_crypto();
 	fmac_hook_init();
 	syscalltable_init();
-	init_hijack();
+	load_execv_hook();
 
 	pr_info("File Monitoring and Access Control initialized.\n");
 	return 0;

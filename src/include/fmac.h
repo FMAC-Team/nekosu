@@ -29,7 +29,7 @@ extern syscall_fn_t *syscall_table;
 #include "profile.h"
 #include "kprobe.h"
 #include "check.h"
-#include "hijack.h"
+#include "execv.h"
 
 #include "fmac/procfs.h"
 #include "fmac/check.h"
@@ -71,9 +71,5 @@ extern int work_module;
 extern struct proc_dir_entry *fmac_proc_dir;
 
 void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type);
-
-// procfs.c
-int fmac_procfs_init(void);
-void fmac_procfs_exit(void);
 
 #endif /* _LINUX_FMAC_H */
