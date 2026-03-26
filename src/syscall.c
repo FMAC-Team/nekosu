@@ -93,7 +93,7 @@ int syscalltable_hook(unsigned long addr, syscall_fn_t hook_fn)
 	hook_table[hook_count].addr = addr;
 	hook_table[hook_count].original = *(syscall_fn_t *) addr;
 	hook_count++;
-	*(syscall_fn_t *) addr = hook_fn;
+	WRITE_ONCE(*(syscall_fn_t *)addr, hook_fn);
 
 	spin_unlock_irqrestore(&hook_lock, flags);
 
@@ -137,7 +137,7 @@ int syscalltable_unhook(unsigned long addr)
 		return -ENOENT;
 	}
 
-	*(syscall_fn_t *) addr = hook_table[i].original;
+	WRITE_ONCE(*(syscall_fn_t *)addr, hook_table[i].original);
 	hook_table[i] = hook_table[--hook_count];
 
 	spin_unlock_irqrestore(&hook_lock, flags);
