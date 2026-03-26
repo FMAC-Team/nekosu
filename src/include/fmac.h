@@ -25,6 +25,7 @@
 #include "allowlist.h"
 #include "eventfd.h"
 #include "selinux.h"
+#include "syscall.h"
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)
