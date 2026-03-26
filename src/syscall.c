@@ -5,6 +5,7 @@
 #include <asm/tlbflush.h>
 #include <asm/pgtable.h>
 #include <linux/spinlock.h>
+#include <linux/vmalloc.h> 
 
 #include <fmac.h>
 
@@ -60,12 +61,14 @@ static int __change_memory_common(unsigned long start, unsigned long size,
 
 static int set_page_rw(unsigned long addr)
 {
+    vm_unmap_aliases();    
 	return __change_memory_common(addr, PAGE_SIZE, __pgprot(PTE_WRITE),
 				      __pgprot(PTE_RDONLY));
 }
 
 static int set_page_ro(unsigned long addr)
 {
+    vm_unmap_aliases();    
 	return __change_memory_common(addr, PAGE_SIZE, __pgprot(PTE_RDONLY),
 				      __pgprot(PTE_WRITE));
 }
