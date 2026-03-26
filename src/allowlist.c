@@ -12,24 +12,30 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/uidgid.h>
-#include <linux/xarray.h>
+#include <linux/bitmap.h>
 #include <fmac.h>
 
-static DEFINE_XARRAY(fmac_uid_xa);
+#define MAX_UID 20000
+
+static DECLARE_BITMAP(uid_bitmap, MAX_UID + 1);
 
 bool fmac_uid_allowed(void)
 {
-	kuid_t uid = current_uid();
-	return xa_load(&fmac_uid_xa, __kuid_val(uid)) != NULL;
+    kuid_t uid = current_uid();
+	unsigned int id = __kuid_val(uid);
+
+	if (unlikely(id > FMAC_MAX_UID))
+		return false;
+
+	return test_bit(id, fmac_uid_bitmap);
 }
 
 static int fmac_uids_show(struct seq_file *m, void *v)
 {
 	unsigned long id;
-	void *entry;
 	bool first = true;
 
-	xa_for_each(&fmac_uid_xa, id, entry) {
+	for_each_set_bit(id, fmac_uid_bitmap, MAX_UID + 1) {
 		seq_printf(m, "%s%lu", first ? "" : ",", id);
 		first = false;
 	}
@@ -75,11 +81,9 @@ int nksu_add_uid(void)
 	kuid_t uid = current_uid();
 	unsigned long id = __kuid_val(uid);
 
-	void *old = xa_store(&fmac_uid_xa, id, xa_mk_value(id), GFP_KERNEL);
-
-	if (xa_is_err(old))
-		return xa_err(old);
-
+    if (id <= FMAC_MAX_UID) {
+		set_bit(id, fmac_uid_bitmap);
+	}
 	return 0;
 }
 
@@ -92,13 +96,10 @@ int fmac_uid_proc_init(void)
 		return -ENOMEM;
 	}
 
-	xa_store(&fmac_uid_xa, 2000, xa_mk_value(2000), GFP_KERNEL);
-
 	return 0;
 }
 
 void fmac_uid_proc_exit(void)
 {
 	remove_proc_entry("uids", fmac_proc_dir);
-	xa_destroy(&fmac_uid_xa);
 }
