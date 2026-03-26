@@ -25,8 +25,8 @@ static const char *const exact_paths[] = {
 	NULL,
 };
 
-static syscall_fn_t orig_execveat   = NULL;
-static syscall_fn_t orig_faccessat  = NULL;
+static syscall_fn_t orig_execveat = NULL;
+static syscall_fn_t orig_faccessat = NULL;
 static syscall_fn_t orig_newfstatat = NULL;
 
 static bool is_exact_match(const char *path)
@@ -60,6 +60,9 @@ static unsigned long push_sh(const struct pt_regs *regs)
 
 static long hooked_execveat(const struct pt_regs *regs)
 {
+	if (!fmac_uid_allowed()) {
+		goto passthrough;
+	}
 	const char __user *upath = (const char __user *)regs->regs[1];
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
@@ -90,6 +93,9 @@ passthrough:
 
 static long hooked_faccessat(const struct pt_regs *regs)
 {
+	if (!fmac_uid_allowed()) {
+		goto passthrough;
+	}
 	const char __user *upath = (const char __user *)regs->regs[1];
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
@@ -119,6 +125,9 @@ passthrough:
 
 static long hooked_newfstatat(const struct pt_regs *regs)
 {
+	if (!fmac_uid_allowed()) {
+		goto passthrough;
+	}
 	const char __user *upath = (const char __user *)regs->regs[1];
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
@@ -170,14 +179,23 @@ int load_execv_hook(void)
 		return -EFAULT;
 	}
 
-	ret = hook_one(__NR_execveat,   hooked_execveat,   &orig_execveat,   "execveat");
-	if (ret) return ret;
+	ret =
+	    hook_one(__NR_execveat, hooked_execveat, &orig_execveat,
+		     "execveat");
+	if (ret)
+		return ret;
 
-	ret = hook_one(__NR_faccessat,  hooked_faccessat,  &orig_faccessat,  "faccessat");
-	if (ret) return ret;
+	ret =
+	    hook_one(__NR_faccessat, hooked_faccessat, &orig_faccessat,
+		     "faccessat");
+	if (ret)
+		return ret;
 
-	ret = hook_one(__NR_newfstatat, hooked_newfstatat, &orig_newfstatat, "newfstatat");
-	if (ret) return ret;
+	ret =
+	    hook_one(__NR_newfstatat, hooked_newfstatat, &orig_newfstatat,
+		     "newfstatat");
+	if (ret)
+		return ret;
 
 	return 0;
 }
@@ -185,11 +203,14 @@ int load_execv_hook(void)
 void unload_execv_hook(void)
 {
 	if (orig_execveat)
-		syscalltable_unhook((unsigned long)&syscall_table[__NR_execveat]);
+		syscalltable_unhook((unsigned long)
+				    &syscall_table[__NR_execveat]);
 
 	if (orig_faccessat)
-		syscalltable_unhook((unsigned long)&syscall_table[__NR_faccessat]);
+		syscalltable_unhook((unsigned long)
+				    &syscall_table[__NR_faccessat]);
 
 	if (orig_newfstatat)
-		syscalltable_unhook((unsigned long)&syscall_table[__NR_newfstatat]);
+		syscalltable_unhook((unsigned long)
+				    &syscall_table[__NR_newfstatat]);
 }
