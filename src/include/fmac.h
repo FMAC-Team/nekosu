@@ -24,6 +24,7 @@
 #include "allowlist.h"
 #include "selinux.h"
 #include "syscall.h"
+extern syscall_fn_t *syscall_table;
 #include "totp.h"
 #include "profile.h"
 #include "kprobe.h"

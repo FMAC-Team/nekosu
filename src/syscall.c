@@ -9,7 +9,7 @@
 #include <fmac.h>
 
 static struct mm_struct *init_mm_ptr;
-static syscall_fn_t *syscall_table;
+syscall_fn_t *syscall_table;
 
 // no export
 struct page_change_data {
