@@ -11,6 +11,7 @@
 static struct mm_struct *init_mm_ptr;
 static syscall_fn_t *syscall_table;
 
+// no export
 struct page_change_data {
 	pgprot_t set_mask;
 	pgprot_t clear_mask;
@@ -18,6 +19,7 @@ struct page_change_data {
 
 #define MAX_HOOKS 256
 
+// no export
 struct hook_entry {
 	unsigned long addr;
 	syscall_fn_t original;

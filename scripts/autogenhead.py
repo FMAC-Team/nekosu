@@ -5,35 +5,53 @@ import re
 import sys
 import os
 
+NO_EXPORT = re.compile(r'//\s*no\s+export\s*\n')
+
 
 def extract_defines(source: str) -> list[str]:
-    return re.findall(r'^\s*#define\s+\S+.*', source, re.MULTILINE)
+    results = []
+    for m in re.finditer(r'(' + NO_EXPORT.pattern + r')?(\s*#define\s+(\S+).*)', source):
+        if m.group(1):
+            continue
+        results.append(m.group(2).strip())
+    return results
 
 
 def extract_structs(source: str) -> list[str]:
     results = []
-    pattern = re.compile(r'(struct\s+\w+\s*\{[^}]*\}\s*;)', re.DOTALL)
-    for match in pattern.finditer(source):
-        results.append(match.group(1).strip())
+    pattern = re.compile(
+        r'(' + NO_EXPORT.pattern + r')?'
+        r'(struct\s+(\w+)\s*\{[^}]*\}\s*;)',
+        re.DOTALL
+    )
+    for m in pattern.finditer(source):
+        if m.group(1):
+            continue
+        results.append(m.group(2).strip())
     return results
 
 
 def extract_public_functions(source: str) -> list[str]:
     pattern = re.compile(
-        r'^(?!.*\bstatic\b)'
+        r'(' + NO_EXPORT.pattern + r')?'
+        r'(static\s+)?'
         r'([a-zA-Z_][\w\s\*]*?)'
         r'\s+(\w+)'
         r'\s*\(([^)]*)\)'
-        r'\s*\{',
+        r'\s*\n?\s*\{',
         re.MULTILINE
     )
 
     declarations = []
-    for match in pattern.finditer(source):
-        ret_type = match.group(1).strip()
-        name     = match.group(2).strip()
-        params   = match.group(3).strip()
+    for m in pattern.finditer(source):
+        no_export = m.group(1)
+        is_static = m.group(2)
+        ret_type  = m.group(3).strip()
+        name      = m.group(4).strip()
+        params    = m.group(5).strip()
 
+        if no_export or is_static:
+            continue
         if name == 'main':
             continue
 
@@ -47,8 +65,8 @@ def generate_header(c_path: str) -> str:
         source = f.read()
 
     basename   = os.path.basename(c_path)
-    guard_name = re.sub(r'[^a-zA-Z0-9]', '_', basename).upper()
-    guard_name = re.sub(r'_C_$', '_H_', guard_name)
+    stem       = os.path.splitext(basename)[0]
+    guard_name = re.sub(r'[^a-zA-Z0-9]', '_', stem).upper() + '_H'
 
     defines   = extract_defines(source)
     structs   = extract_structs(source)
