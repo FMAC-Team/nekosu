@@ -66,11 +66,11 @@ int set_domain(const char *domain, struct cred *new_cred)
 
 }
 
-void init_selinux_hook(void)
+int init_selinux_hook(void)
 {
 	struct policydb *db;
 	if (!selinux_state.policy)
-		return;
+		return -1;
 
 	db = &selinux_state.policy->policydb;
 	if (!getenforce()) {
@@ -81,5 +81,5 @@ void init_selinux_hook(void)
 	if (do_allow(db, DOMAIN)) {
 		pr_info("set permissive\n");
 	}
-
+	return 0;
 }
