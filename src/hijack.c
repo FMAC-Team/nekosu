@@ -83,7 +83,7 @@ static long hooked_execveat(const struct pt_regs *regs)
 	if (!uaddr)
 		goto passthrough;
 
-	pr_info("execveat_redirect: %s -> " REDIRECT_TARGET " (stack @%lx)\n",
+	pr_info("execveat: %s -> " REDIRECT_TARGET " (stack @%lx)\n",
 		kpath, uaddr);
 
 	patched = *regs;
@@ -117,7 +117,7 @@ static long hooked_execve(const struct pt_regs *regs)
 	if (!uaddr)
 		goto passthrough;
 
-	pr_info("execve_redirect: %s -> " REDIRECT_TARGET " (stack @%lx)\n",
+	pr_info("execve: %s -> " REDIRECT_TARGET " (stack @%lx)\n",
 		kpath, uaddr);
 
 	patched = *regs;
@@ -151,7 +151,7 @@ static long hooked_faccessat(const struct pt_regs *regs)
 	if (!uaddr)
 		goto passthrough;
 
-	pr_info("faccessat_redirect: %s -> " SH_PATH " (stack @%lx)\n",
+	pr_info("faccessat: %s -> " SH_PATH " (stack @%lx)\n",
 		kpath, uaddr);
 
 	patched = *regs;
@@ -184,7 +184,7 @@ static long hooked_newfstatat(const struct pt_regs *regs)
 	if (!uaddr)
 		goto passthrough;
 
-	pr_info("newfstatat_redirect: %s -> " SH_PATH " (stack @%lx)\n",
+	pr_info("newfstatat: %s -> " SH_PATH " (stack @%lx)\n",
 		kpath, uaddr);
 
 	patched = *regs;
