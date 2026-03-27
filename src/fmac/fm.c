@@ -51,7 +51,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
 		path_prefix, uid, deny, op_type);
 }
 
- int fmac_init(void)
+int fmac_init(void)
 {
 	int ret;
 
@@ -67,7 +67,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
 	return 0;
 }
 
- void fmac_exit(void)
+void fmac_exit(void)
 {
 	struct fmac_rule *rule;
 	struct hlist_node *tmp;
