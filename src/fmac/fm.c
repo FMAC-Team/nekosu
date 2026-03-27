@@ -51,7 +51,7 @@ void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
 		path_prefix, uid, deny, op_type);
 }
 
-static int __init fmac_init(void)
+ int fmac_init(void)
 {
 	int ret;
 
@@ -67,7 +67,7 @@ static int __init fmac_init(void)
 	return 0;
 }
 
-static void __exit fmac_exit(void)
+ void fmac_exit(void)
 {
 	struct fmac_rule *rule;
 	struct hlist_node *tmp;
@@ -86,6 +86,3 @@ static void __exit fmac_exit(void)
 
 	pr_info("File Monitoring and Access Control exited.\n");
 }
-
-module_init(fmac_init);
-module_exit(fmac_exit);

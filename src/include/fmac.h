@@ -33,6 +33,7 @@ extern syscall_fn_t *syscall_table;
 
 #include "fmac/procfs.h"
 #include "fmac/check.h"
+#include "fmac/fm.h"
 
 #define MAX_PATH_LEN 256
 #define MAX_LOG_SIZE (PAGE_SIZE * 1024)

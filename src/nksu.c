@@ -11,20 +11,9 @@
 #include <linux/string.h>
 #include <fmac.h>
 
-DEFINE_HASHTABLE(fmac_rule_ht, FMAC_HASH_BITS);
-DEFINE_SPINLOCK(fmac_lock);
-int work_module = 1;
-
-static void fmac_rule_free_rcu(struct rcu_head *head)
-{
-	struct fmac_rule *rule = container_of(head, struct fmac_rule, rcu);
-	kfree(rule);
-}
-
 static int __init fmac_init(void)
 {
 	int ret;
-	hash_init(fmac_rule_ht);
 
 	ret = init_selinux_hook();
 	if (ret) {
@@ -32,9 +21,9 @@ static int __init fmac_init(void)
 		return ret;
 	}
 
-	ret = fmac_procfs_init();
+	ret = fmac_init();
 	if (ret) {
-		pr_err("Failed to initialize procfs\n");
+		pr_err("Failed to initialize fmac\n");
 		return ret;
 	}
 	ret = fmac_anonfd_init();
@@ -68,27 +57,11 @@ static int __init fmac_init(void)
 
 static void __exit fmac_exit(void)
 {
-	struct fmac_rule *rule;
-	struct hlist_node *tmp;
-	int bkt;
-
 	fmac_anonfd_exit();
 	cleanup_totp_crypto();
 	fmac_hook_exit();
 	syscalltable_exit();
-
-	fmac_procfs_exit();
-
-	spin_lock(&fmac_lock);
-	hash_for_each_safe(fmac_rule_ht, bkt, tmp, rule, node) {
-		hash_del_rcu(&rule->node);
-		call_rcu(&rule->rcu, fmac_rule_free_rcu);
-	}
-	spin_unlock(&fmac_lock);
-
-	synchronize_rcu();
-
-	pr_info("File Monitoring and Access Control exited.\n");
+	fmac_exit();
 }
 
 module_init(fmac_init);
