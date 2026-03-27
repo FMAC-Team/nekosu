@@ -11,7 +11,7 @@
 #include <linux/string.h>
 #include <fmac.h>
 
-static int __init fmac_init(void)
+static int __init nekosu_init(void)
 {
 	int ret;
 
@@ -55,7 +55,7 @@ static int __init fmac_init(void)
 	return 0;
 }
 
-static void __exit fmac_exit(void)
+static void __exit nekosu_exit(void)
 {
 	fmac_anonfd_exit();
 	cleanup_totp_crypto();
@@ -64,8 +64,8 @@ static void __exit fmac_exit(void)
 	fmac_exit();
 }
 
-module_init(fmac_init);
-module_exit(fmac_exit);
+module_init(nekosu_init);
+module_exit(nekosu_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Aqnya");
 MODULE_DESCRIPTION("nekosu");
