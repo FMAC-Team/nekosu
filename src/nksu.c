@@ -18,58 +18,51 @@ int work_module = 1;
 static void fmac_rule_free_rcu(struct rcu_head *head)
 {
 	struct fmac_rule *rule = container_of(head, struct fmac_rule, rcu);
-
 	kfree(rule);
-}
-
-void fmac_add_rule(const char *path_prefix, uid_t uid, bool deny, int op_type)
-{
-	struct fmac_rule *rule;
-	u32 key;
-
-	rule = kmalloc(sizeof(*rule), GFP_KERNEL);
-	if (!rule) {
-		pr_err("Failed to allocate rule\n");
-		return;
-	}
-
-	strscpy(rule->path_prefix, path_prefix, MAX_PATH_LEN);
-	rule->path_len = strlen(path_prefix);
-	rule->uid = uid;
-	rule->deny = deny;
-	rule->op_type = op_type;
-
-	key = jhash(rule->path_prefix, rule->path_len, 0);
-
-	spin_lock(&fmac_lock);
-	hash_add_rcu(fmac_rule_ht, &rule->node, key);
-	spin_unlock(&fmac_lock);
-
-	pr_info("added rule: path=%s, uid=%u, deny=%d, op_type=%d\n",
-		path_prefix, uid, deny, op_type);
 }
 
 static int __init fmac_init(void)
 {
 	int ret;
-
-	/*selinux */
-	init_selinux_hook();
-
 	hash_init(fmac_rule_ht);
+
+	ret = init_selinux_hook();
+	if (ret) {
+		pr_err("failed to initialize SELinux\n");
+		return ret;
+	}
 
 	ret = fmac_procfs_init();
 	if (ret) {
 		pr_err("Failed to initialize procfs\n");
 		return ret;
 	}
-	fmac_anonfd_init();
-	init_totp_crypto();
-	fmac_hook_init();
-	syscalltable_init();
-	load_hijack_hook();
+	ret = fmac_anonfd_init();
+	if (ret) {
+		pr_err("Failed to initialize anonfd\n");
+		return ret;
+	}
+	ret = init_totp_crypto();
+	if (ret) {
+		pr_err("Failed to initialize crypto\n");
+		return ret;
+	}
+	ret = fmac_hook_init();
+	if (ret) {
+		pr_err("Failed to initialize kprobe hook\n");
+		return ret;
+	}
+	ret = syscalltable_init();
+	if (ret) {
+		pr_err("Failed to initialize syscalltable\n");
+		return ret;
+	}
 
-	pr_info("File Monitoring and Access Control initialized.\n");
+	ret = load_hijack_hook();
+	if (ret) {
+		pr_err("Failed to initialize hijack\n");
+		return ret;
+	}
 	return 0;
 }
 
