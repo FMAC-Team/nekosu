@@ -85,7 +85,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 		break;
 	case 203:
 		if (fmac_uid_allowed()) {
-			check_mmap_write();
+			fmac_ctlfd_get();
 		}
 		break;
 	default:

@@ -30,6 +30,7 @@ extern syscall_fn_t *syscall_table;
 #include "kprobe.h"
 #include "check.h"
 #include "hijack.h"
+#include "ioctl.h"
 
 #include "fmac/procfs.h"
 #include "fmac/check.h"
