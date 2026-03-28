@@ -4,7 +4,7 @@
 #include <fmac.h>
 
 // no export
-static struct fmac_rule {
+struct fmac_rule {
 	char path[1024];
 	unsigned long status_bits;
 };
