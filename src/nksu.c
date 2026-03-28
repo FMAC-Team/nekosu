@@ -20,12 +20,6 @@ static int __init nekosu_init(void)
 		pr_err("failed to initialize SELinux\n");
 		return ret;
 	}
-
-	ret = fmac_init();
-	if (ret) {
-		pr_err("Failed to initialize fmac\n");
-		return ret;
-	}
 	ret = fmac_anonfd_init();
 	if (ret) {
 		pr_err("Failed to initialize anonfd\n");
@@ -61,7 +55,6 @@ static void __exit nekosu_exit(void)
 	cleanup_totp_crypto();
 	fmac_hook_exit();
 	syscalltable_exit();
-	fmac_exit();
 }
 
 module_init(nekosu_init);
