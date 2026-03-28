@@ -190,8 +190,7 @@ passthrough:
 	return orig_newfstatat(regs);
 }
 
-int hook_one(int nr, syscall_fn_t fn, syscall_fn_t *orig,
-		    const char *name)
+int hook_one(int nr, syscall_fn_t fn, syscall_fn_t *orig, const char *name)
 {
 	unsigned long addr = (unsigned long)&syscall_table[nr];
 	int ret = syscalltable_hook(addr, fn);

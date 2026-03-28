@@ -3,6 +3,11 @@
 #include <linux/anon_inodes.h>
 #include <fmac.h>
 
+struct fmac_rule {
+	char path[1024];
+	unsigned long status_bits;
+};
+
 #define IOC_MAGIC      'F'
 #define IOC_GET_SHM    _IO(IOC_MAGIC,  0)
 #define IOC_BIND_EVT   _IOW(IOC_MAGIC, 1, int)
@@ -10,6 +15,8 @@
 #define IOC_ADD_UID   _IOW(IOC_MAGIC, 3, unsigned int)
 #define IOC_DEL_UID   _IOW(IOC_MAGIC, 4, unsigned int)
 #define IOC_HAS_UID   _IOWR(IOC_MAGIC, 5, unsigned int)
+#define IOC_ADD_RULE  _IOW(IOC_MAGIC, 6, struct fmac_rule)
+#define IOC_DEL_RULE  _IOW(IOC_MAGIC, 7, struct fmac_rule)
 
 static long ioc_has_uid(unsigned long arg)
 {
@@ -61,6 +68,28 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			    (&id, (unsigned int __user *)arg, sizeof(id)))
 				return -EFAULT;
 			del_uid(id);
+			return 0;
+		}
+
+	case IOC_ADD_RULE:{
+			struct fmac_rule rule;
+			if (copy_from_user
+			    (&rule, (struct fmac_rule __user *)arg,
+			     sizeof(rule)))
+				return -EFAULT;
+			rule.path[sizeof(rule.path) - 1] = '\0';
+			insert_into_hash_table(rule.path, rule.status_bits);
+			return 0;
+		}
+
+	case IOC_DEL_RULE:{
+			struct fmac_rule rule;
+			if (copy_from_user
+			    (&rule, (struct fmac_rule __user *)arg,
+			     sizeof(rule)))
+				return -EFAULT;
+			rule.path[sizeof(rule.path) - 1] = '\0';
+			delete_from_hash_table(rule.path);
 			return 0;
 		}
 

@@ -135,7 +135,6 @@ struct hash_node *find_in_hash_table(const char *key)
 
 int rhash_init(void)
 {
-//      struct hash_node *node;
 	int err;
 
 	err = rhashtable_init(&fmac_rhashtable, &fmac_rht_params);
