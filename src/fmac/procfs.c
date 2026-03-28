@@ -10,6 +10,8 @@
 #include <linux/uaccess.h>
 #include <fmac.h>
 
+struct proc_dir_entry *fmac_proc_dir;
+
 int fmac_procfs_init(void)
 {
 
