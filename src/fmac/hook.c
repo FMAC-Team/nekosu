@@ -18,7 +18,7 @@ long hooked_openat(const struct pt_regs *regs)
 	return orig_openat(regs);
 }
 
-int load_hook()
+int load_hook(void)
 {
 	int ret;
 	ret = hook_one(__NR_openat, hooked_openat, &orig_openat, "openat");
