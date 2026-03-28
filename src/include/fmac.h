@@ -37,4 +37,6 @@ extern syscall_fn_t *syscall_table;
 
 extern struct proc_dir_entry *fmac_proc_dir;
 
+#define MAX_PATH_LEN 1024
+
 #endif /* _LINUX_FMAC_H */

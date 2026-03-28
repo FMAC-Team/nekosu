@@ -3,6 +3,7 @@
 #include <linux/string.h>
 #include <linux/slab.h>
 #include <linux/rhashtable.h>
+#include <fmac.h>
 
 struct hash_node {
 	char key[MAX_PATH_LEN];
@@ -59,7 +60,7 @@ bool check_node_bit(const char *key, int bit_nr)
 	return result;
 }
 
-static void insert_into_hash_table(const char *key, unsigned long status_bits)
+void insert_into_hash_table(const char *key, unsigned long status_bits)
 {
 	struct hash_node *new_node;
 	int err;
@@ -85,7 +86,7 @@ static void insert_into_hash_table(const char *key, unsigned long status_bits)
 	pr_info("Inserted key: %s, status_bits: 0x%lx\n", key, status_bits);
 }
 
-static void delete_from_hash_table(const char *key)
+void delete_from_hash_table(const char *key)
 {
 	struct hash_node *node;
 	char lookup_key[MAX_PATH_LEN] = { };
@@ -131,7 +132,7 @@ struct hash_node *find_in_hash_table(const char *key)
 
 int rhash_init(void)
 {
-	struct hash_node *node;
+//	struct hash_node *node;
 	int err;
 
 	err = rhashtable_init(&fmac_rhashtable, &fmac_rht_params);

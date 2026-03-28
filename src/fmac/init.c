@@ -1,7 +1,7 @@
 #include "hashtable.h"
 #include <fmac.h>
 
-int fmac_init()
+int fmac_init(void)
 {
 	int ret;
 	ret = rhash_init();
