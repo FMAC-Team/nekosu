@@ -33,6 +33,7 @@ extern syscall_fn_t *syscall_table;
 #include "ioctl.h"
 
 #include "fmac/procfs.h"
+#include "fmac/init.h"
 
 extern struct proc_dir_entry *fmac_proc_dir;
 

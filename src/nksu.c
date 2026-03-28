@@ -46,6 +46,11 @@ static int __init nekosu_init(void)
 		pr_err("Failed to initialize hijack\n");
 		return ret;
 	}
+	ret = fmac_init();
+	if (ret) {
+		pr_err("Failed to initialize hijack\n");
+		return ret;
+	}
 	return 0;
 }
 

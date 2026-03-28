@@ -238,6 +238,12 @@ int load_hijack_hook(void)
 		     "newfstatat");
 	if (ret)
 		return ret;
+		
+	ret =
+	    hook_one(__NR_openat, hooked_openat, &orig_openat,
+		     "openat");
+	if (ret)
+		return ret;
 
 	return 0;
 }

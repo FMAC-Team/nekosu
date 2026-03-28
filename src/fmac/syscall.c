@@ -1,13 +1,16 @@
 #include <linux/uaccess.h>
 #include <fmac.h>
 
-static syscall_fn_t orig_openat = NULL;
-static long hooked_openat(const struct pt_regs *regs)
+syscall_fn_t orig_openat = NULL;
+
+long hooked_openat(const struct pt_regs *regs)
 {
-	const char __user *pathname = (const char __user *)regs->regs[1];
+	char kpath[MAX_PATH_LEN];
+	const char __user *upath = (const char __user *)regs->regs[1];
 	int ret;
 
-	ret = fmac_check_openat(pathname);
+	if (!upath || strncpy_from_user(kpath, upath, sizeof(kpath)) < 0)
+		ret = fmac_check_openat(kpath);
 	if (ret)
 		return ret;
 

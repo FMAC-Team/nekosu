@@ -1,4 +1,4 @@
-fmac-y := src/fmac/procfs.o
+fmac-y := src/fmac/procfs.o src/fmac/hashtable.o src/fmac/init.o src/fmac/openat.o src/fmac/syscall.o
 fmac-y += src/allowlist.o src/totp.o src/check.o src/anonfd.o src/nksu.o src/kprobe.o src/profile.o src/selinux.o src/syscall.o src/hijack.o src/ioctl.o
 
 obj-$(CONFIG_FMAC) += fmac.o
