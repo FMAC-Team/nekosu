@@ -1,5 +1,6 @@
 #include <linux/fs.h>
 #include <linux/uaccess.h>
+#include <linux/anon_inodes.h>
 #include <fmac.h>
 
 #define IOC_MAGIC      'F'
