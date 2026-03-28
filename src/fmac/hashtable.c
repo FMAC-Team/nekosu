@@ -5,6 +5,8 @@
 #include <linux/rhashtable.h>
 #include <fmac.h>
 
+#define MAX_PATH_LEN 1024
+
 struct hash_node {
 	char key[MAX_PATH_LEN];
 	unsigned long status_bits;
