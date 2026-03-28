@@ -3,7 +3,7 @@
 #include <linux/anon_inodes.h>
 #include <fmac.h>
 
-struct fmac_rule {
+static struct fmac_rule {
 	char path[1024];
 	unsigned long status_bits;
 };
