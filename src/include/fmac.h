@@ -35,7 +35,7 @@ extern syscall_fn_t *syscall_table;
 #include "fmac/procfs.h"
 #include "fmac/hashtable.h"
 #include "fmac/init.h"
-#include "fmac/syscall.h"
+#include "fmac/hook.h"
 #include "fmac/openat.h"
 
 extern struct proc_dir_entry *fmac_proc_dir;
