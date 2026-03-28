@@ -17,9 +17,6 @@
 #define SH_PATH     "/system/bin/sh"
 #define SH_PATH_LEN (sizeof(SH_PATH))
 
-// no export
-#define MAX_PATH_LEN 256
-
 static const char exact_paths[] = "/system/bin/su";
 
 static syscall_fn_t orig_execveat = NULL;
@@ -193,7 +190,7 @@ passthrough:
 	return orig_newfstatat(regs);
 }
 
-static int hook_one(int nr, syscall_fn_t fn, syscall_fn_t *orig,
+int hook_one(int nr, syscall_fn_t fn, syscall_fn_t *orig,
 		    const char *name)
 {
 	unsigned long addr = (unsigned long)&syscall_table[nr];
@@ -236,12 +233,6 @@ int load_hijack_hook(void)
 	ret =
 	    hook_one(__NR_newfstatat, hooked_newfstatat, &orig_newfstatat,
 		     "newfstatat");
-	if (ret)
-		return ret;
-		
-	ret =
-	    hook_one(__NR_openat, hooked_openat, &orig_openat,
-		     "openat");
 	if (ret)
 		return ret;
 

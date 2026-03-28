@@ -8,5 +8,10 @@ int fmac_init(void)
 		pr_err("failed to load hashtable\n");
 		return ret;
 	}
+	ret = load_hook();
+	if (ret) {
+		pr_err("failed to load hashtable\n");
+		return ret;
+	}
 	return 0;
 }
