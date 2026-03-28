@@ -151,8 +151,7 @@ static long hooked_faccessat(const struct pt_regs *regs)
 	if (!uaddr)
 		goto passthrough;
 
-	pr_info("faccessat: %s -> " SH_PATH " (stack @%lx)\n",
-		kpath, uaddr);
+	pr_info("faccessat: %s -> " SH_PATH " (stack @%lx)\n", kpath, uaddr);
 
 	patched = *regs;
 	patched.regs[1] = uaddr;
@@ -184,8 +183,7 @@ static long hooked_newfstatat(const struct pt_regs *regs)
 	if (!uaddr)
 		goto passthrough;
 
-	pr_info("newfstatat: %s -> " SH_PATH " (stack @%lx)\n",
-		kpath, uaddr);
+	pr_info("newfstatat: %s -> " SH_PATH " (stack @%lx)\n", kpath, uaddr);
 
 	patched = *regs;
 	patched.regs[1] = uaddr;

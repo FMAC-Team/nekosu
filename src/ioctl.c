@@ -6,9 +6,19 @@
 #define IOC_GET_SHM    _IO(IOC_MAGIC,  0)
 #define IOC_BIND_EVT   _IOW(IOC_MAGIC, 1, int)
 #define IOC_CHK_WRITE  _IOR(IOC_MAGIC, 2, int)
-#define FMAC_IOC_ADD_UID   _IOW(FMAC_IOC_MAGIC, 3, unsigned int)
-#define FMAC_IOC_DEL_UID   _IOW(FMAC_IOC_MAGIC, 4, unsigned int)
-#define FMAC_IOC_HAS_UID   _IOWR(FMAC_IOC_MAGIC, 5, unsigned int)
+#define IOC_ADD_UID   _IOW(IOC_MAGIC, 3, unsigned int)
+#define IOC_DEL_UID   _IOW(IOC_MAGIC, 4, unsigned int)
+#define IOC_HAS_UID   _IOWR(IOC_MAGIC, 5, unsigned int)
+
+static long ioc_has_uid(unsigned long arg)
+{
+	unsigned int id;
+	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
+		return -EFAULT;
+	id = fmac_uid_has(id) ? 1 : 0;
+	return copy_to_user((unsigned int __user *)arg, &id, sizeof(id))
+	    ? -EFAULT : 0;
+}
 
 static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -35,41 +45,26 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				return -EFAULT;
 			break;
 		}
-	case FMAC_IOC_ADD_UID:{
+	case IOC_ADD_UID:{
 			unsigned int id;
 			if (copy_from_user
 			    (&id, (unsigned int __user *)arg, sizeof(id)))
 				return -EFAULT;
-			if (id > MAX_UID)
-				return -EINVAL;
-			set_bit(id, uid_bitmap);
+			add_uid(id);
 			return 0;
 		}
 
-	case FMAC_IOC_DEL_UID:{
+	case IOC_DEL_UID:{
 			unsigned int id;
 			if (copy_from_user
 			    (&id, (unsigned int __user *)arg, sizeof(id)))
 				return -EFAULT;
-			if (id > MAX_UID)
-				return -EINVAL;
-			clear_bit(id, uid_bitmap);
+			del_uid(id);
 			return 0;
 		}
 
-	case FMAC_IOC_HAS_UID:{
-			unsigned int id;
-			if (copy_from_user
-			    (&id, (unsigned int __user *)arg, sizeof(id)))
-				return -EFAULT;
-			if (id > MAX_UID)
-				return -EINVAL;
-			id = test_bit(id, uid_bitmap) ? 1 : 0;
-			if (copy_to_user
-			    ((unsigned int __user *)arg, &id, sizeof(id)))
-				return -EFAULT;
-			return 0;
-		}
+	case IOC_HAS_UID:
+		return ioc_has_uid(arg);
 
 	default:
 		return -ENOTTY;

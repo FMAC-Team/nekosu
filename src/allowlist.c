@@ -87,6 +87,33 @@ int nksu_add_uid(void)
 	return 0;
 }
 
+int add_uid(unsigned int id)
+{
+	if (id <= MAX_UID) {
+		set_bit(id, uid_bitmap);
+	} else {
+		return -1;
+	}
+	return 0;
+}
+
+int del_uid(unsigned int id)
+{
+	if (id <= MAX_UID) {
+		clear_bit(id, uid_bitmap);
+	} else {
+		return -1;
+	}
+	return 0;
+}
+
+bool fmac_uid_has(unsigned int id)
+{
+	if (id > MAX_UID)
+		return false;
+	return test_bit(id, uid_bitmap);
+}
+
 int fmac_uid_proc_init(void)
 {
 	struct proc_dir_entry *entry;
