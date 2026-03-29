@@ -32,8 +32,6 @@ static long ioc_has_uid(unsigned long arg)
 static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-	
-	pr_info("fmac: cmd=0x%x IOC_ADD_RULE=0x%x\n", cmd, IOC_ADD_RULE);
 
 	switch (cmd) {
 	case IOC_GET_SHM:
