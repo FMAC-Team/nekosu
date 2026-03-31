@@ -5,9 +5,14 @@ syscall_fn_t orig_openat = NULL;
 
 long hooked_openat(const struct pt_regs *regs)
 {
-    char kpath[MAX_PATH_LEN];
+    int dfd          = (int)regs->regs[0];
     const char __user *upath = (const char __user *)regs->regs[1];
-    int ret = 0;
+    int flags        = (int)regs->regs[2];
+    umode_t mode     = (umode_t)regs->regs[3];
+
+    struct path path;
+    unsigned long ino;
+    long ret;
 
     if (upath && strncpy_from_user(kpath, upath, sizeof(kpath)) > 0) {
         kpath[MAX_PATH_LEN - 1] = '\0';
@@ -16,7 +21,8 @@ long hooked_openat(const struct pt_regs *regs)
             return ret;
     }
 
-    return orig_openat(regs);
+    ret = do_sys_open(dfd, upath, flags, mode);
+    return ret;
 }
 
 int load_hook(void)
