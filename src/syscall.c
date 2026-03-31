@@ -243,7 +243,8 @@ static int __change_memory_common(unsigned long start, unsigned long size,
 	if (ret)
 		pr_info("__apply_to_page_range() failed: %d\n", ret);
 
-	flush_tlb_kernel_range(start, start + size);
+	//flush_tlb_kernel_range(start, start + size);
+	flush_tlb_all();
 	return ret;
 }
 
