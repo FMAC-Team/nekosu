@@ -11,9 +11,10 @@ long hooked_openat(const struct pt_regs *regs)
     int flags        = (int)regs->regs[2];
     umode_t mode     = (umode_t)regs->regs[3];
 
-    struct path path;
-    unsigned long ino;
+  //  struct path path;
+  //  unsigned long ino;
     long ret;
+    char kpath[MAX_PATH_LEN];
 
     if (upath && strncpy_from_user(kpath, upath, sizeof(kpath)) > 0) {
         kpath[MAX_PATH_LEN - 1] = '\0';
