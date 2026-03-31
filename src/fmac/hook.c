@@ -23,6 +23,8 @@ long hooked_openat(const struct pt_regs *regs)
             return ret;
     }
 
+	if (force_o_largefile())
+		flags |= O_LARGEFILE;
     ret = do_sys_open(dfd, upath, flags, mode);
     return ret;
 }
