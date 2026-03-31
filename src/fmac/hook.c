@@ -1,4 +1,5 @@
 #include <linux/uaccess.h>
+#include <linux/fs.h>
 #include <fmac.h>
 
 syscall_fn_t orig_openat = NULL;
