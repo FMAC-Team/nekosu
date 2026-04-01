@@ -6,6 +6,10 @@ syscall_fn_t orig_openat = NULL;
 
 long hooked_openat(const struct pt_regs *regs)
 {
+	if (likely(!fmac_uid_allowed())) {
+		return orig_openat(regs);
+	}
+
     int dfd          = (int)regs->regs[0];
     const char __user *upath = (const char __user *)regs->regs[1];
     int flags        = (int)regs->regs[2];
