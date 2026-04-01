@@ -8,3 +8,4 @@ ccflags-y += -I$(IDIR)
 ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
 
 ccflags-y += -std=gnu99
+ccflags-y += -Wno-declaration-after-statement
