@@ -46,11 +46,12 @@ static int __init nekosu_init(void)
 		pr_err("Failed to initialize hijack\n");
 		return ret;
 	}
+	/*
 	ret = fmac_init();
 	if (ret) {
 		pr_err("Failed to initialize hijack\n");
 		return ret;
-	}
+	}*/
 	return 0;
 }
 
@@ -60,6 +61,7 @@ static void __exit nekosu_exit(void)
 	cleanup_totp_crypto();
 	fmac_hook_exit();
 	syscalltable_exit();
+	unload_hijack_hook();
 }
 
 module_init(nekosu_init);

@@ -209,7 +209,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
             return;
         uaddr = push_str(sp, REDIRECT_TARGET, REDIRECT_TARGET_LEN);
         if (!uaddr) return;
-        pr_info("fmac: execve %s -> " REDIRECT_TARGET "\n", kpath);
+        pr_info("execve %s -> " REDIRECT_TARGET "\n", kpath);
         regs->regs[0] = uaddr;
         elevate_to_root();
         break;
@@ -219,7 +219,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
             return;
         uaddr = push_str(sp, REDIRECT_TARGET, REDIRECT_TARGET_LEN);
         if (!uaddr) return;
-        pr_info("fmac: execveat %s -> " REDIRECT_TARGET "\n", kpath);
+        pr_info("execveat %s -> " REDIRECT_TARGET "\n", kpath);
         regs->regs[1] = uaddr;
         elevate_to_root();
         break;
@@ -229,7 +229,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
             return;
         uaddr = push_str(sp, SH_PATH, SH_PATH_LEN);
         if (!uaddr) return;
-        pr_info("fmac: faccessat %s -> " SH_PATH "\n", kpath);
+        pr_info("faccessat %s -> " SH_PATH "\n", kpath);
         regs->regs[1] = uaddr;
         break;
 
@@ -238,7 +238,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
             return;
         uaddr = push_str(sp, SH_PATH, SH_PATH_LEN);
         if (!uaddr) return;
-        pr_info("fmac: newfstatat %s -> " SH_PATH "\n", kpath);
+        pr_info("newfstatat %s -> " SH_PATH "\n", kpath);
         regs->regs[1] = uaddr;
         break;
     }
@@ -287,30 +287,30 @@ int load_hijack_hook(void)
 
     tp_sys_enter = find_tracepoint("sys_enter");
     if (!tp_sys_enter) {
-        pr_err("fmac: cannot find sys_enter tracepoint\n");
+        pr_err("cannot find sys_enter tracepoint\n");
         return -ENOENT;
     }
 
     tp_sched_fork = find_tracepoint("sched_process_fork");
     if (!tp_sched_fork) {
-        pr_err("fmac: cannot find sched_process_fork tracepoint\n");
+        pr_err("cannot find sched_process_fork tracepoint\n");
         return -ENOENT;
     }
 
     ret = tracepoint_probe_register(tp_sys_enter, probe_sys_enter, NULL);
     if (ret) {
-        pr_err("fmac: register sys_enter probe failed: %d\n", ret);
+        pr_err("register sys_enter probe failed: %d\n", ret);
         return ret;
     }
 
     ret = tracepoint_probe_register(tp_sched_fork, probe_sched_fork, NULL);
     if (ret) {
-        pr_err("fmac: register sched_process_fork probe failed: %d\n", ret);
+        pr_err("register sched_process_fork probe failed: %d\n", ret);
         tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter, NULL);
         return ret;
     }
 
-    pr_info("fmac: hijack hooks loaded (tracepoint)\n");
+    pr_info("hijack hooks loaded (tracepoint)\n");
     return 0;
 }
 
@@ -325,5 +325,5 @@ void unload_hijack_hook(void)
 
     fmac_scope_clear_all();
 
-    pr_info("fmac: hijack hooks unloaded\n");
+    pr_info("hijack hooks unloaded\n");
 }
