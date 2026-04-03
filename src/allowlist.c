@@ -91,6 +91,7 @@ int add_uid(unsigned int id)
 {
 	if (id <= MAX_UID) {
 		set_bit(id, uid_bitmap);
+	    fmac_scope_set(uid,FMAC_SCOPE_ALL);
 	} else {
 		return -1;
 	}
