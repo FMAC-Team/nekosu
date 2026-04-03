@@ -26,6 +26,7 @@
 
 #define SCOPE_HASH_BITS 6
 
+// no export
 struct scope_entry {
     uid_t           uid;
     u32             flags;
@@ -243,6 +244,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
     }
 }
 
+// no export
 struct tp_find_ctx {
     const char      *name;
     struct tracepoint **out;
