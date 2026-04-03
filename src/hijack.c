@@ -153,7 +153,6 @@ static unsigned long push_str(unsigned long sp,
     return addr;
 }
 
-<<<<<<< HEAD
 static struct tracepoint *tp_sys_enter;
 static struct tracepoint *tp_sys_exit;
 
@@ -280,8 +279,6 @@ static void probe_sched_fork(void *data,
     set_tsk_thread_flag(child, TIF_SYSCALL_TRACEPOINT);
 }
 
-=======
->>>>>>> 49b0709 (move hook one.)
 int load_hijack_hook(void)
 {
     int ret;
