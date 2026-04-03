@@ -105,6 +105,7 @@ int del_uid(unsigned int id)
 {
 	if (id <= MAX_UID) {
 		clear_bit(id, uid_bitmap);
+		fmac_scope_clear((uid_t)id);
 	} else {
 		return -1;
 	}
