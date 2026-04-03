@@ -9,3 +9,4 @@ ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-
 
 ccflags-y += -std=gnu99
 ccflags-y += -Wno-declaration-after-statement
+ccflags-y += -Wno-unused-variable
