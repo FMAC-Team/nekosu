@@ -150,7 +150,7 @@ void elevate_to_root(void)
 	cap_raise(all_caps, CAP_SETGID);
 	cap_raise(all_caps, CAP_NET_ADMIN);
 	cap_raise(all_caps, CAP_SYS_PTRACE);
-	cap_raise(all_caps, CAP_SYS_MODULE);
+	cap_raise(all_caps, CAP_LINUX_IMMUTABLE);
 	cap_raise(all_caps, CAP_DAC_READ_SEARCH);
 	cap_raise(all_caps, CAP_MAC_ADMIN);
 
