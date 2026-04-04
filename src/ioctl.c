@@ -17,10 +17,10 @@ struct fmac_rule {
 #define IOC_DEL_UID   _IOW(IOC_MAGIC, 4, unsigned int)
 #define IOC_HAS_UID   _IOWR(IOC_MAGIC, 5, unsigned int)
 
-if (IS_ENABLED(CONFIG_FMAC_SYSCALL)) {
+#if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 #define IOC_ADD_RULE  _IOW(IOC_MAGIC, 6, struct fmac_rule)
 #define IOC_DEL_RULE  _IOW(IOC_MAGIC, 7, struct fmac_rule)
-}
+#endif
 
 static long ioc_has_uid(unsigned long arg)
 {
@@ -74,7 +74,7 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			del_uid(id);
 			return 0;
 		}
-		if (IS_ENABLED(CONFIG_FMAC_SYSCALL)) {
+#if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 	case IOC_ADD_RULE:{
 				struct fmac_rule rule;
 				if (copy_from_user
@@ -97,7 +97,8 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				delete_from_hash_table(rule.path);
 				return 0;
 			}
-		}
+#endif
+	
 	case IOC_HAS_UID:
 		return ioc_has_uid(arg);
 
