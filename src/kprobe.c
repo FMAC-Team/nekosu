@@ -20,7 +20,7 @@
 static int authenticate(int key)
 {
 	int fd;
-#ifdef CONFIG_FMAC_DEBUG
+#if IS_ENABLED(CONFIG_FMAC_DEBUG) 
 	pr_info("prctl hit: option=201 arg2=%lu\n", key);
 #endif
 	if (fmac_uid_allowed()) {
