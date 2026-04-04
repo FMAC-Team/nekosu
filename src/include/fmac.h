@@ -31,7 +31,7 @@
 #include "ioctl.h"
 #include "procfs.h"
 
-if (IS_ENABLED(CONFIG_FMAC_SYSCALL)) {
+#if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 #include "syscall.h"
 extern syscall_fn_t *syscall_table;
 
@@ -39,7 +39,7 @@ extern syscall_fn_t *syscall_table;
 #include "fmac/init.h"
 #include "fmac/hook.h"
 #include "fmac/openat.h"
-}
+#endif
 
 extern struct proc_dir_entry *fmac_proc_dir;
 
