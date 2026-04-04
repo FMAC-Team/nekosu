@@ -35,24 +35,25 @@ static int __init nekosu_init(void)
 		pr_err("Failed to initialize kprobe hook\n");
 		return ret;
 	}
+#if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 	ret = syscalltable_init();
 	if (ret) {
 		pr_err("Failed to initialize syscalltable\n");
 		return ret;
 	}
-
+#endif
 	ret = load_hijack_hook();
 	if (ret) {
 		pr_err("Failed to initialize hijack\n");
 		return ret;
 	}
-	if (IS_ENABLED(CONFIG_FMAC_SYSCALL)) {
+#if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 		ret = fmac_init()
 		    if (ret) {
 			pr_err("Failed to load fmac\n");
 			return ret;
 		}
-	}
+#endif
 	return 0;
 }
 
@@ -61,7 +62,9 @@ static void __exit nekosu_exit(void)
 	fmac_anonfd_exit();
 	cleanup_totp_crypto();
 	fmac_hook_exit();
+#if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 	syscalltable_exit();
+#endif
 	unload_hijack_hook();
 }
 
