@@ -23,20 +23,23 @@
 #include "anonfd.h"
 #include "allowlist.h"
 #include "selinux.h"
-#include "syscall.h"
-extern syscall_fn_t *syscall_table;
 #include "totp.h"
 #include "profile.h"
 #include "kprobe.h"
 #include "check.h"
 #include "hijack.h"
 #include "ioctl.h"
+#include "procfs.h"
 
-#include "fmac/procfs.h"
+if (IS_ENABLED(CONFIG_FMAC_SYSCALL)) {
+#include "syscall.h"
+extern syscall_fn_t *syscall_table;
+
 #include "fmac/hashtable.h"
 #include "fmac/init.h"
 #include "fmac/hook.h"
 #include "fmac/openat.h"
+}
 
 extern struct proc_dir_entry *fmac_proc_dir;
 

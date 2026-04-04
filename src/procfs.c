@@ -33,8 +33,6 @@ void fmac_procfs_exit(void)
 		remove_proc_entry("fmac", NULL);
 		fmac_proc_dir = NULL;
 	}
-#ifdef FMAC_ROOT
 	fmac_uid_proc_exit();
-#endif
 	pr_info("Procfs removed.\n");
 }

@@ -1,6 +1,6 @@
-fmac-y += src/allowlist.o src/totp.o src/check.o src/anonfd.o src/nksu.o src/kprobe.o src/profile.o src/selinux.o src/hijack.o src/ioctl.o
+fmac-y += src/allowlist.o src/totp.o src/check.o src/anonfd.o src/nksu.o src/kprobe.o src/profile.o src/selinux.o src/hijack.o src/ioctl.o src/procfs.o
 
-fmac-$(CONFIG_FMAC_SYSCALL)       += src/fmac/procfs.o src/fmac/hashtable.o src/fmac/init.o src/fmac/openat.o src/fmac/hook.o src/syscall.o
+fmac-$(CONFIG_FMAC_SYSCALL)       += src/fmac/hashtable.o src/fmac/init.o src/fmac/openat.o src/fmac/hook.o src/syscall.o
 
 obj-$(CONFIG_FMAC) += fmac.o
 
