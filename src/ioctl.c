@@ -13,7 +13,7 @@ struct fmac_rule {
 // no export
 struct fmac_uid_cap {
 	unsigned int uid;
-	uint64_t     caps;
+	uint64_t caps;
 };
 
 #define IOC_MAGIC      'F'
@@ -83,57 +83,63 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = fmac_anonfd_get();
 		break;
 
-	case IOC_BIND_EVT: {
-		int efd;
-		if (copy_from_user(&efd, (int __user *)arg, sizeof(efd)))
-			return -EFAULT;
-		ret = bind_eventfd(efd);
-		break;
-	}
+	case IOC_BIND_EVT:{
+			int efd;
+			if (copy_from_user
+			    (&efd, (int __user *)arg, sizeof(efd)))
+				return -EFAULT;
+			ret = bind_eventfd(efd);
+			break;
+		}
 
-	case IOC_CHK_WRITE: {
-		int changed = check_mmap_write() ? 1 : 0;
-		if (copy_to_user((int __user *)arg, &changed, sizeof(changed)))
-			return -EFAULT;
-		break;
-	}
+	case IOC_CHK_WRITE:{
+			int changed = check_mmap_write()? 1 : 0;
+			if (copy_to_user
+			    ((int __user *)arg, &changed, sizeof(changed)))
+				return -EFAULT;
+			break;
+		}
 
-	case IOC_ADD_UID: {
-		unsigned int id;
-		if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
-			return -EFAULT;
-		add_uid(id);
-		return 0;
-	}
+	case IOC_ADD_UID:{
+			unsigned int id;
+			if (copy_from_user
+			    (&id, (unsigned int __user *)arg, sizeof(id)))
+				return -EFAULT;
+			add_uid(id);
+			return 0;
+		}
 
-	case IOC_DEL_UID: {
-		unsigned int id;
-		if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
-			return -EFAULT;
-		del_uid(id);
-		return 0;
-	}
+	case IOC_DEL_UID:{
+			unsigned int id;
+			if (copy_from_user
+			    (&id, (unsigned int __user *)arg, sizeof(id)))
+				return -EFAULT;
+			del_uid(id);
+			return 0;
+		}
 
 #if IS_ENABLED(CONFIG_FMAC_SYSCALL)
-	case IOC_ADD_RULE: {
-		struct fmac_rule rule;
-		if (copy_from_user(&rule, (struct fmac_rule __user *)arg,
-				   sizeof(rule)))
-			return -EFAULT;
-		rule.path[sizeof(rule.path) - 1] = '\0';
-		insert_into_hash_table(rule.path, rule.status_bits);
-		return 0;
-	}
+	case IOC_ADD_RULE:{
+			struct fmac_rule rule;
+			if (copy_from_user
+			    (&rule, (struct fmac_rule __user *)arg,
+			     sizeof(rule)))
+				return -EFAULT;
+			rule.path[sizeof(rule.path) - 1] = '\0';
+			insert_into_hash_table(rule.path, rule.status_bits);
+			return 0;
+		}
 
-	case IOC_DEL_RULE: {
-		struct fmac_rule rule;
-		if (copy_from_user(&rule, (struct fmac_rule __user *)arg,
-				   sizeof(rule)))
-			return -EFAULT;
-		rule.path[sizeof(rule.path) - 1] = '\0';
-		delete_from_hash_table(rule.path);
-		return 0;
-	}
+	case IOC_DEL_RULE:{
+			struct fmac_rule rule;
+			if (copy_from_user
+			    (&rule, (struct fmac_rule __user *)arg,
+			     sizeof(rule)))
+				return -EFAULT;
+			rule.path[sizeof(rule.path) - 1] = '\0';
+			delete_from_hash_table(rule.path);
+			return 0;
+		}
 #endif
 
 	case IOC_HAS_UID:
@@ -156,10 +162,10 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 }
 
 static const struct file_operations fmac_ctl_fops = {
-	.owner          = THIS_MODULE,
+	.owner = THIS_MODULE,
 	.unlocked_ioctl = fmac_ioctl,
 #ifdef CONFIG_COMPAT
-	.compat_ioctl   = fmac_ioctl,
+	.compat_ioctl = fmac_ioctl,
 #endif
 };
 

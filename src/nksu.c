@@ -24,49 +24,49 @@ typedef struct {
 
 static const module_component_t core_components[] = {
 	{
-		.name = "SELinux Hook",
-		.init = init_selinux_hook,
-		.exit = NULL,
-	},
+	 .name = "SELinux Hook",
+	 .init = init_selinux_hook,
+	 .exit = NULL,
+	  },
 	{
-		.name = "Anonymous FD",
-		.init = fmac_anonfd_init,
-		.exit = fmac_anonfd_exit,
-	},
+	 .name = "Anonymous FD",
+	 .init = fmac_anonfd_init,
+	 .exit = fmac_anonfd_exit,
+	  },
 	{
-		.name = "TOTP Crypto",
-		.init = init_totp_crypto,
-		.exit = cleanup_totp_crypto,
-	},
+	 .name = "TOTP Crypto",
+	 .init = init_totp_crypto,
+	 .exit = cleanup_totp_crypto,
+	  },
 	{
-		.name = "UID Capabilities",
-		.init = uid_caps_init,
-		.exit = uid_caps_exit,
-	},
+	 .name = "UID Capabilities",
+	 .init = uid_caps_init,
+	 .exit = uid_caps_exit,
+	  },
 	{
-		.name = "FMAC Hook",
-		.init = fmac_hook_init,
-		.exit = fmac_hook_exit,
-	},
+	 .name = "FMAC Hook",
+	 .init = fmac_hook_init,
+	 .exit = fmac_hook_exit,
+	  },
 	{
-		.name = "Hijack Hook",
-		.init = load_hijack_hook,
-		.exit = unload_hijack_hook,
-	},
+	 .name = "Hijack Hook",
+	 .init = load_hijack_hook,
+	 .exit = unload_hijack_hook,
+	  },
 };
 
 #if IS_ENABLED(CONFIG_FMAC_SYSCALL)
 static const module_component_t syscall_components[] = {
 	{
-		.name = "Syscall Table",
-		.init = syscalltable_init,
-		.exit = syscalltable_exit,
-	},
+	 .name = "Syscall Table",
+	 .init = syscalltable_init,
+	 .exit = syscalltable_exit,
+	  },
 	{
-		.name = "FMAC Core",
-		.init = fmac_init,
-		.exit = NULL,
-	},
+	 .name = "FMAC Core",
+	 .init = fmac_init,
+	 .exit = NULL,
+	  },
 };
 
 #define SYSCALL_COMPONENTS_COUNT ARRAY_SIZE(syscall_components)
@@ -92,11 +92,13 @@ static int nekosu_init_component(const module_component_t *comp, int index)
 		return ret;
 	}
 
-	pr_debug("%s initialized successfully (index: %d)\n", comp->name, index);
+	pr_debug("%s initialized successfully (index: %d)\n", comp->name,
+		 index);
 	return 0;
 }
 
-static void nekosu_cleanup_components(const module_component_t *comps, int count)
+static void nekosu_cleanup_components(const module_component_t *comps,
+				      int count)
 {
 	int i;
 	for (i = count - 1; i >= 0; i--) {
@@ -124,7 +126,7 @@ static int nekosu_init_all_components(void)
 		if (ret) {
 			nekosu_cleanup_components(syscall_components, i);
 			nekosu_cleanup_components(core_components,
-			                          CORE_COMPONENTS_COUNT);
+						  CORE_COMPONENTS_COUNT);
 			return ret;
 		}
 	}
