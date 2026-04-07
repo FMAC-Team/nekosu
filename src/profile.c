@@ -146,8 +146,13 @@ void elevate_to_root(void)
     kernel_cap_t all_caps = CAP_EMPTY_SET;
     uint64_t caps_config;
     int cap_bit;
-    kuid_t uid = current_uid();
-    caps_config = uid_caps_get(uid);
+    kuid_t uid;
+    uid_t uid_val;
+    
+    uid = current_uid();
+    uid_val = from_kuid(current_user_ns(), uid);
+    
+    caps_config = uid_caps_get(uid_val);
     
     if (caps_config == 0) {
         pr_warn("uid_caps: no capabilities configured, using defaults\n");
