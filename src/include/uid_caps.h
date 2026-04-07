@@ -5,6 +5,7 @@
 #include <linux/hashtable.h>
 #include <linux/spinlock.h>
 #include <linux/types.h>
+#include <fmac.h>
 
 #define UID_CAPS_HASH_BITS 8
 

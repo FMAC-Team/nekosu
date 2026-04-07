@@ -77,9 +77,6 @@ int init_selinux_hook(void)
 		pr_info("enforcing is false,set 1\n");
 		setenforce(true);
 	}
-
-	if (do_allow(db, DOMAIN)) {
-		pr_info("set permissive\n");
-	}
+	do_allow(db, DOMAIN);
 	return 0;
 }
