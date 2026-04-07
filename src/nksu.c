@@ -30,6 +30,11 @@ static int __init nekosu_init(void)
 		pr_err("Failed to initialize crypto\n");
 		return ret;
 	}
+		ret = uid_caps_init();
+	if (ret) {
+		pr_err("Failed to load caplist\n");
+		return ret;
+	}
 	ret = fmac_hook_init();
 	if (ret) {
 		pr_err("Failed to initialize kprobe hook\n");
@@ -61,6 +66,7 @@ static void __exit nekosu_exit(void)
 {
 	fmac_anonfd_exit();
 	cleanup_totp_crypto();
+	uid_caps_exit();
 	fmac_hook_exit();
 #if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 	syscalltable_exit();

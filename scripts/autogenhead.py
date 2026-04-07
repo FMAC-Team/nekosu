@@ -6,10 +6,13 @@ import sys
 import os
 
 
+BLACKLIST = [
+    'uid_cap.c'
+]
+
 def _has_no_export_before(source: str, match_start: int) -> bool:
     """Return True if the line immediately preceding match_start is '// no export'."""
     preceding = source[:match_start]
-    # 修复：获取所有匹配项，并选择最后一个
     matches = list(re.finditer(r'//\s*no\s+export\s*$', preceding, re.MULTILINE))
     if not matches:
         return False
@@ -116,12 +119,23 @@ def generate_header(c_path: str) -> str:
     return "\n".join(lines)
 
 
+def is_blacklisted(c_path: str) -> bool:
+    """Check if the file is in the blacklist."""
+    basename = os.path.basename(c_path)
+    return basename in BLACKLIST
+
+
 def main():
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <file.c> [output.h]")
         sys.exit(1)
 
     c_path = sys.argv[1]
+    
+    if is_blacklisted(c_path):
+        print(f"Skipping blacklisted file: {c_path}")
+        sys.exit(0)
+
     if not os.path.exists(c_path):
         print(f"Error: {c_path} not found")
         sys.exit(1)

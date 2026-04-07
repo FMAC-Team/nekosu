@@ -30,6 +30,7 @@
 #include "hijack.h"
 #include "ioctl.h"
 #include "procfs.h"
+#include "uid_cap.h"
 
 #if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 #include "syscall.h"
