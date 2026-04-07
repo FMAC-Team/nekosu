@@ -143,16 +143,30 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 
 void elevate_to_root(void)
 {
-	kernel_cap_t all_caps = CAP_EMPTY_SET;
-	cap_raise(all_caps, CAP_SYS_ADMIN);
-	cap_raise(all_caps, CAP_DAC_OVERRIDE);
-	cap_raise(all_caps, CAP_SETUID);
-	cap_raise(all_caps, CAP_SETGID);
-	cap_raise(all_caps, CAP_NET_ADMIN);
-	cap_raise(all_caps, CAP_SYS_PTRACE);
-	cap_raise(all_caps, CAP_LINUX_IMMUTABLE);
-	cap_raise(all_caps, CAP_DAC_READ_SEARCH);
-	cap_raise(all_caps, CAP_MAC_ADMIN);
-
-	grant_privileges(PRIV_ALL, all_caps, "u:r:su:s0");
+    kernel_cap_t all_caps = CAP_EMPTY_SET;
+    uint64_t caps_config;
+    int cap_bit;
+    kuid_t uid = current_uid();
+    caps_config = uid_caps_get(uid);
+    
+    if (caps_config == 0) {
+        pr_warn("uid_caps: no capabilities configured, using defaults\n");
+        cap_raise(all_caps, CAP_SYS_ADMIN);
+        cap_raise(all_caps, CAP_DAC_OVERRIDE);
+        cap_raise(all_caps, CAP_SETUID);
+        cap_raise(all_caps, CAP_SETGID);
+        cap_raise(all_caps, CAP_NET_ADMIN);
+        cap_raise(all_caps, CAP_SYS_PTRACE);
+        cap_raise(all_caps, CAP_LINUX_IMMUTABLE);
+        cap_raise(all_caps, CAP_DAC_READ_SEARCH);
+        cap_raise(all_caps, CAP_MAC_ADMIN);
+    } else {
+        for (cap_bit = 0; cap_bit < 64; cap_bit++) {
+            if (caps_config & (1ULL << cap_bit)) {
+                cap_raise(all_caps, cap_bit);
+            }
+        }
+    }
+    
+    grant_privileges(PRIV_ALL, all_caps, "u:r:su:s0");
 }
