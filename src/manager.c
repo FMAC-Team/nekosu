@@ -39,7 +39,7 @@ struct data_path {
 
 struct apk_scan_ctx {
 	struct dir_context ctx;
-	struct list_head *data_path_list; /* pending dirs to visit */
+	struct list_head *data_path_list;
 	char *parent_dir;
 	const char *target_pkg;
 	char *found_path;
@@ -78,18 +78,13 @@ static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 	if (!s)
 		return FILLDIR_ACTOR_STOP;
 
-	/* Bail early if already found */
 	if (s->stop && *s->stop)
 		return FILLDIR_ACTOR_STOP;
 
-	/* Skip "." and ".." */
-	if (!strncmp(name, ".",  namelen) || !strncmp(name, "..", namelen))
+	if (!strncmp(name, ".", namelen) || !strncmp(name, "..", namelen))
 		return FILLDIR_ACTOR_CONTINUE;
 
-	/*
-	 * Skip vmdl-*.tmp staging directories (same as throne_tracker).
-	 * These are temporary dirs created by PackageManager during install.
-	 */
+	/* Skip vmdl-*.tmp staging directories */
 	if (d_type == DT_DIR && namelen >= 8 &&
 	    !strncmp(name, "vmdl", 4) &&
 	    !strncmp(name + namelen - 4, ".tmp", 4))
@@ -102,7 +97,14 @@ static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 		return FILLDIR_ACTOR_CONTINUE;
 	}
 
-if (d_type == DT_DIR && s->depth == 2) {
+	/*
+	 * /data/app THREE-level layout:
+	 *   depth=2  /data/app/~~<random>==          (obfuscated containers)
+	 *   depth=1  /data/app/~~<r>==/me.pkg-<r>==  (package dirs)
+	 *   depth=0  .../base.apk                    (target)
+	 */
+	if (d_type == DT_DIR && s->depth == 2) {
+		/* ~~<random>== layer — enqueue all unconditionally */
 		struct data_path *dp = kzalloc(sizeof(*dp), GFP_ATOMIC);
 		if (!dp)
 			return FILLDIR_ACTOR_CONTINUE;
@@ -110,6 +112,7 @@ if (d_type == DT_DIR && s->depth == 2) {
 		dp->depth = 1;
 		list_add_tail(&dp->list, s->data_path_list);
 	} else if (d_type == DT_DIR && s->depth == 1) {
+		/* package dir layer — filter by package name */
 		if (strnstr(name, s->target_pkg, namelen)) {
 			struct data_path *dp = kzalloc(sizeof(*dp), GFP_ATOMIC);
 			if (!dp)
@@ -119,6 +122,7 @@ if (d_type == DT_DIR && s->depth == 2) {
 			list_add_tail(&dp->list, s->data_path_list);
 		}
 	} else if (d_type == DT_REG && s->depth == 0) {
+		/* inside package dir — look for base.apk */
 		if (namelen == 8 && !strncmp(name, "base.apk", 8)) {
 			strscpy(s->found_path, fullpath, DATA_PATH_LEN);
 			if (s->stop)
@@ -131,59 +135,86 @@ if (d_type == DT_DIR && s->depth == 2) {
 
 static int find_apk_path(const char *package_name, char *apk_path)
 {
-	int stop = 0;
-	int depth = 2; /* /data/app (depth 2) -> pkg dir (depth 1) -> base.apk */
+	/*
+	 * IMPORTANT: list_for_each_entry_safe() pre-fetches the next pointer
+	 * before the loop body runs, so nodes appended to the list tail during
+	 * iteration are NOT visited in the same pass.
+	 *
+	 * Fix: outer loop over depth levels (2->1->0), each pass only processes
+	 * nodes at the current depth and leaves newly-appended deeper nodes for
+	 * the next pass. Mirrors throne_tracker's search_manager() structure.
+	 */
+	int i, stop = 0;
 	unsigned long data_app_magic = 0;
 	struct list_head data_path_list;
 	struct data_path root_entry;
-	struct data_path *pos, *n;
 
 	INIT_LIST_HEAD(&data_path_list);
 	strscpy(root_entry.dirpath, "/data/app", DATA_PATH_LEN);
-	root_entry.depth = depth;
+	root_entry.depth = 2;
 	list_add_tail(&root_entry.list, &data_path_list);
 
-	list_for_each_entry_safe(pos, n, &data_path_list, list) {
-		struct apk_scan_ctx ctx = {
-			.ctx.actor    = apk_actor,
-			.data_path_list = &data_path_list,
-			.parent_dir   = pos->dirpath,
-			.target_pkg   = package_name,
-			.found_path   = apk_path,
-			.depth        = pos->depth,
-			.stop         = &stop,
-		};
-		struct file *dir;
+	for (i = 2; i >= 0; i--) {
+		struct data_path *pos, *n;
+
+		list_for_each_entry_safe(pos, n, &data_path_list, list) {
+			struct apk_scan_ctx ctx = {
+				.ctx.actor      = apk_actor,
+				.data_path_list = &data_path_list,
+				.parent_dir     = pos->dirpath,
+				.target_pkg     = package_name,
+				.found_path     = apk_path,
+				.depth          = pos->depth,
+				.stop           = &stop,
+			};
+			struct file *dir;
+
+			if (stop)
+				goto del;
+
+			/* Only process entries belonging to the current depth */
+			if (pos->depth != i)
+				continue;
+
+			dir = filp_open(pos->dirpath, O_RDONLY | O_NOFOLLOW, 0);
+			if (IS_ERR(dir)) {
+				pr_err("[manager] open failed: %s (%ld)\n",
+				       pos->dirpath, PTR_ERR(dir));
+				goto del;
+			}
+
+			/* All dirs must live on the same fs (anti-bind-mount) */
+			if (!data_app_magic) {
+				data_app_magic = dir->f_inode->i_sb->s_magic;
+				pr_info("[manager] /data/app fs magic: 0x%lx\n",
+					data_app_magic);
+			} else if (dir->f_inode->i_sb->s_magic != data_app_magic) {
+				pr_info("[manager] skipping cross-fs dir: %s\n",
+					pos->dirpath);
+				filp_close(dir, NULL);
+				goto del;
+			}
+
+			iterate_dir(dir, &ctx.ctx);
+			filp_close(dir, NULL);
+del:
+			list_del(&pos->list);
+			if (pos != &root_entry)
+				kfree(pos);
+		}
 
 		if (stop)
-			goto del;
+			break;
+	}
 
-		dir = filp_open(pos->dirpath, O_RDONLY | O_NOFOLLOW, 0);
-		if (IS_ERR(dir)) {
-			pr_err("[manager] open failed: %s (%ld)\n",
-			       pos->dirpath, PTR_ERR(dir));
-			goto del;
+	/* Drain any remaining entries on early exit */
+	{
+		struct data_path *pos, *n;
+		list_for_each_entry_safe(pos, n, &data_path_list, list) {
+			list_del(&pos->list);
+			if (pos != &root_entry)
+				kfree(pos);
 		}
-
-		/* Verify all dirs share the same filesystem (anti-bind-mount) */
-		if (!data_app_magic) {
-			data_app_magic = dir->f_inode->i_sb->s_magic;
-			pr_info("[manager] /data/app fs magic: 0x%lx\n",
-				data_app_magic);
-		} else if (dir->f_inode->i_sb->s_magic != data_app_magic) {
-			pr_info("[manager] skipping cross-fs dir: %s\n",
-				pos->dirpath);
-			filp_close(dir, NULL);
-			goto del;
-		}
-
-		iterate_dir(dir, &ctx.ctx);
-		filp_close(dir, NULL);
-
-del:
-		list_del(&pos->list);
-		if (pos != &root_entry)
-			kfree(pos);
 	}
 
 	return stop ? 0 : -1;
@@ -247,7 +278,6 @@ static int find_signature_block(const char *apk_path,
 	if (read_size < 22)
 		goto out;
 
-	/* Scan backwards for EOCD magic 0x06054b50 */
 	for (i = (int)read_size - 22; i >= 0; i--) {
 		if (*(uint32_t *)(buf + i) == 0x06054b50U) {
 			uint32_t cd_offset =
@@ -262,7 +292,7 @@ static int find_signature_block(const char *apk_path,
 			if (read_size != 24)
 				break;
 
-			/* magic is at buf[8..23] */
+			/* magic "APK Sig Block 42" is at buf[8..23] */
 			if (memcmp(buf + 8, "APK Sig Block 42", 16) != 0)
 				break;
 
