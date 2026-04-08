@@ -25,8 +25,8 @@ struct my_dir_ctx {
 	size_t  pos;
 };
 
-static bool my_filldir(struct dir_context *dctx, const char *name, int namlen,
-		       loff_t offset, u64 ino, unsigned int d_type)
+static int my_filldir(struct dir_context *dctx, const char *name, int namlen,
+		      loff_t offset, u64 ino, unsigned int d_type)
 {
 	struct my_dir_ctx *ctx = (struct my_dir_ctx *)dctx;
 	struct linux_dirent64 *de;
@@ -34,7 +34,7 @@ static bool my_filldir(struct dir_context *dctx, const char *name, int namlen,
 		offsetof(struct linux_dirent64, d_name) + namlen + 1, 8);
 
 	if (ctx->pos + reclen > ctx->buf_size)
-		return false;
+		return 0;
 
 	de = (struct linux_dirent64 *)(ctx->buf + ctx->pos);
 	de->d_ino    = ino;
@@ -45,13 +45,13 @@ static bool my_filldir(struct dir_context *dctx, const char *name, int namlen,
 	de->d_name[namlen] = '\0';
 
 	ctx->pos += reclen;
-	return true;
+	return 1;
 }
 
 static ssize_t read_dir_entries(struct file *dir, char *buf, size_t buf_size)
 {
 	struct my_dir_ctx ctx = {
-		.dctx     = { .actor = my_filldir },
+		.dctx.actor = my_filldir,
 		.buf      = buf,
 		.buf_size = buf_size,
 		.pos      = 0,
