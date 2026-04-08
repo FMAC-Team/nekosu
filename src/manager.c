@@ -102,17 +102,23 @@ static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 		return FILLDIR_ACTOR_CONTINUE;
 	}
 
-	if (d_type == DT_DIR && s->depth > 0) {
+if (d_type == DT_DIR && s->depth == 2) {
+		struct data_path *dp = kzalloc(sizeof(*dp), GFP_ATOMIC);
+		if (!dp)
+			return FILLDIR_ACTOR_CONTINUE;
+		strscpy(dp->dirpath, fullpath, DATA_PATH_LEN);
+		dp->depth = 1;
+		list_add_tail(&dp->list, s->data_path_list);
+	} else if (d_type == DT_DIR && s->depth == 1) {
 		if (strnstr(name, s->target_pkg, namelen)) {
-			struct data_path *dp =
-				kzalloc(sizeof(*dp), GFP_ATOMIC);
+			struct data_path *dp = kzalloc(sizeof(*dp), GFP_ATOMIC);
 			if (!dp)
 				return FILLDIR_ACTOR_CONTINUE;
 			strscpy(dp->dirpath, fullpath, DATA_PATH_LEN);
-			dp->depth = s->depth - 1;
+			dp->depth = 0;
 			list_add_tail(&dp->list, s->data_path_list);
 		}
-	} else if (d_type == DT_REG) {
+	} else if (d_type == DT_REG && s->depth == 0) {
 		if (namelen == 8 && !strncmp(name, "base.apk", 8)) {
 			strscpy(s->found_path, fullpath, DATA_PATH_LEN);
 			if (s->stop)
