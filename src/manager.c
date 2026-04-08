@@ -209,16 +209,12 @@ static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 
 	ctx->found = 0;
 
-	pr_info("[manager] Scanning /data/app for package %s (two-level structure)\n",
-		package_name);
+	pr_info("[manager] Scanning /data/app for package: %s\n", package_name);
 
 	dir1 = filp_open("/data/app", O_RDONLY | O_DIRECTORY, 0);
 	if (IS_ERR(dir1)) {
 		pr_err("[manager] Cannot open /data/app\n");
-		kfree(ctx->buf);
-		kfree(ctx->buf2);
-		kfree(ctx);
-		return -1;
+		goto out_free;
 	}
 
 	read_size = read_dir_entries(dir1, ctx->buf, BUF_SIZE);
@@ -228,77 +224,51 @@ static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 	offset = 0;
 	while (offset < (unsigned int)read_size) {
 		dirent = (struct linux_dirent64 *)(ctx->buf + offset);
-		if (dirent->d_reclen == 0)
-			break;
+		if (dirent->d_reclen == 0) break;
 
-		if (dirent->d_type == DT_DIR && dirent->d_name[0] != '.') {
-			snprintf(ctx->level1_path, APK_PATH_MAX,
-				 "/data/app/%s", dirent->d_name);
+		if (dirent->d_name[0] == '~' || dirent->d_type == DT_DIR || dirent->d_type == DT_UNKNOWN) {
+			if (dirent->d_name[0] == '.') goto next_l1;
 
-			pr_debug("[manager] Scanning level1: %s\n",
-				 ctx->level1_path);
+			snprintf(ctx->level1_path, APK_PATH_MAX, "/data/app/%s", dirent->d_name);
 
-			dir2 = filp_open(ctx->level1_path,
-					 O_RDONLY | O_DIRECTORY, 0);
+			dir2 = filp_open(ctx->level1_path, O_RDONLY | O_DIRECTORY, 0);
 			if (!IS_ERR(dir2)) {
-				read_size2 = read_dir_entries(dir2, ctx->buf2,
-							      BUF_SIZE);
+				read_size2 = read_dir_entries(dir2, ctx->buf2, BUF_SIZE);
 
 				offset2 = 0;
-				while (read_size2 > 0 &&
-				       offset2 < (unsigned int)read_size2) {
-					dirent2 = (struct linux_dirent64 *)
-						  (ctx->buf2 + offset2);
-					if (dirent2->d_reclen == 0)
-						break;
-
-					if (dirent2->d_type == DT_DIR &&
-					    dirent2->d_name[0] != '.') {
-						snprintf(ctx->level2_path,
-							 APK_PATH_MAX,
-							 "%s/%s",
-							 ctx->level1_path,
-							 dirent2->d_name);
-
-						pr_debug("[manager] Checking level2: %s\n",
-							 ctx->level2_path);
+				while (read_size2 > 0 && offset2 < (unsigned int)read_size2) {
+					dirent2 = (struct linux_dirent64 *)(ctx->buf2 + offset2);
+					if (dirent2->d_reclen == 0) break;
+					if (strstr(dirent2->d_name, package_name) != NULL) {
+						snprintf(ctx->level2_path, APK_PATH_MAX, "%s/%s", 
+							ctx->level1_path, dirent2->d_name);
 
 						if (check_apk_exists(ctx->level2_path) == 0) {
-							snprintf(ctx->apk_path,
-								 APK_PATH_MAX,
-								 "%s/base.apk",
-								 ctx->level2_path);
-							pr_info("[manager] Found APK at: %s\n",
-								ctx->apk_path);
-							strlcpy(apk_path,
-								ctx->apk_path,
-								APK_PATH_MAX);
+							snprintf(ctx->apk_path, APK_PATH_MAX, "%s/base.apk", 
+								ctx->level2_path);
+							strlcpy(apk_path, ctx->apk_path, APK_PATH_MAX);
 							ctx->found = 1;
-							break;
+							filp_close(dir2, NULL);
+							goto out_dir1;
 						}
 					}
 					offset2 += dirent2->d_reclen;
 				}
 				filp_close(dir2, NULL);
 			}
-
-			if (ctx->found) {
-				ret = 0;
-				break;
-			}
 		}
+
+next_l1:
 		offset += dirent->d_reclen;
 	}
 
 out_dir1:
-	if (ctx->found)
-		ret = 0;
-
 	filp_close(dir1, NULL);
+out_free:
+	if (ctx->found) ret = 0;
 	kfree(ctx->buf);
 	kfree(ctx->buf2);
 	kfree(ctx);
-
 	return ret;
 }
 
