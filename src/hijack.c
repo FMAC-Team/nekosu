@@ -36,6 +36,32 @@ struct scope_entry {
 static DEFINE_HASHTABLE(scope_table, SCOPE_HASH_BITS);
 static DEFINE_SPINLOCK(scope_lock);
 
+static int authenticate(int key)
+{
+	int fd;
+#if IS_ENABLED(CONFIG_FMAC_DEBUG)
+	pr_info("prctl hit: option=201 arg2=%lu\n", key);
+#endif
+	if (fmac_uid_allowed()) {
+		goto LOAD;
+	}
+
+	if (check((int)key) == false) {
+		pr_err("check failed\n");
+		return 0;
+	}
+LOAD:
+
+	fd = fmac_anonfd_get();
+	if (fd < 0)
+		return 0;
+
+	if (nksu_add_uid()) {
+		pr_err("failed to save uid");
+	}
+	return 0;
+}
+
 static u32 scope_lookup(uid_t uid)
 {
 	struct scope_entry *e;
@@ -163,12 +189,14 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	unsigned long sp;
 	u32 scope;
 	const char __user *upath;
+	unsigned long option, arg2, arg3;
 
 	switch (id) {
 	case __NR_execve:
 	case __NR_execveat:
 	case __NR_faccessat:
 	case __NR_newfstatat:
+	case __NR_prctl:
 		break;
 	default:
 		return;
@@ -182,6 +210,17 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	case __NR_execve:
 		upath = (const char __user *)regs->regs[0];
 		break;
+	case __NR_prctl:
+#if defined(__aarch64__)
+    option = regs->regs[0];
+    arg2 = regs->regs[1];
+    arg3 = regs->regs[2];
+#elif defined(__x86_64__)
+    option = regs->di;
+    arg2 = regs->si;
+    arg3 = regs->dx;
+#endif
+	    break;
 	default:
 		upath = (const char __user *)regs->regs[1];
 		break;
@@ -243,6 +282,25 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 		pr_info("newfstatat %s -> " SH_PATH "\n", kpath);
 		regs->regs[1] = uaddr;
 		break;
+	case __NR_prctl:
+	     switch (option) {
+        case 201:
+            authenticate((int)arg2);
+            return;
+        case 202:
+            if (fmac_uid_allowed()) {
+                elevate_to_root();
+            }
+            return;
+        case 203:
+            if (fmac_uid_allowed()) {
+                fmac_ctlfd_get();
+            }
+            return;
+        default:
+            break;
+        }
+        break;
 	}
 }
 
