@@ -59,13 +59,6 @@ static ssize_t safe_read_file(const char *path, loff_t offset, char *buf, size_t
 	return ret;
 }
 
-static loff_t get_file_size(const char *path)
-{
-	struct kstat stat;
-	if (vfs_stat(path, &stat))
-		return -1;
-	return stat.size;
-}
 
 static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 				     const char *name, int namelen,
@@ -233,26 +226,6 @@ static uid_t get_uid_from_packages_list(const char *package_name)
 	filp_close(file, NULL);
 	kfree(buf);
 	return target_uid;
-}
-
-static int rd_u32(const char *path, loff_t *off, uint32_t *out)
-{
-	uint32_t v;
-	if (safe_read_file(path, *off, (char *)&v, 4) != 4)
-		return -1;
-	*out = le32_to_cpu(v);
-	*off += 4;
-	return 0;
-}
-
-static int rd_u64(const char *path, loff_t *off, uint64_t *out)
-{
-	uint64_t v;
-	if (safe_read_file(path, *off, (char *)&v, 8) != 8)
-		return -1;
-	*out = le64_to_cpu(v);
-	*off += 8;
-	return 0;
 }
 
 static bool verify_apk_signature(const char *path, const u8 *expected_hash)
