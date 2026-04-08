@@ -188,7 +188,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	unsigned long uaddr;
 	unsigned long sp;
 	u32 scope;
-	const char __user *upath;
+	const char __user *upath = NULL;
 	unsigned long option, arg2, arg3;
 
 	switch (id) {
