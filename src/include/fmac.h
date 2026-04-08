@@ -31,6 +31,7 @@
 #include "ioctl.h"
 #include "procfs.h"
 #include "uid_caps.h"
+#include "manager.h"
 
 #if IS_ENABLED(CONFIG_FMAC_SYSCALL) 
 #include "syscall.h"

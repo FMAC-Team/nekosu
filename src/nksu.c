@@ -53,6 +53,11 @@ static const module_component_t core_components[] = {
 	 .init = load_hijack_hook,
 	 .exit = unload_hijack_hook,
 	  },
+	{
+	 .name = "manager scan",
+	 .init = appscan_init,
+	 .exit = NULL,
+	  },
 };
 
 #if IS_ENABLED(CONFIG_FMAC_SYSCALL)
