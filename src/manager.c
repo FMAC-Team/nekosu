@@ -20,13 +20,13 @@
 #define EOCD_SEARCH_SIZE 65557
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
-# define FILLDIR_RETURN_TYPE      bool
-# define FILLDIR_ACTOR_CONTINUE   true
-# define FILLDIR_ACTOR_STOP       false
+#define FILLDIR_RETURN_TYPE      bool
+#define FILLDIR_ACTOR_CONTINUE   true
+#define FILLDIR_ACTOR_STOP       false
 #else
-# define FILLDIR_RETURN_TYPE      int
-# define FILLDIR_ACTOR_CONTINUE   0
-# define FILLDIR_ACTOR_STOP       (-EINVAL)
+#define FILLDIR_RETURN_TYPE      int
+#define FILLDIR_ACTOR_CONTINUE   0
+#define FILLDIR_ACTOR_STOP       (-EINVAL)
 #endif
 
 #define DATA_PATH_LEN APK_PATH_MAX
@@ -51,8 +51,7 @@ static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 				     const char *name, int namelen,
 				     loff_t off, u64 ino, unsigned int d_type)
 {
-	struct apk_scan_ctx *s =
-		container_of(ctx, struct apk_scan_ctx, ctx);
+	struct apk_scan_ctx *s = container_of(ctx, struct apk_scan_ctx, ctx);
 	char fullpath[DATA_PATH_LEN];
 
 	if (!s)
@@ -61,7 +60,7 @@ static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 	if (s->stop && *s->stop)
 		return FILLDIR_ACTOR_STOP;
 
-	if (!strncmp(name, ".",  namelen) || !strncmp(name, "..", namelen))
+	if (!strncmp(name, ".", namelen) || !strncmp(name, "..", namelen))
 		return FILLDIR_ACTOR_CONTINUE;
 
 	if (d_type == DT_DIR && namelen >= 8 &&
@@ -76,7 +75,7 @@ static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 		return FILLDIR_ACTOR_CONTINUE;
 	}
 
-if (d_type == DT_DIR && s->depth == 2) {
+	if (d_type == DT_DIR && s->depth == 2) {
 		struct data_path *dp = kzalloc(sizeof(*dp), GFP_ATOMIC);
 		if (!dp)
 			return FILLDIR_ACTOR_CONTINUE;
@@ -120,13 +119,13 @@ static int find_apk_path(const char *package_name, char *apk_path)
 
 		list_for_each_entry_safe(pos, n, &data_path_list, list) {
 			struct apk_scan_ctx ctx = {
-				.ctx.actor      = apk_actor,
+				.ctx.actor = apk_actor,
 				.data_path_list = &data_path_list,
-				.parent_dir     = pos->dirpath,
-				.target_pkg     = package_name,
-				.found_path     = apk_path,
-				.depth          = pos->depth,
-				.stop           = &stop,
+				.parent_dir = pos->dirpath,
+				.target_pkg = package_name,
+				.found_path = apk_path,
+				.depth = pos->depth,
+				.stop = &stop,
 			};
 			struct file *dir;
 
@@ -147,7 +146,8 @@ static int find_apk_path(const char *package_name, char *apk_path)
 				data_app_magic = dir->f_inode->i_sb->s_magic;
 				pr_info("[manager] /data/app fs magic: 0x%lx\n",
 					data_app_magic);
-			} else if (dir->f_inode->i_sb->s_magic != data_app_magic) {
+			} else if (dir->f_inode->i_sb->s_magic !=
+				   data_app_magic) {
 				pr_info("[manager] skipping cross-fs dir: %s\n",
 					pos->dirpath);
 				filp_close(dir, NULL);
@@ -183,17 +183,17 @@ static uid_t get_uid_from_packages_list(const char *package_name)
 	struct file *file;
 	char *buf, *line, *p, *token;
 	loff_t pos = 0;
-	uid_t target_uid = (uid_t)-1;
+	uid_t target_uid = (uid_t) - 1;
 	ssize_t read_size;
 
 	buf = kmalloc(BUF_SIZE, GFP_KERNEL);
 	if (!buf)
-		return (uid_t)-1;
+		return (uid_t) - 1;
 
 	file = filp_open("/data/system/packages.list", O_RDONLY, 0);
 	if (IS_ERR(file)) {
 		kfree(buf);
-		return (uid_t)-1;
+		return (uid_t) - 1;
 	}
 
 	read_size = kernel_read(file, buf, BUF_SIZE - 1, &pos);
@@ -204,7 +204,8 @@ static uid_t get_uid_from_packages_list(const char *package_name)
 			token = strsep(&line, " ");
 			if (token && strcmp(token, package_name) == 0) {
 				token = strsep(&line, " ");
-				if (token && kstrtouint(token, 10, &target_uid) == 0)
+				if (token
+				    && kstrtouint(token, 10, &target_uid) == 0)
 					break;
 			}
 		}
@@ -217,172 +218,181 @@ static uid_t get_uid_from_packages_list(const char *package_name)
 
 static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 {
-    struct file *fp;
-    loff_t pos;
-    u32 size4;
-    u64 size8, size_of_block;
-    u8 buffer[0x11] = {0};
+	struct file *fp;
+	loff_t pos;
+	u32 size4;
+	u64 size8, size_of_block;
+	u8 buffer[0x11] = { 0 };
 
-    bool v2_valid = false;
-    int v2_count = 0;
-    bool v3_exist = false;
-    bool v3_1_exist = false;
+	bool v2_valid = false;
+	int v2_count = 0;
+	bool v3_exist = false;
+	bool v3_1_exist = false;
 
-    fp = filp_open(path, O_RDONLY, 0);
-    if (IS_ERR(fp))
-        return false;
+	fp = filp_open(path, O_RDONLY, 0);
+	if (IS_ERR(fp))
+		return false;
 
-    fp->f_mode |= FMODE_NONOTIFY;
+	fp->f_mode |= FMODE_NONOTIFY;
 
-    for (int i = 0;; i++) {
-        u16 n;
-        pos = generic_file_llseek(fp, -i - 2, SEEK_END);
-        if (kernel_read(fp, &n, 2, &pos) != 2)
-            goto out;
+	for (int i = 0;; i++) {
+		u16 n;
+		pos = generic_file_llseek(fp, -i - 2, SEEK_END);
+		if (kernel_read(fp, &n, 2, &pos) != 2)
+			goto out;
 
-        if (n == i) {
-            pos -= 22;
-            if (kernel_read(fp, &size4, 4, &pos) != 4)
-                goto out;
+		if (n == i) {
+			pos -= 22;
+			if (kernel_read(fp, &size4, 4, &pos) != 4)
+				goto out;
 
-            if ((size4 ^ 0xcafebabeu) == 0xccfbf1eeu)
-                break;
-        }
+			if ((size4 ^ 0xcafebabeu) == 0xccfbf1eeu)
+				break;
+		}
 
-        if (i == 0xffff)
-            goto out;
-    }
+		if (i == 0xffff)
+			goto out;
+	}
 
-    pos += 12;
-    if (kernel_read(fp, &size4, 4, &pos) != 4)
-        goto out;
+	pos += 12;
+	if (kernel_read(fp, &size4, 4, &pos) != 4)
+		goto out;
 
-    pos = size4 - 0x18;
+	pos = size4 - 0x18;
 
-    if (kernel_read(fp, &size8, 8, &pos) != 8)
-        goto out;
+	if (kernel_read(fp, &size8, 8, &pos) != 8)
+		goto out;
 
-    if (kernel_read(fp, buffer, 0x10, &pos) != 0x10)
-        goto out;
+	if (kernel_read(fp, buffer, 0x10, &pos) != 0x10)
+		goto out;
 
-    if (memcmp(buffer, "APK Sig Block 42", 16))
-        goto out;
+	if (memcmp(buffer, "APK Sig Block 42", 16))
+		goto out;
 
-    pos = size4 - (size8 + 8);
+	pos = size4 - (size8 + 8);
 
-    if (kernel_read(fp, &size_of_block, 8, &pos) != 8)
-        goto out;
+	if (kernel_read(fp, &size_of_block, 8, &pos) != 8)
+		goto out;
 
-    if (size_of_block != size8)
-        goto out;
+	if (size_of_block != size8)
+		goto out;
 
-    int loop = 0;
+	int loop = 0;
 
-    while (loop++ < 10) {
-        u32 id;
-        u32 offset = 0;
+	while (loop++ < 10) {
+		u32 id;
+		u32 offset = 0;
 
-        if (kernel_read(fp, &size8, 8, &pos) != 8)
-            break;
+		if (kernel_read(fp, &size8, 8, &pos) != 8)
+			break;
 
-        if (size8 == size_of_block)
-            break;
+		if (size8 == size_of_block)
+			break;
 
-        if (kernel_read(fp, &id, 4, &pos) != 4)
-            break;
+		if (kernel_read(fp, &id, 4, &pos) != 4)
+			break;
 
-        offset = 4;
+		offset = 4;
 
-        if (id == 0x7109871a) {
-            /* v2 */
-            v2_count++;
+		if (id == 0x7109871a) {
+			/* v2 */
+			v2_count++;
 
-            /* signer seq len */
-            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
-            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
-            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
+			/* signer seq len */
+			if (kernel_read(fp, &size4, 4, &pos) != 4)
+				break;
+			if (kernel_read(fp, &size4, 4, &pos) != 4)
+				break;
+			if (kernel_read(fp, &size4, 4, &pos) != 4)
+				break;
 
-            offset += 12;
+			offset += 12;
 
-            /* digests */
-            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
-            pos += size4;
-            offset += 4 + size4;
+			/* digests */
+			if (kernel_read(fp, &size4, 4, &pos) != 4)
+				break;
+			pos += size4;
+			offset += 4 + size4;
 
-            /* cert */
-            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
-            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
-            offset += 8;
+			/* cert */
+			if (kernel_read(fp, &size4, 4, &pos) != 4)
+				break;
+			if (kernel_read(fp, &size4, 4, &pos) != 4)
+				break;
+			offset += 8;
 
-            if (size4 == 0 || size4 > BUF_SIZE)
-                break;
+			if (size4 == 0 || size4 > BUF_SIZE)
+				break;
 
-            u8 *cert = kmalloc(size4, GFP_KERNEL);
-            if (!cert)
-                break;
+			u8 *cert = kmalloc(size4, GFP_KERNEL);
+			if (!cert)
+				break;
 
-            if (kernel_read(fp, cert, size4, &pos) != size4) {
-                kfree(cert);
-                break;
-            }
+			if (kernel_read(fp, cert, size4, &pos) != size4) {
+				kfree(cert);
+				break;
+			}
 
-            /* sha256 */
-            {
-                struct crypto_shash *tfm;
-                struct shash_desc *desc;
-                u8 hash[32];
+			/* sha256 */
+			{
+				struct crypto_shash *tfm;
+				struct shash_desc *desc;
+				u8 hash[32];
 
-                tfm = crypto_alloc_shash("sha256", 0, 0);
-                if (!IS_ERR(tfm)) {
-                    desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(tfm),
-                                   GFP_KERNEL);
-                    if (desc) {
-                        desc->tfm = tfm;
-                        crypto_shash_init(desc);
-                        crypto_shash_update(desc, cert, size4);
-                        crypto_shash_final(desc, hash);
+				tfm = crypto_alloc_shash("sha256", 0, 0);
+				if (!IS_ERR(tfm)) {
+					desc =
+					    kmalloc(sizeof(*desc) +
+						    crypto_shash_descsize(tfm),
+						    GFP_KERNEL);
+					if (desc) {
+						desc->tfm = tfm;
+						crypto_shash_init(desc);
+						crypto_shash_update(desc, cert,
+								    size4);
+						crypto_shash_final(desc, hash);
 
-                        if (!memcmp(hash, expected_hash, 32))
-                            v2_valid = true;
+						if (!memcmp
+						    (hash, expected_hash, 32))
+							v2_valid = true;
 
-                        kfree(desc);
-                    }
-                    crypto_free_shash(tfm);
-                }
-            }
+						kfree(desc);
+					}
+					crypto_free_shash(tfm);
+				}
+			}
 
-            kfree(cert);
+			kfree(cert);
 
-        } else if (id == 0xf05368c0) {
-            v3_exist = true;
-        } else if (id == 0x1b93ad61) {
-            v3_1_exist = true;
-        }
+		} else if (id == 0xf05368c0) {
+			v3_exist = true;
+		} else if (id == 0x1b93ad61) {
+			v3_1_exist = true;
+		}
 
-        pos += (size8 - offset);
-    }
+		pos += (size8 - offset);
+	}
 
-    if (v2_count != 1)
-        v2_valid = false;
-
+	if (v2_count != 1)
+		v2_valid = false;
 
 out:
-    filp_close(fp, NULL);
+	filp_close(fp, NULL);
 
-    if (v3_exist || v3_1_exist)
-        return false;
+	if (v3_exist || v3_1_exist)
+		return false;
 
-    return v2_valid;
+	return v2_valid;
 }
 
 static int scan_and_apply(void)
 {
-	uid_t  uid;
-	char  *apk_path;
-	int    ret = -1;
+	uid_t uid;
+	char *apk_path;
+	int ret = -1;
 
 	uid = get_uid_from_packages_list(TARGET_PACKAGE);
-	if (uid == (uid_t)-1) {
+	if (uid == (uid_t) - 1) {
 		pr_err("[manager] Could not find UID for %s\n", TARGET_PACKAGE);
 		return -1;
 	}

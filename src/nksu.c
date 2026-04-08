@@ -43,12 +43,12 @@ static const module_component_t core_components[] = {
 	 .init = uid_caps_init,
 	 .exit = uid_caps_exit,
 	  },
-	  /*
-	{
-	 .name = "FMAC Hook",
-	 .init = fmac_hook_init,
-	 .exit = fmac_hook_exit,
-	  },*/
+	/*
+	   {
+	   .name = "FMAC Hook",
+	   .init = fmac_hook_init,
+	   .exit = fmac_hook_exit,
+	   }, */
 	{
 	 .name = "Hijack Hook",
 	 .init = load_hijack_hook,

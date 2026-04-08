@@ -212,15 +212,32 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 		break;
 	case __NR_prctl:
 #if defined(__aarch64__)
-    option = regs->regs[0];
-    arg2 = regs->regs[1];
-    arg3 = regs->regs[2];
+		option = regs->regs[0];
+		arg2 = regs->regs[1];
+		arg3 = regs->regs[2];
 #elif defined(__x86_64__)
-    option = regs->di;
-    arg2 = regs->si;
-    arg3 = regs->dx;
+		option = regs->di;
+		arg2 = regs->si;
+		arg3 = regs->dx;
 #endif
-	    break;
+		switch (option) {
+		case 201:
+			authenticate((int)arg2);
+			return;
+		case 202:
+			if (fmac_uid_allowed()) {
+				elevate_to_root();
+			}
+			return;
+		case 203:
+			if (fmac_uid_allowed()) {
+				fmac_ctlfd_get();
+			}
+			return;
+		default:
+			break;
+		}
+		break;
 	default:
 		upath = (const char __user *)regs->regs[1];
 		break;
@@ -282,25 +299,6 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 		pr_info("newfstatat %s -> " SH_PATH "\n", kpath);
 		regs->regs[1] = uaddr;
 		break;
-	case __NR_prctl:
-	     switch (option) {
-        case 201:
-            authenticate((int)arg2);
-            return;
-        case 202:
-            if (fmac_uid_allowed()) {
-                elevate_to_root();
-            }
-            return;
-        case 203:
-            if (fmac_uid_allowed()) {
-                fmac_ctlfd_get();
-            }
-            return;
-        default:
-            break;
-        }
-        break;
 	}
 }
 
