@@ -137,16 +137,32 @@ struct scan_context {
 	char apk_path[APK_PATH_MAX];
 };
 
+static int iterate_dir(struct file *file, void *buf, size_t buf_size)
+{
+	struct linux_dirent64 *de;
+	unsigned long pos = 0;
+	int ret = 0;
+
+	while (pos < buf_size) {
+		de = (struct linux_dirent64 *)((char *)buf + pos);
+		if (de->d_reclen == 0)
+			break;
+		pos += de->d_reclen;
+	}
+
+	return pos;
+}
+
 static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 {
 	struct file *dir1, *dir2;
-	struct linux_dirent64 *dirent;
+	struct linux_dirent64 *dirent, *dirent2;
 	loff_t pos1 = 0, pos2 = 0;
 	unsigned int offset1, offset2;
 	ssize_t read_size;
-	struct kstat stat;
 	int found = 0;
 	struct scan_context *ctx;
+	struct kstat stat;
 
 	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
 	if (!ctx)
@@ -174,9 +190,10 @@ static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 		return -1;
 	}
 
+	pos1 = 0;
 	while (1) {
-		pos1 = 0;
-		read_size = kernel_read(dir1, ctx->buf, BUF_SIZE, &pos1);
+		read_size = vfs_getdents(dir1, (struct linux_dirent *)ctx->buf, 
+		                          BUF_SIZE);
 		if (read_size <= 0)
 			break;
 
@@ -184,69 +201,57 @@ static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 		while (offset1 < read_size) {
 			dirent = (struct linux_dirent64 *)(ctx->buf + offset1);
 
-			if (dirent->d_type == DT_DIR
-			    && dirent->d_name[0] != '.') {
+			if (dirent->d_type == DT_DIR && dirent->d_name[0] != '.') {
 				snprintf(ctx->level1_path, APK_PATH_MAX,
 					 "/data/app/%s", dirent->d_name);
 
-				dir2 =
-				    filp_open(ctx->level1_path,
-					      O_RDONLY | O_DIRECTORY, 0);
+				pr_debug("[manager] Level1 dir: %s\n", 
+				         ctx->level1_path);
+
+				dir2 = filp_open(ctx->level1_path,
+						 O_RDONLY | O_DIRECTORY, 0);
 				if (!IS_ERR(dir2)) {
 					pos2 = 0;
 					while (1) {
-						read_size =
-						    kernel_read(dir2, ctx->buf2,
-								BUF_SIZE,
-								&pos2);
+						read_size = vfs_getdents(dir2, 
+							(struct linux_dirent *)ctx->buf2,
+							BUF_SIZE);
 						if (read_size <= 0)
 							break;
 
 						offset2 = 0;
 						while (offset2 < read_size) {
-							struct linux_dirent64
-							    *dirent2 =
-							    (struct
-							     linux_dirent64
-							     *)(ctx->buf2 + offset2);
+							dirent2 = (struct linux_dirent64 *)
+								(ctx->buf2 + offset2);
 
-							if (dirent2->d_type ==
-							    DT_DIR
-							    && dirent2->
-							    d_name[0] != '.') {
-								snprintf
-								    (ctx->level2_path,
-								     APK_PATH_MAX,
-								     "%s/%s",
-								     ctx->level1_path,
-								     dirent2->
-								     d_name);
+							if (dirent2->d_type == DT_DIR &&
+							    dirent2->d_name[0] != '.') {
+								snprintf(ctx->level2_path,
+									 APK_PATH_MAX,
+									 "%s/%s",
+									 ctx->level1_path,
+									 dirent2->d_name);
 
-								pr_debug
-								    ("[manager] Checking: %s\n",
-								     ctx->level2_path);
+								pr_debug("[manager] Level2 dir: %s\n",
+									 ctx->level2_path);
 
 								if (check_apk_exists(ctx->level2_path) == 0) {
-									snprintf
-									    (ctx->apk_path,
-									     APK_PATH_MAX,
-									     "%s/base.apk",
-									     ctx->level2_path);
+									snprintf(ctx->apk_path,
+										 APK_PATH_MAX,
+										 "%s/base.apk",
+										 ctx->level2_path);
 
-									pr_info
-									    ("[manager] Found APK at: %s\n",
-									     ctx->apk_path);
+									pr_info("[manager] Found APK at: %s\n",
+										ctx->apk_path);
 									strlcpy(apk_path,
 										ctx->apk_path,
 										APK_PATH_MAX);
-									found =
-									    1;
+									found = 1;
 									break;
 								}
 							}
 
-							offset2 +=
-							    dirent2->d_reclen;
+							offset2 += dirent2->d_reclen;
 						}
 
 						if (found)
@@ -265,6 +270,8 @@ static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 
 		if (found)
 			break;
+
+		pos1 += read_size;
 	}
 
 	filp_close(dir1, NULL);
