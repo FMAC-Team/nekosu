@@ -144,48 +144,6 @@ struct dir_scan_data {
 	int level;
 };
 
-static int scan_dir_helper(struct dir_context *ctx, const char *name,
-			   int namelen, loff_t offset, u64 ino,
-			   unsigned int d_type)
-{
-	struct dir_scan_data *data = container_of(ctx, struct dir_scan_data, ctx);
-	struct scan_context *scan_ctx = data->ctx;
-
-	if (name[0] == '.')
-		return 0;
-
-	if (data->level == 1) {
-		if (d_type == DT_DIR) {
-			snprintf(scan_ctx->level1_path, APK_PATH_MAX,
-				 "/data/app/%.*s", namelen, name);
-			pr_debug("[manager] Level1 dir: %s\n", 
-			         scan_ctx->level1_path);
-		}
-	} else if (data->level == 2) {
-		if (d_type == DT_DIR) {
-			snprintf(scan_ctx->level2_path, APK_PATH_MAX,
-				 "%s/%.*s", scan_ctx->level1_path, namelen, name);
-
-			pr_debug("[manager] Level2 dir: %s\n",
-				 scan_ctx->level2_path);
-
-			if (check_apk_exists(scan_ctx->level2_path) == 0) {
-				snprintf(scan_ctx->apk_path,
-					 APK_PATH_MAX,
-					 "%s/base.apk",
-					 scan_ctx->level2_path);
-
-				pr_info("[manager] Found APK at: %s\n",
-					scan_ctx->apk_path);
-				scan_ctx->found = 1;
-				return -1;
-			}
-		}
-	}
-
-	return 0;
-}
-
 static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 {
 	struct file *dir1, *dir2;
