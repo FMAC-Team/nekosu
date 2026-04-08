@@ -22,7 +22,6 @@ static ssize_t safe_read_file(const char *path, loff_t offset,
 			      char *buf, size_t len)
 {
 	struct file *file;
-	mm_segment_t old_fs;
 	ssize_t ret;
 
 	if (!path || !buf || len == 0)
@@ -35,12 +34,8 @@ static ssize_t safe_read_file(const char *path, loff_t offset,
 		return PTR_ERR(file);
 	}
 
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-
 	ret = kernel_read(file, buf, len, &offset);
 
-	set_fs(old_fs);
 	filp_close(file, NULL);
 
 	return ret;
