@@ -7,7 +7,8 @@ import os
 
 
 BLACKLIST = [
-    'uid_cap.c'
+    'uid_cap.c',
+    'manager.c'
 ]
 
 def _has_no_export_before(source: str, match_start: int) -> bool:
