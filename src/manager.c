@@ -116,7 +116,7 @@ static int find_apk_path(const char *package_name, char *apk_path)
 	if (IS_ERR(root_dir)) return -1;
 
 	iterate_dir(root_dir, &s_ctx.ctx);
-	filp_close(root_dir);
+filp_close(root_dir, NULL);
 
 	return s_ctx.found ? 0 : -1;
 }
