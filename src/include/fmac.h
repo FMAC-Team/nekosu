@@ -25,7 +25,6 @@
 #include "selinux.h"
 #include "totp.h"
 #include "profile.h"
-#include "kprobe.h"
 #include "check.h"
 #include "hijack.h"
 #include "ioctl.h"
