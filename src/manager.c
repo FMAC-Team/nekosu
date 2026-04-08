@@ -114,31 +114,50 @@ static uid_t get_uid_from_packages_list(const char *package_name)
 
 static int check_apk_exists(const char *base_path)
 {
-	char apk_path[APK_PATH_MAX];
+	char *apk_path;
 	struct kstat stat;
+	int ret;
+
+	apk_path = kmalloc(APK_PATH_MAX, GFP_KERNEL);
+	if (!apk_path)
+		return -1;
 
 	snprintf(apk_path, APK_PATH_MAX, "%s/base.apk", base_path);
-	return (vfs_stat(apk_path, &stat) == 0 && S_ISREG(stat.mode)) ? 0 : -1;
+	ret = (vfs_stat(apk_path, &stat) == 0 && S_ISREG(stat.mode)) ? 0 : -1;
+
+	kfree(apk_path);
+	return ret;
 }
+
+struct scan_context {
+	char *buf;
+	char *buf2;
+	char level1_path[APK_PATH_MAX];
+	char level2_path[APK_PATH_MAX];
+	char apk_path[APK_PATH_MAX];
+};
 
 static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 {
 	struct file *dir1, *dir2;
 	struct linux_dirent64 *dirent;
-	char *buf, *buf2;
 	loff_t pos1 = 0, pos2 = 0;
 	unsigned int offset1, offset2;
 	ssize_t read_size;
-	char level1_path[APK_PATH_MAX];
-	char level2_path[APK_PATH_MAX];
 	struct kstat stat;
 	int found = 0;
+	struct scan_context *ctx;
 
-	buf = kmalloc(BUF_SIZE, GFP_KERNEL);
-	buf2 = kmalloc(BUF_SIZE, GFP_KERNEL);
-	if (!buf || !buf2) {
-		kfree(buf);
-		kfree(buf2);
+	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
+	if (!ctx)
+		return -1;
+
+	ctx->buf = kmalloc(BUF_SIZE, GFP_KERNEL);
+	ctx->buf2 = kmalloc(BUF_SIZE, GFP_KERNEL);
+	if (!ctx->buf || !ctx->buf2) {
+		kfree(ctx->buf);
+		kfree(ctx->buf2);
+		kfree(ctx);
 		return -1;
 	}
 
@@ -149,34 +168,35 @@ static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 	dir1 = filp_open("/data/app", O_RDONLY | O_DIRECTORY, 0);
 	if (IS_ERR(dir1)) {
 		pr_err("[manager] Cannot open /data/app\n");
-		kfree(buf);
-		kfree(buf2);
+		kfree(ctx->buf);
+		kfree(ctx->buf2);
+		kfree(ctx);
 		return -1;
 	}
 
 	while (1) {
 		pos1 = 0;
-		read_size = kernel_read(dir1, buf, BUF_SIZE, &pos1);
+		read_size = kernel_read(dir1, ctx->buf, BUF_SIZE, &pos1);
 		if (read_size <= 0)
 			break;
 
 		offset1 = 0;
 		while (offset1 < read_size) {
-			dirent = (struct linux_dirent64 *)(buf + offset1);
+			dirent = (struct linux_dirent64 *)(ctx->buf + offset1);
 
 			if (dirent->d_type == DT_DIR
 			    && dirent->d_name[0] != '.') {
-				snprintf(level1_path, APK_PATH_MAX,
+				snprintf(ctx->level1_path, APK_PATH_MAX,
 					 "/data/app/%s", dirent->d_name);
 
 				dir2 =
-				    filp_open(level1_path,
+				    filp_open(ctx->level1_path,
 					      O_RDONLY | O_DIRECTORY, 0);
 				if (!IS_ERR(dir2)) {
 					pos2 = 0;
 					while (1) {
 						read_size =
-						    kernel_read(dir2, buf2,
+						    kernel_read(dir2, ctx->buf2,
 								BUF_SIZE,
 								&pos2);
 						if (read_size <= 0)
@@ -188,34 +208,37 @@ static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 							    *dirent2 =
 							    (struct
 							     linux_dirent64
-							     *)(buf2 + offset2);
+							     *)(ctx->buf2 + offset2);
 
 							if (dirent2->d_type ==
 							    DT_DIR
 							    && dirent2->
 							    d_name[0] != '.') {
 								snprintf
-								    (level2_path,
+								    (ctx->level2_path,
 								     APK_PATH_MAX,
 								     "%s/%s",
-								     level1_path,
+								     ctx->level1_path,
 								     dirent2->
 								     d_name);
 
 								pr_debug
 								    ("[manager] Checking: %s\n",
-								     level2_path);
+								     ctx->level2_path);
 
-								if (check_apk_exists(level2_path) == 0) {
+								if (check_apk_exists(ctx->level2_path) == 0) {
 									snprintf
-									    (apk_path,
+									    (ctx->apk_path,
 									     APK_PATH_MAX,
 									     "%s/base.apk",
-									     level2_path);
+									     ctx->level2_path);
 
 									pr_info
 									    ("[manager] Found APK at: %s\n",
-									     apk_path);
+									     ctx->apk_path);
+									strlcpy(apk_path,
+										ctx->apk_path,
+										APK_PATH_MAX);
 									found =
 									    1;
 									break;
@@ -245,15 +268,21 @@ static int find_apk_in_two_level_dirs(const char *package_name, char *apk_path)
 	}
 
 	filp_close(dir1, NULL);
-	kfree(buf);
-	kfree(buf2);
+	kfree(ctx->buf);
+	kfree(ctx->buf2);
+	kfree(ctx);
 
 	return found ? 0 : -1;
 }
 
 static int find_apk_path(const char *package_name, char *apk_path)
 {
-	char search_path[APK_PATH_MAX];
+	char *search_path;
+	int ret;
+
+	search_path = kmalloc(APK_PATH_MAX, GFP_KERNEL);
+	if (!search_path)
+		return -1;
 
 	snprintf(search_path, APK_PATH_MAX, "/data/app/%s/base.apk",
 		 package_name);
@@ -261,18 +290,27 @@ static int find_apk_path(const char *package_name, char *apk_path)
 	if (vfs_stat(search_path, NULL) == 0) {
 		strlcpy(apk_path, search_path, APK_PATH_MAX);
 		pr_info("[manager] Found APK at standard path\n");
+		kfree(search_path);
 		return 0;
 	}
 
 	pr_info
 	    ("[manager] Standard path not found, scanning two-level encrypted dirs\n");
-	return find_apk_in_two_level_dirs(package_name, apk_path);
+	ret = find_apk_in_two_level_dirs(package_name, apk_path);
+	kfree(search_path);
+	return ret;
 }
+
+struct sig_context {
+	char *buf;
+	loff_t sig_offset;
+	uint32_t sig_size;
+};
 
 static int find_signature_block(const char *apk_path, loff_t *sig_offset,
 				uint32_t *sig_size)
 {
-	char *buf;
+	struct sig_context *ctx;
 	loff_t file_size, eocd_pos;
 	ssize_t read_size;
 	uint32_t cd_offset;
@@ -283,12 +321,18 @@ static int find_signature_block(const char *apk_path, loff_t *sig_offset,
 	if (file_size < 0)
 		return -1;
 
-	buf = kmalloc(BUF_SIZE, GFP_KERNEL);
-	if (!buf)
+	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
+	if (!ctx)
 		return -1;
 
+	ctx->buf = kmalloc(BUF_SIZE, GFP_KERNEL);
+	if (!ctx->buf) {
+		kfree(ctx);
+		return -1;
+	}
+
 	eocd_pos = max(0LL, file_size - EOCD_SEARCH_SIZE);
-	read_size = safe_read_file(apk_path, eocd_pos, buf, BUF_SIZE);
+	read_size = safe_read_file(apk_path, eocd_pos, ctx->buf, BUF_SIZE);
 
 	if (read_size < 22) {
 		pr_err("[manager] File too small\n");
@@ -296,9 +340,9 @@ static int find_signature_block(const char *apk_path, loff_t *sig_offset,
 	}
 
 	for (i = read_size - 22; i >= 0; i--) {
-		uint32_t *sig = (uint32_t *) (buf + i);
+		uint32_t *sig = (uint32_t *) (ctx->buf + i);
 		if (*sig == 0x06054b50) {
-			uint32_t *cd_off_ptr = (uint32_t *) (buf + i + 16);
+			uint32_t *cd_off_ptr = (uint32_t *) (ctx->buf + i + 16);
 			cd_offset = le32_to_cpu(*cd_off_ptr);
 
 			pr_info("[manager] EOCD found, CD offset: %u\n",
@@ -307,10 +351,10 @@ static int find_signature_block(const char *apk_path, loff_t *sig_offset,
 			if (cd_offset >= 24) {
 				loff_t pos = cd_offset - 24;
 				read_size =
-				    safe_read_file(apk_path, pos, buf, 24);
+				    safe_read_file(apk_path, pos, ctx->buf, 24);
 
 				if (read_size == 24) {
-					uint64_t *size_ptr = (uint64_t *) buf;
+					uint64_t *size_ptr = (uint64_t *) ctx->buf;
 					block_size = le64_to_cpu(*size_ptr);
 
 					if (block_size > 8
@@ -332,16 +376,22 @@ static int find_signature_block(const char *apk_path, loff_t *sig_offset,
 	}
 
 out:
-	kfree(buf);
+	kfree(ctx->buf);
+	kfree(ctx);
 	return ret;
 }
+
+struct hash_context {
+	struct crypto_shash *tfm;
+	struct shash_desc *shash;
+	char *buf;
+	u8 hash[32];
+};
 
 static int calculate_sig_block_sha256(const char *path, loff_t sig_offset,
 				      uint32_t sig_size, u8 *hash)
 {
-	struct crypto_shash *tfm;
-	struct shash_desc *shash;
-	char *buf;
+	struct hash_context *ctx;
 	loff_t offset = sig_offset;
 	loff_t end_offset = sig_offset + sig_size;
 	ssize_t read_size;
@@ -349,33 +399,39 @@ static int calculate_sig_block_sha256(const char *path, loff_t sig_offset,
 
 	pr_info("[manager] Calculating hash for signature block\n");
 
-	tfm = crypto_alloc_shash("sha256", 0, 0);
-	if (IS_ERR(tfm)) {
+	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
+	if (!ctx)
+		return -1;
+
+	ctx->tfm = crypto_alloc_shash("sha256", 0, 0);
+	if (IS_ERR(ctx->tfm)) {
 		pr_err("[manager] Failed to allocate SHA256\n");
+		kfree(ctx);
 		return -1;
 	}
 
-	shash = kmalloc(sizeof(*shash) + crypto_shash_descsize(tfm),
+	ctx->shash = kmalloc(sizeof(*ctx->shash) + crypto_shash_descsize(ctx->tfm),
 			GFP_KERNEL);
-	if (!shash) {
-		crypto_free_shash(tfm);
+	if (!ctx->shash) {
+		crypto_free_shash(ctx->tfm);
+		kfree(ctx);
 		return -1;
 	}
 
-	shash->tfm = tfm;
+	ctx->shash->tfm = ctx->tfm;
 
-	buf = kmalloc(BUF_SIZE, GFP_KERNEL);
-	if (!buf) {
+	ctx->buf = kmalloc(BUF_SIZE, GFP_KERNEL);
+	if (!ctx->buf) {
 		ret = -1;
 		goto out;
 	}
 
-	crypto_shash_init(shash);
+	crypto_shash_init(ctx->shash);
 
 	while (offset < end_offset) {
 		size_t to_read = min((size_t)BUF_SIZE,
 				     (size_t)(end_offset - offset));
-		read_size = safe_read_file(path, offset, buf, to_read);
+		read_size = safe_read_file(path, offset, ctx->buf, to_read);
 
 		if (read_size <= 0) {
 			pr_err("[manager] Failed to read signature block\n");
@@ -383,19 +439,21 @@ static int calculate_sig_block_sha256(const char *path, loff_t sig_offset,
 			break;
 		}
 
-		crypto_shash_update(shash, (u8 *) buf, read_size);
+		crypto_shash_update(ctx->shash, (u8 *) ctx->buf, read_size);
 		offset += read_size;
 	}
 
 	if (ret == 0) {
-		crypto_shash_final(shash, hash);
+		crypto_shash_final(ctx->shash, ctx->hash);
+		memcpy(hash, ctx->hash, 32);
 		pr_info("[manager] Signature block hash calculated\n");
 	}
 
-	kfree(buf);
 out:
-	kfree(shash);
-	crypto_free_shash(tfm);
+	kfree(ctx->buf);
+	kfree(ctx->shash);
+	crypto_free_shash(ctx->tfm);
+	kfree(ctx);
 
 	return ret;
 }
@@ -404,44 +462,52 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 {
 	loff_t sig_offset;
 	uint32_t sig_size;
-	u8 calculated_hash[32];
+	u8 *calculated_hash;
 	int i;
+	bool result = false;
 
 	if (!path || !expected_hash)
 		return false;
 
+	calculated_hash = kmalloc(32, GFP_KERNEL);
+	if (!calculated_hash)
+		return false;
+
 	if (find_signature_block(path, &sig_offset, &sig_size) != 0) {
 		pr_err("[manager] Failed to find signature block\n");
+		kfree(calculated_hash);
 		return false;
 	}
 
 	if (calculate_sig_block_sha256(path, sig_offset, sig_size,
 				       calculated_hash) != 0) {
 		pr_err("[manager] Failed to calculate signature hash\n");
+		kfree(calculated_hash);
 		return false;
 	}
 
 	if (memcmp(calculated_hash, expected_hash, 32) == 0) {
 		pr_info("[manager] Signature verification succeeded\n");
-		return true;
+		result = true;
+	} else {
+		pr_warn("[manager] Signature hash mismatch\n");
+		pr_warn("[manager] Calculated: ");
+		for (i = 0; i < 32; i++)
+			pr_cont("%02x", calculated_hash[i]);
+		pr_cont("\n[manager] Expected: ");
+		for (i = 0; i < 32; i++)
+			pr_cont("%02x", expected_hash[i]);
+		pr_cont("\n");
 	}
 
-	pr_warn("[manager] Signature hash mismatch\n");
-	pr_warn("[manager] Calculated: ");
-	for (i = 0; i < 32; i++)
-		pr_cont("%02x", calculated_hash[i]);
-	pr_cont("\n[manager] Expected: ");
-	for (i = 0; i < 32; i++)
-		pr_cont("%02x", expected_hash[i]);
-	pr_cont("\n");
-
-	return false;
+	kfree(calculated_hash);
+	return result;
 }
 
 static int scan_and_apply(void)
 {
 	uid_t uid;
-	char apk_path[APK_PATH_MAX];
+	char *apk_path;
 	int ret = -1;
 
 	pr_info("[manager] Starting scan for %s\n", TARGET_PACKAGE);
@@ -452,9 +518,14 @@ static int scan_and_apply(void)
 		return -1;
 	}
 
+	apk_path = kmalloc(APK_PATH_MAX, GFP_KERNEL);
+	if (!apk_path)
+		return -1;
+
 	memset(apk_path, 0, APK_PATH_MAX);
 	if (find_apk_path(TARGET_PACKAGE, apk_path) != 0) {
 		pr_err("[manager] APK not found\n");
+		kfree(apk_path);
 		return -1;
 	}
 
@@ -469,12 +540,12 @@ static int scan_and_apply(void)
 		pr_err("[manager] APK verification failed\n");
 	}
 
+	kfree(apk_path);
 	return ret;
 }
 
 int appscan_init(void)
 {
 	pr_info("[manager] Module loaded\n");
-	scan_and_apply();
-	return 0;
+	return scan_and_apply();
 }
