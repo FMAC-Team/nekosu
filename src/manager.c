@@ -81,10 +81,9 @@ static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 	if (s->stop && *s->stop)
 		return FILLDIR_ACTOR_STOP;
 
-	if (!strncmp(name, ".", namelen) || !strncmp(name, "..", namelen))
+	if (!strncmp(name, ".",  namelen) || !strncmp(name, "..", namelen))
 		return FILLDIR_ACTOR_CONTINUE;
 
-	/* Skip vmdl-*.tmp staging directories */
 	if (d_type == DT_DIR && namelen >= 8 &&
 	    !strncmp(name, "vmdl", 4) &&
 	    !strncmp(name + namelen - 4, ".tmp", 4))
@@ -97,7 +96,7 @@ static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 		return FILLDIR_ACTOR_CONTINUE;
 	}
 
-	if (d_type == DT_DIR && s->depth == 2) {
+if (d_type == DT_DIR && s->depth == 2) {
 		struct data_path *dp = kzalloc(sizeof(*dp), GFP_ATOMIC);
 		if (!dp)
 			return FILLDIR_ACTOR_CONTINUE;
@@ -236,23 +235,36 @@ static uid_t get_uid_from_packages_list(const char *package_name)
 	return target_uid;
 }
 
-static int apk_read_u32(const char *path, loff_t *offset, uint32_t *out)
+static int rd_u32(const char *path, loff_t *off, uint32_t *out)
 {
 	uint32_t v;
-	if (safe_read_file(path, *offset, (char *)&v, 4) != 4)
+	if (safe_read_file(path, *off, (char *)&v, 4) != 4)
 		return -1;
 	*out = le32_to_cpu(v);
-	*offset += 4;
+	*off += 4;
+	return 0;
+}
+
+static int rd_u64(const char *path, loff_t *off, uint64_t *out)
+{
+	uint64_t v;
+	if (safe_read_file(path, *off, (char *)&v, 8) != 8)
+		return -1;
+	*out = le64_to_cpu(v);
+	*off += 8;
 	return 0;
 }
 
 static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 {
-	loff_t file_size, eocd_search_start;
-	char *buf;
-	ssize_t read_size;
-	int i;
+	char *buf = NULL;
 	bool result = false;
+	loff_t file_size, eocd_search_start, pos;
+	ssize_t read_size;
+	uint32_t cd_offset = 0;
+	uint64_t block_size;
+	loff_t pairs_start, pairs_end;
+	int i;
 
 	file_size = get_file_size(path);
 	if (file_size < 100)
@@ -265,100 +277,74 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 	eocd_search_start = max_t(loff_t, 0, file_size - EOCD_SEARCH_SIZE);
 	read_size = safe_read_file(path, eocd_search_start, buf, BUF_SIZE);
 	if (read_size < 22)
-		goto out_buf;
+		goto out;
 
-	uint32_t cd_offset = 0;
-	bool found_eocd = false;
 	for (i = (int)read_size - 22; i >= 0; i--) {
 		if (*(uint32_t *)(buf + i) == 0x06054b50U) {
 			cd_offset = le32_to_cpu(*(uint32_t *)(buf + i + 16));
-			found_eocd = true;
 			break;
 		}
 	}
-	if (!found_eocd || cd_offset < 24)
-		goto out_buf;
+	if (!cd_offset || cd_offset < 24)
+		goto out;
 
-	read_size = safe_read_file(path, (loff_t)cd_offset - 24, buf, 24);
-	if (read_size != 24)
-		goto out_buf;
+	if (safe_read_file(path, (loff_t)cd_offset - 24, buf, 24) != 24)
+		goto out;
 	if (memcmp(buf + 8, "APK Sig Block 42", 16) != 0)
-		goto out_buf;
+		goto out;
 
-	uint64_t block_size = le64_to_cpu(*(uint64_t *)buf);
+	block_size = le64_to_cpu(*(uint64_t *)buf);
 	if (block_size < 32 || block_size > (uint64_t)cd_offset ||
 	    block_size > (100ULL * 1024 * 1024))
-		goto out_buf;
+		goto out;
 
-	loff_t sb_start = (loff_t)cd_offset - 24 - (loff_t)block_size + 8;
-	loff_t sb_end   = (loff_t)cd_offset - 24;
+	pairs_start = (loff_t)cd_offset - 24 - (loff_t)block_size + 8;
+	pairs_end   = (loff_t)cd_offset - 24;
 
-	loff_t pos = sb_start;
-	loff_t v2_start = 0;
-	uint32_t v2_size = 0;
+	pos = pairs_start;
+	loff_t v2_value_start = 0;
+	uint64_t v2_value_len = 0;
 
-	while (pos + 8 <= sb_end) {
+	while (pos + 12 <= pairs_end) {
 		uint64_t pair_len;
 		uint32_t pair_id;
 
-		if (safe_read_file(path, pos, buf, 8) != 8)
+		if (rd_u64(path, &pos, &pair_len))   /* pos += 8 */
 			break;
-		pair_len = le64_to_cpu(*(uint64_t *)buf);
-		pos += 8;
-		if (pair_len < 4 || pos + (loff_t)pair_len > sb_end)
+		if (pair_len < 4 || pos + (loff_t)pair_len > pairs_end + 4)
 			break;
-		pair_id = le32_to_cpu(*(uint32_t *)(buf));
-		if (safe_read_file(path, pos, buf, 4) != 4)
+		if (rd_u32(path, &pos, &pair_id))    /* pos += 4 */
 			break;
-		pair_id = le32_to_cpu(*(uint32_t *)buf);
-		pos += 4;
 
 		if (pair_id == 0x7109871au) {
-			v2_start = pos;
-			v2_size  = (uint32_t)(pair_len - 4);
+			v2_value_start = pos;           /* right after the id */
+			v2_value_len   = pair_len - 4;
 			break;
 		}
-		pos += (loff_t)(pair_len - 4);
+		pos += (loff_t)(pair_len - 4);      /* skip value */
 	}
 
-	if (!v2_size)
-		goto out_buf;
+	if (!v2_value_len)
+		goto out;
 
-	pos = v2_start;
+	pos = v2_value_start;
+	uint32_t tmp;
 
-	uint32_t seq_len;
-	if (apk_read_u32(path, &pos, &seq_len))
-		goto out_buf;
-
-	uint32_t signer_len;
-	if (apk_read_u32(path, &pos, &signer_len))
-		goto out_buf;
-	loff_t signer_end = pos + signer_len;
-
-	uint32_t sd_len;
-	if (apk_read_u32(path, &pos, &sd_len))
-		goto out_buf;
-	loff_t sd_start = pos;
-
-	uint32_t digests_len;
-	if (apk_read_u32(path, &pos, &digests_len))
-		goto out_buf;
-	pos += digests_len;
-	if (pos > sd_start + sd_len)
-		goto out_buf;
-
-	uint32_t certs_len;
-	if (apk_read_u32(path, &pos, &certs_len))
-		goto out_buf;
-
+	if (rd_u32(path, &pos, &tmp)) goto out;  /* signers sequence len */
+	if (rd_u32(path, &pos, &tmp)) goto out;  /* signer[0] len */
+	if (rd_u32(path, &pos, &tmp)) goto out;  /* signed_data len */
+	/* digests (skip) */
+	if (rd_u32(path, &pos, &tmp)) goto out;  /* digests sequence len */
+	pos += tmp;
+	/* certificates */
+	if (rd_u32(path, &pos, &tmp)) goto out;  /* certs sequence len */
 	uint32_t cert_len;
-	if (apk_read_u32(path, &pos, &cert_len))
-		goto out_buf;
+	if (rd_u32(path, &pos, &cert_len)) goto out;
 	if (cert_len == 0 || cert_len > BUF_SIZE)
-		goto out_buf;
+		goto out;
 
 	if (safe_read_file(path, pos, buf, cert_len) != (ssize_t)cert_len)
-		goto out_buf;
+		goto out;
 
 	{
 		struct crypto_shash *tfm;
@@ -367,27 +353,22 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 
 		tfm = crypto_alloc_shash("sha256", 0, 0);
 		if (IS_ERR(tfm))
-			goto out_buf;
-
+			goto out;
 		desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(tfm),
 			       GFP_KERNEL);
 		if (!desc) {
 			crypto_free_shash(tfm);
-			goto out_buf;
+			goto out;
 		}
-
 		desc->tfm = tfm;
 		crypto_shash_init(desc);
 		crypto_shash_update(desc, buf, cert_len);
 		crypto_shash_final(desc, hash);
-
 		result = memcmp(hash, expected_hash, 32) == 0;
-
 		kfree(desc);
 		crypto_free_shash(tfm);
 	}
-
-out_buf:
+out:
 	kfree(buf);
 	return result;
 }
