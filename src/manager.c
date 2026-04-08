@@ -257,120 +257,162 @@ static int rd_u64(const char *path, loff_t *off, uint64_t *out)
 
 static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 {
-	char *buf = NULL;
-	bool result = false;
-	loff_t file_size, eocd_search_start, pos;
-	ssize_t read_size;
-	uint32_t cd_offset = 0;
-	uint64_t block_size;
-	loff_t pairs_start, pairs_end;
-	int i;
+    struct file *fp;
+    loff_t pos;
+    u32 size4;
+    u64 size8, size_of_block;
+    u8 buffer[0x11] = {0};
 
-	file_size = get_file_size(path);
-	if (file_size < 100)
-		return false;
+    bool v2_valid = false;
+    int v2_count = 0;
+    bool v3_exist = false;
+    bool v3_1_exist = false;
 
-	buf = kmalloc(BUF_SIZE, GFP_KERNEL);
-	if (!buf)
-		return false;
+    fp = filp_open(path, O_RDONLY, 0);
+    if (IS_ERR(fp))
+        return false;
 
-	eocd_search_start = max_t(loff_t, 0, file_size - EOCD_SEARCH_SIZE);
-	read_size = safe_read_file(path, eocd_search_start, buf, BUF_SIZE);
-	if (read_size < 22)
-		goto out;
+    fp->f_mode |= FMODE_NONOTIFY;
 
-	for (i = (int)read_size - 22; i >= 0; i--) {
-		if (*(uint32_t *)(buf + i) == 0x06054b50U) {
-			cd_offset = le32_to_cpu(*(uint32_t *)(buf + i + 16));
-			break;
-		}
-	}
-	if (!cd_offset || cd_offset < 24)
-		goto out;
+    for (int i = 0;; i++) {
+        u16 n;
+        pos = generic_file_llseek(fp, -i - 2, SEEK_END);
+        if (kernel_read(fp, &n, 2, &pos) != 2)
+            goto out;
 
-	if (safe_read_file(path, (loff_t)cd_offset - 24, buf, 24) != 24)
-		goto out;
-	if (memcmp(buf + 8, "APK Sig Block 42", 16) != 0)
-		goto out;
+        if (n == i) {
+            pos -= 22;
+            if (kernel_read(fp, &size4, 4, &pos) != 4)
+                goto out;
 
-	block_size = le64_to_cpu(*(uint64_t *)buf);
-	if (block_size < 32 || block_size > (uint64_t)cd_offset ||
-	    block_size > (100ULL * 1024 * 1024))
-		goto out;
+            if ((size4 ^ 0xcafebabeu) == 0xccfbf1eeu)
+                break;
+        }
 
-	pairs_start = (loff_t)cd_offset - 24 - (loff_t)block_size + 8;
-	pairs_end   = (loff_t)cd_offset - 24;
+        if (i == 0xffff)
+            goto out;
+    }
 
-	pos = pairs_start;
-	loff_t v2_value_start = 0;
-	uint64_t v2_value_len = 0;
+    pos += 12;
+    if (kernel_read(fp, &size4, 4, &pos) != 4)
+        goto out;
 
-	while (pos + 12 <= pairs_end) {
-		uint64_t pair_len;
-		uint32_t pair_id;
+    pos = size4 - 0x18;
 
-		if (rd_u64(path, &pos, &pair_len))   /* pos += 8 */
-			break;
-		if (pair_len < 4 || pos + (loff_t)pair_len > pairs_end + 4)
-			break;
-		if (rd_u32(path, &pos, &pair_id))    /* pos += 4 */
-			break;
+    if (kernel_read(fp, &size8, 8, &pos) != 8)
+        goto out;
 
-		if (pair_id == 0x7109871au) {
-			v2_value_start = pos;           /* right after the id */
-			v2_value_len   = pair_len - 4;
-			break;
-		}
-		pos += (loff_t)(pair_len - 4);      /* skip value */
-	}
+    if (kernel_read(fp, buffer, 0x10, &pos) != 0x10)
+        goto out;
 
-	if (!v2_value_len)
-		goto out;
+    if (memcmp(buffer, "APK Sig Block 42", 16))
+        goto out;
 
-	pos = v2_value_start;
-	uint32_t tmp;
+    pos = size4 - (size8 + 8);
 
-	if (rd_u32(path, &pos, &tmp)) goto out;  /* signers sequence len */
-	if (rd_u32(path, &pos, &tmp)) goto out;  /* signer[0] len */
-	if (rd_u32(path, &pos, &tmp)) goto out;  /* signed_data len */
-	/* digests (skip) */
-	if (rd_u32(path, &pos, &tmp)) goto out;  /* digests sequence len */
-	pos += tmp;
-	/* certificates */
-	if (rd_u32(path, &pos, &tmp)) goto out;  /* certs sequence len */
-	uint32_t cert_len;
-	if (rd_u32(path, &pos, &cert_len)) goto out;
-	if (cert_len == 0 || cert_len > BUF_SIZE)
-		goto out;
+    if (kernel_read(fp, &size_of_block, 8, &pos) != 8)
+        goto out;
 
-	if (safe_read_file(path, pos, buf, cert_len) != (ssize_t)cert_len)
-		goto out;
+    if (size_of_block != size8)
+        goto out;
 
-	{
-		struct crypto_shash *tfm;
-		struct shash_desc *desc;
-		u8 hash[32];
+    int loop = 0;
 
-		tfm = crypto_alloc_shash("sha256", 0, 0);
-		if (IS_ERR(tfm))
-			goto out;
-		desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(tfm),
-			       GFP_KERNEL);
-		if (!desc) {
-			crypto_free_shash(tfm);
-			goto out;
-		}
-		desc->tfm = tfm;
-		crypto_shash_init(desc);
-		crypto_shash_update(desc, buf, cert_len);
-		crypto_shash_final(desc, hash);
-		result = memcmp(hash, expected_hash, 32) == 0;
-		kfree(desc);
-		crypto_free_shash(tfm);
-	}
+    while (loop++ < 10) {
+        u32 id;
+        u32 offset = 0;
+
+        if (kernel_read(fp, &size8, 8, &pos) != 8)
+            break;
+
+        if (size8 == size_of_block)
+            break;
+
+        if (kernel_read(fp, &id, 4, &pos) != 4)
+            break;
+
+        offset = 4;
+
+        if (id == 0x7109871a) {
+            /* v2 */
+            v2_count++;
+
+            /* signer seq len */
+            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
+            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
+            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
+
+            offset += 12;
+
+            /* digests */
+            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
+            pos += size4;
+            offset += 4 + size4;
+
+            /* cert */
+            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
+            if (kernel_read(fp, &size4, 4, &pos) != 4) break;
+            offset += 8;
+
+            if (size4 == 0 || size4 > BUF_SIZE)
+                break;
+
+            u8 *cert = kmalloc(size4, GFP_KERNEL);
+            if (!cert)
+                break;
+
+            if (kernel_read(fp, cert, size4, &pos) != size4) {
+                kfree(cert);
+                break;
+            }
+
+            /* sha256 */
+            {
+                struct crypto_shash *tfm;
+                struct shash_desc *desc;
+                u8 hash[32];
+
+                tfm = crypto_alloc_shash("sha256", 0, 0);
+                if (!IS_ERR(tfm)) {
+                    desc = kmalloc(sizeof(*desc) + crypto_shash_descsize(tfm),
+                                   GFP_KERNEL);
+                    if (desc) {
+                        desc->tfm = tfm;
+                        crypto_shash_init(desc);
+                        crypto_shash_update(desc, cert, size4);
+                        crypto_shash_final(desc, hash);
+
+                        if (!memcmp(hash, expected_hash, 32))
+                            v2_valid = true;
+
+                        kfree(desc);
+                    }
+                    crypto_free_shash(tfm);
+                }
+            }
+
+            kfree(cert);
+
+        } else if (id == 0xf05368c0) {
+            v3_exist = true;
+        } else if (id == 0x1b93ad61) {
+            v3_1_exist = true;
+        }
+
+        pos += (size8 - offset);
+    }
+
+    if (v2_count != 1)
+        v2_valid = false;
+
+
 out:
-	kfree(buf);
-	return result;
+    filp_close(fp, NULL);
+
+    if (v3_exist || v3_1_exist)
+        return false;
+
+    return v2_valid;
 }
 
 static int scan_and_apply(void)
