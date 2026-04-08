@@ -47,19 +47,6 @@ struct apk_scan_ctx {
 	int *stop;
 };
 
-static ssize_t safe_read_file(const char *path, loff_t offset, char *buf, size_t len)
-{
-	struct file *file;
-	ssize_t ret;
-	file = filp_open(path, O_RDONLY, 0);
-	if (IS_ERR(file))
-		return PTR_ERR(file);
-	ret = kernel_read(file, buf, len, &offset);
-	filp_close(file, NULL);
-	return ret;
-}
-
-
 static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 				     const char *name, int namelen,
 				     loff_t off, u64 ino, unsigned int d_type)
