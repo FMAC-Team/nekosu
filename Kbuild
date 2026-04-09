@@ -1,5 +1,5 @@
 fmac-y += src/anonfd.o src/nksu.o \
-           src/privilege.o src/selinux.o src/tracepoint.o src/ioctl.o src/procfs.o \
+           src/privilege.o src/selinux.o src/tracepoint.o src/ioctl.o \
            src/uid_cap.o src/manager.o
 
 obj-$(CONFIG_FMAC) += fmac.o

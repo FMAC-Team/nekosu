@@ -25,7 +25,6 @@
 #include "privilege.h"
 #include "tracepoint.h"
 #include "ioctl.h"
-#include "procfs.h"
 #include "uid_caps.h"
 #include "manager.h"
 
