@@ -24,7 +24,7 @@
 #include "allowlist.h"
 #include "selinux.h"
 #include "privilege.h"
-#include "hijack.h"
+#include "tracepoint.h"
 #include "ioctl.h"
 #include "procfs.h"
 #include "uid_caps.h"

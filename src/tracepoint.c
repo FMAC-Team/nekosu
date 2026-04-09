@@ -13,7 +13,7 @@
 #include <asm/syscall.h>
 
 #include <fmac.h>
-#include "hijack.h"
+#include "tracepoint.h"
 
 #define REDIRECT_TARGET     "/data/adb/ncore"
 #define REDIRECT_TARGET_LEN (sizeof(REDIRECT_TARGET))
@@ -315,7 +315,7 @@ static void probe_sched_fork(void *data,
 	set_tsk_thread_flag(child, TIF_SYSCALL_TRACEPOINT);
 }
 
-int load_hijack_hook(void)
+int load_tracepoint_hook(void)
 {
 	int ret;
 
@@ -345,11 +345,11 @@ int load_hijack_hook(void)
 		return ret;
 	}
 
-	pr_info("hijack hooks loaded (tracepoint)\n");
+	pr_info("tracepoint hooks loaded (tracepoint)\n");
 	return 0;
 }
 
-void unload_hijack_hook(void)
+void unload_tracepoint_hook(void)
 {
 	if (tp_sys_enter)
 		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter,
@@ -362,5 +362,5 @@ void unload_hijack_hook(void)
 
 	fmac_scope_clear_all();
 
-	pr_info("hijack hooks unloaded\n");
+	pr_info("tracepoint hooks unloaded\n");
 }

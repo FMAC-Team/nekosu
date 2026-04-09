@@ -39,9 +39,9 @@ static const module_component_t core_components[] = {
 	 .exit = uid_caps_exit,
 	  },
 	{
-	 .name = "Hijack Hook",
-	 .init = load_hijack_hook,
-	 .exit = unload_hijack_hook,
+	 .name = "tracepoint hook",
+	 .init = load_tracepoint_hook,
+	 .exit = unload_tracepoint_hook,
 	  },
 	{
 	 .name = "manager scan",
