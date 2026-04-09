@@ -97,11 +97,6 @@ int fmac_scope_set(uid_t uid, u32 flags)
 	return 0;
 }
 
-u32 fmac_scope_get(uid_t uid)
-{
-	return scope_lookup(uid);
-}
-
 void fmac_scope_clear(uid_t uid)
 {
 	struct scope_entry *e;
