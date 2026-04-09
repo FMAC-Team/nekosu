@@ -12,19 +12,5 @@ config FMAC_DEBUG
 	default y
 	help
 	  Enable FMAC debug mode.
-	  
-config FMAC_ROOT
-	bool "FMAC ROOT feature"
-	depends on FMAC
-	default y
-	help
-	  Enable FMAC root feature.
-	  
-config FMAC_SYSCALL
-	bool "hook syscall table"
-    depends on FMAC
-	default n
-	help
-	  Enable FMAC syscall table hook feature.
 
 endmenu

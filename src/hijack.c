@@ -36,32 +36,6 @@ struct scope_entry {
 static DEFINE_HASHTABLE(scope_table, SCOPE_HASH_BITS);
 static DEFINE_SPINLOCK(scope_lock);
 
-static int authenticate(int key)
-{
-	int fd;
-#if IS_ENABLED(CONFIG_FMAC_DEBUG)
-	pr_info("prctl hit: option=201 arg2=%lu\n", key);
-#endif
-	if (fmac_uid_allowed()) {
-		goto LOAD;
-	}
-
-	if (check((int)key) == false) {
-		pr_err("check failed\n");
-		return 0;
-	}
-LOAD:
-
-	fd = fmac_anonfd_get();
-	if (fd < 0)
-		return 0;
-
-	if (nksu_add_uid()) {
-		pr_err("failed to save uid");
-	}
-	return 0;
-}
-
 static u32 scope_lookup(uid_t uid)
 {
 	struct scope_entry *e;
@@ -222,7 +196,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 #endif
 		switch (option) {
 		case 201:
-			authenticate((int)arg2);
+		  // TODO:
 			return;
 		case 202:
 			if (fmac_uid_allowed()) {

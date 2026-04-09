@@ -34,21 +34,10 @@ static const module_component_t core_components[] = {
 	 .exit = fmac_anonfd_exit,
 	  },
 	{
-	 .name = "TOTP Crypto",
-	 .init = init_totp_crypto,
-	 .exit = cleanup_totp_crypto,
-	  },
-	{
 	 .name = "UID Capabilities",
 	 .init = uid_caps_init,
 	 .exit = uid_caps_exit,
 	  },
-	/*
-	   {
-	   .name = "FMAC Hook",
-	   .init = fmac_hook_init,
-	   .exit = fmac_hook_exit,
-	   }, */
 	{
 	 .name = "Hijack Hook",
 	 .init = load_hijack_hook,
@@ -60,25 +49,6 @@ static const module_component_t core_components[] = {
 	 .exit = NULL,
 	  },
 };
-
-#if IS_ENABLED(CONFIG_FMAC_SYSCALL)
-static const module_component_t syscall_components[] = {
-	{
-	 .name = "Syscall Table",
-	 .init = syscalltable_init,
-	 .exit = syscalltable_exit,
-	  },
-	{
-	 .name = "FMAC Core",
-	 .init = fmac_init,
-	 .exit = NULL,
-	  },
-};
-
-#define SYSCALL_COMPONENTS_COUNT ARRAY_SIZE(syscall_components)
-#else
-#define SYSCALL_COMPONENTS_COUNT 0
-#endif
 
 #define CORE_COMPONENTS_COUNT ARRAY_SIZE(core_components)
 
@@ -126,27 +96,12 @@ static int nekosu_init_all_components(void)
 		}
 	}
 
-#if IS_ENABLED(CONFIG_FMAC_SYSCALL)
-	for (i = 0; i < SYSCALL_COMPONENTS_COUNT; i++) {
-		ret = nekosu_init_component(&syscall_components[i], i);
-		if (ret) {
-			nekosu_cleanup_components(syscall_components, i);
-			nekosu_cleanup_components(core_components,
-						  CORE_COMPONENTS_COUNT);
-			return ret;
-		}
-	}
-#endif
-
 	pr_info("All components initialized successfully\n");
 	return 0;
 }
 
 static void nekosu_cleanup_all_components(void)
 {
-#if IS_ENABLED(CONFIG_FMAC_SYSCALL)
-	nekosu_cleanup_components(syscall_components, SYSCALL_COMPONENTS_COUNT);
-#endif
 	nekosu_cleanup_components(core_components, CORE_COMPONENTS_COUNT);
 
 	pr_info("All components cleaned up\n");
