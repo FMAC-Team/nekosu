@@ -21,7 +21,6 @@
 #include <asm/syscall.h>
 
 #include "anonfd.h"
-#include "allowlist.h"
 #include "selinux.h"
 #include "privilege.h"
 #include "tracepoint.h"

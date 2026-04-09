@@ -1,4 +1,4 @@
-fmac-y += src/allowlist.o src/anonfd.o src/nksu.o \
+fmac-y += src/anonfd.o src/nksu.o \
            src/privilege.o src/selinux.o src/tracepoint.o src/ioctl.o src/procfs.o \
            src/uid_cap.o src/manager.o
 
