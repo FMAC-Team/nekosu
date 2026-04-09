@@ -35,7 +35,7 @@ static long ioc_has_uid(unsigned long arg)
 	if (copy_from_user(&id, (void __user *)arg, sizeof(id)))
 		return -EFAULT;
 
-	id = !!scope_lookup((uid_t)id);
+	id = !!scope_lookup((uid_t) id);
 
 	if (copy_to_user((void __user *)arg, &id, sizeof(id)))
 		return -EFAULT;
@@ -105,7 +105,7 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			if (copy_from_user
 			    (&id, (unsigned int __user *)arg, sizeof(id)))
 				return -EFAULT;
-fmac_scope_set((uid_t) id, FMAC_SCOPE_ALL)
+			fmac_scope_set((uid_t) id, FMAC_SCOPE_ALL);
 			return 0;
 		}
 
@@ -114,7 +114,7 @@ fmac_scope_set((uid_t) id, FMAC_SCOPE_ALL)
 			if (copy_from_user
 			    (&id, (unsigned int __user *)arg, sizeof(id)))
 				return -EFAULT;
-fmac_scope_clear((uid_t) id);
+			fmac_scope_clear((uid_t) id);
 			return 0;
 		}
 
