@@ -223,6 +223,8 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 	u32 size4;
 	u64 size8, size_of_block;
 	u8 buffer[0x11] = { 0 };
+	u8 *cert = NULL;
+	int loop;
 
 	bool v2_valid = false;
 	int v2_count = 0;
@@ -277,7 +279,7 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 	if (size_of_block != size8)
 		goto out;
 
-	int loop = 0;
+	loop = 0;
 
 	while (loop++ < 10) {
 		u32 id;
@@ -324,7 +326,7 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 			if (size4 == 0 || size4 > BUF_SIZE)
 				break;
 
-			u8 *cert = kmalloc(size4, GFP_KERNEL);
+			cert = kmalloc(size4, GFP_KERNEL);
 			if (!cert)
 				break;
 
