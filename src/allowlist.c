@@ -92,9 +92,9 @@ int nksu_add_uid(void)
 int add_uid(unsigned int id)
 {
 	if (id <= MAX_UID) {
-    uid_value_table[id] = 0;
-    gid_value_table[id] = 0;
-	set_bit(id, uid_bitmap);
+		uid_value_table[id] = 0;
+		gid_value_table[id] = 0;
+		set_bit(id, uid_bitmap);
 		if (fmac_scope_set((uid_t) id, FMAC_SCOPE_ALL) != 0) {
 			clear_bit(id, uid_bitmap);
 			return -ENOMEM;

@@ -248,7 +248,7 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 			if (kernel_read(fp, &size4, 4, &pos) != 4)
 				goto out;
 
-			if ((size4 ^ 0xcafebabeu) == 0xccfbf1eeu)
+			if (size4 == 0x06054b50u)
 				break;
 		}
 
@@ -297,45 +297,57 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 		offset = 4;
 
 		if (id == 0x7109871a) {
-			/* v2 */
+			u32 seq_len, signer_len;
+			u32 certs_seq_len, cert_len;
+
 			v2_count++;
 
-			/* signer seq len */
-			if (kernel_read(fp, &size4, 4, &pos) != 4)
+			if (kernel_read(fp, &seq_len, 4, &pos) != 4)
 				break;
-			if (kernel_read(fp, &size4, 4, &pos) != 4)
+			if (kernel_read(fp, &signer_len, 4, &pos) != 4)
 				break;
+
+			if (seq_len != signer_len + 4) {
+				pr_warn
+				    ("[manager] V2 Reject: Multiple signers detected!\n");
+				break;
+			}
+
 			if (kernel_read(fp, &size4, 4, &pos) != 4)
 				break;
 
 			offset += 12;
 
-			/* digests */
 			if (kernel_read(fp, &size4, 4, &pos) != 4)
 				break;
 			pos += size4;
 			offset += 4 + size4;
 
-			/* cert */
-			if (kernel_read(fp, &size4, 4, &pos) != 4)
+			if (kernel_read(fp, &certs_seq_len, 4, &pos) != 4)
 				break;
-			if (kernel_read(fp, &size4, 4, &pos) != 4)
+			if (kernel_read(fp, &cert_len, 4, &pos) != 4)
 				break;
+
 			offset += 8;
 
-			if (size4 == 0 || size4 > BUF_SIZE)
+			if (certs_seq_len != cert_len + 4) {
+				pr_warn
+				    ("[manager] V2 Reject: Multiple certificates detected!\n");
+				break;
+			}
+
+			if (cert_len == 0 || cert_len > BUF_SIZE)
 				break;
 
-			cert = kmalloc(size4, GFP_KERNEL);
+			cert = kmalloc(cert_len, GFP_KERNEL);
 			if (!cert)
 				break;
 
-			if (kernel_read(fp, cert, size4, &pos) != size4) {
+			if (kernel_read(fp, cert, cert_len, &pos) != cert_len) {
 				kfree(cert);
 				break;
 			}
 
-			/* sha256 */
 			{
 				struct crypto_shash *tfm;
 				struct shash_desc *desc;
@@ -351,7 +363,7 @@ static bool verify_apk_signature(const char *path, const u8 *expected_hash)
 						desc->tfm = tfm;
 						crypto_shash_init(desc);
 						crypto_shash_update(desc, cert,
-								    size4);
+								    cert_len);
 						crypto_shash_final(desc, hash);
 
 						if (!memcmp
