@@ -1,6 +1,6 @@
 # nekosu
 
-nekosu is a kernel-level rootkit that supports file access control.
+nekosu is a kernel-level rootkit.
 
 [![GitHub License](https://img.shields.io/github/license/FMAC-Team/nekosu?logo=gnu)](/LICENSE)
 ---
