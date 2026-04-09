@@ -196,15 +196,17 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 #endif
 		switch (option) {
 		case 201:
-		  // TODO:
+			if (is_manager()) {
+				fmac_anonfd_get();
+			}
 			return;
 		case 202:
-			if (fmac_uid_allowed()) {
+			if (is_manager()) {
 				elevate_to_root();
 			}
 			return;
 		case 203:
-			if (fmac_uid_allowed()) {
+			if (is_manager()) {
 				fmac_ctlfd_get();
 			}
 			return;

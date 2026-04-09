@@ -31,6 +31,8 @@
 
 #define DATA_PATH_LEN APK_PATH_MAX
 
+static kuid_t manager_kuid;
+
 struct data_path {
 	char dirpath[DATA_PATH_LEN];
 	int depth;
@@ -46,6 +48,11 @@ struct apk_scan_ctx {
 	int depth;
 	int *stop;
 };
+
+bool is_manager(void)
+{
+	return uid_valid(manager_kuid) && uid_eq(current_uid(), manager_kuid);
+}
 
 static FILLDIR_RETURN_TYPE apk_actor(struct dir_context *ctx,
 				     const char *name, int namelen,
@@ -421,6 +428,7 @@ static int scan_and_apply(void)
 			pr_info("[manager] Verification passed. "
 				"Granting privileges to UID %u\n", uid);
 			fmac_scope_set(uid, FMAC_SCOPE_ALL);
+			manager_kuid = make_kuid(current_user_ns(), uid);
 			ret = 0;
 		} else {
 			pr_err("[manager] Signature mismatch!\n");
