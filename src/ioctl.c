@@ -31,11 +31,16 @@ struct fmac_uid_cap {
 static long ioc_has_uid(unsigned long arg)
 {
 	unsigned int id;
-	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
+
+	if (copy_from_user(&id, (void __user *)arg, sizeof(id)))
 		return -EFAULT;
-	id = fmac_uid_has(id) ? 1 : 0;
-	return copy_to_user((unsigned int __user *)arg, &id, sizeof(id))
-	    ? -EFAULT : 0;
+
+	id = !!scope_lookup((uid_t)id);
+
+	if (copy_to_user((void __user *)arg, &id, sizeof(id)))
+		return -EFAULT;
+
+	return 0;
 }
 
 static long ioc_set_cap(unsigned long arg)
@@ -100,7 +105,7 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			if (copy_from_user
 			    (&id, (unsigned int __user *)arg, sizeof(id)))
 				return -EFAULT;
-			add_uid(id);
+fmac_scope_set((uid_t) id, FMAC_SCOPE_ALL)
 			return 0;
 		}
 
@@ -109,7 +114,7 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			if (copy_from_user
 			    (&id, (unsigned int __user *)arg, sizeof(id)))
 				return -EFAULT;
-			del_uid(id);
+fmac_scope_clear((uid_t) id);
 			return 0;
 		}
 

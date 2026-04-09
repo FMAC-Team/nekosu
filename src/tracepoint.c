@@ -36,7 +36,7 @@ struct scope_entry {
 static DEFINE_HASHTABLE(scope_table, SCOPE_HASH_BITS);
 static DEFINE_SPINLOCK(scope_lock);
 
-static u32 scope_lookup(uid_t uid)
+u32 scope_lookup(uid_t uid)
 {
 	struct scope_entry *e;
 	u32 flags = 0;
