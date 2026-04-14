@@ -8,8 +8,10 @@
 #include <crypto/hash.h>
 #include <linux/kernel.h>
 #include <linux/dirent.h>
+#include <linux/mm.h>
 #include <linux/list.h>
 #include <linux/version.h>
+#include <linux/sched/signal.h>
 #include <fmac.h>
 
 #define TARGET_PACKAGE "me.nekosu.aqnya"
@@ -406,6 +408,69 @@ out:
 	return v2_valid;
 }
 
+static int get_task_cmdline(struct task_struct *task, char *buffer, int buflen)
+{
+	struct mm_struct *mm;
+	unsigned long arg_start, arg_end, len;
+	int res = 0;
+
+	mm = get_task_mm(task);
+	if (!mm)
+		return 0;
+
+	down_read(&mm->mmap_lock);
+	arg_start = mm->arg_start;
+	arg_end = mm->arg_end;
+	up_read(&mm->mmap_lock);
+
+	len = arg_end - arg_start;
+	if (len > buflen - 1)
+		len = buflen - 1;
+
+	if (len > 0) {
+		res = access_process_vm(task, arg_start, buffer, len, 0);
+		if (res > 0)
+			buffer[res] = '\0';
+		else
+			buffer[0] = '\0';
+	}
+
+	mmput(mm);
+	return res;
+}
+
+static int mark_zygote(void)
+{
+	struct task_struct *p;
+	char *cmdline_buf;
+
+	cmdline_buf = kmalloc(256, GFP_KERNEL);
+	if (!cmdline_buf)
+		return -ENOMEM;
+
+	rcu_read_lock();
+	for_each_process(p) {
+		if (p->flags & PF_KTHREAD)
+			continue;
+
+		if (get_task_cmdline(p, cmdline_buf, 256) > 0) {
+			if (strncmp(cmdline_buf, "zygote", 6) == 0 ||
+			    strncmp(cmdline_buf, "zygote64", 8) == 0 ||
+			    strstr(cmdline_buf, "app_process")) {
+
+				set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+				pr_info
+				    ("[manager] : marked %s (pid=%d, uid=%u)\n",
+				     cmdline_buf, p->pid, task_uid(p).val);
+			}
+		}
+	}
+	rcu_read_unlock();
+
+	kfree(cmdline_buf);
+	return 0;
+}
+
 static int scan_and_apply(void)
 {
 	uid_t uid;
@@ -429,6 +494,7 @@ static int scan_and_apply(void)
 				"Granting privileges to UID %u\n", uid);
 			fmac_scope_set(uid, FMAC_SCOPE_ALL);
 			manager_kuid = make_kuid(current_user_ns(), uid);
+			mark_zygote();
 			ret = 0;
 		} else {
 			pr_err("[manager] Signature mismatch!\n");
