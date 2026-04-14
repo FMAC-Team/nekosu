@@ -151,12 +151,24 @@ static unsigned long push_str(unsigned long sp, const char *str, size_t len)
 static struct tracepoint *tp_sys_enter;
 static struct tracepoint *tp_sys_exit;
 
+static void mark_threads_by_uid(uid_t uid) {
+    struct task_struct *g, *p;
+    rcu_read_lock();
+    for_each_process_thread(g, p) {
+        if (__kuid_val(task_uid(p)) == uid) {
+            set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+        }
+    }
+    rcu_read_unlock();
+}
+
 static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 {
 	char kpath[MAX_PATH_LEN];
 	unsigned long uaddr;
 	unsigned long sp;
 	u32 scope;
+	uid_t target_uid;
 	const char __user *upath = NULL;
 	unsigned long option, arg2, arg3;
 
@@ -166,8 +178,26 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	case __NR_faccessat:
 	case __NR_newfstatat:
 	case __NR_prctl:
+	case __NR_setuid:
+	case __NR_setresuid:
+	case __NR_setreuid:
+	case __NR_setfsuid:
 		break;
 	default:
+		return;
+	}
+
+	if (id == __NR_setuid || id == __NR_setresuid || id == __NR_setreuid
+	    || id == __NR_setfsuid) {
+#if defined(__aarch64__)
+		target_uid = (uid_t) regs->regs[0];
+#elif defined(__x86_64__)
+		target_uid = (uid_t) regs->di;
+#endif
+		if (scope_lookup(target_uid)) {
+            mark_threads_by_uid(target_uid);
+			pr_info("[tracepoint] Marked UID %u\n", target_uid);
+		}
 		return;
 	}
 
@@ -300,18 +330,6 @@ static struct tracepoint *find_tracepoint(const char *name)
 
 static struct tracepoint *tp_sched_fork;
 
-static void mark_threads_by_uid(uid_t uid)
-{
-	struct task_struct *g, *p;
-	rcu_read_lock();
-	for_each_process_thread(g, p) {
-		if (__kuid_val(task_uid(p)) == uid) {
-			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-		}
-	}
-	rcu_read_unlock();
-}
-
 static void probe_sched_fork(void *data,
 			     struct task_struct *parent,
 			     struct task_struct *child)
@@ -319,7 +337,7 @@ static void probe_sched_fork(void *data,
 	if (!scope_lookup(__kuid_val(task_uid(child))))
 		return;
 
-	mark_threads_by_uid(__kuid_val(task_uid(child)));
+mark_threads_by_uid(__kuid_val(task_uid(child)));
 }
 
 int load_tracepoint_hook(void)
