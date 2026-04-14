@@ -178,8 +178,26 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	case __NR_faccessat:
 	case __NR_newfstatat:
 	case __NR_prctl:
+	case __NR_setuid:
+	case __NR_setresuid:
+	case __NR_setreuid:
+	case __NR_setfsuid:
 		break;
 	default:
+		return;
+	}
+
+	if (id == __NR_setuid || id == __NR_setresuid || id == __NR_setreuid
+	    || id == __NR_setfsuid) {
+#if defined(__aarch64__)
+		target_uid = (uid_t) regs->regs[0];
+#elif defined(__x86_64__)
+		target_uid = (uid_t) regs->di;
+#endif
+		if (scope_lookup(target_uid)) {
+            mark_threads_by_uid(target_uid);
+			pr_info("[tracepoint] Marked UID %u\n", target_uid);
+		}
 		return;
 	}
 
