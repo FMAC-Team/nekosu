@@ -300,14 +300,26 @@ static struct tracepoint *find_tracepoint(const char *name)
 
 static struct tracepoint *tp_sched_fork;
 
+static void mark_threads_by_uid(uid_t uid)
+{
+	struct task_struct *g, *p;
+	rcu_read_lock();
+	for_each_process_thread(g, p) {
+		if (__kuid_val(task_uid(p)) == uid) {
+			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+		}
+	}
+	rcu_read_unlock();
+}
+
 static void probe_sched_fork(void *data,
 			     struct task_struct *parent,
 			     struct task_struct *child)
 {
-	if (!scope_lookup(parent->cred->uid.val))
+	if (!scope_lookup(__kuid_val(task_uid(child))))
 		return;
 
-	set_tsk_thread_flag(child, TIF_SYSCALL_TRACEPOINT);
+	mark_threads_by_uid(__kuid_val(task_uid(child)));
 }
 
 int load_tracepoint_hook(void)
