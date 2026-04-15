@@ -221,8 +221,13 @@ out:
 	if (ret == 0)
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
 		avc_ss_reset(0);
+		selnl_notify_policyload(0);
+    selinux_status_update_policyload(0);
 #else
 		avc_ss_reset(selinux_state.avc, 0);
+		selnl_notify_policyload(0);
+ selinux_status_update_policyload(&selinux_state, 0);
 #endif
+selinux_xfrm_notify_policyload();
 	return ret;
 }
