@@ -136,9 +136,9 @@ int fmac_sepolicy_add_rule(const char *sname, const char *tname,
         goto out;
     }
 
-    key.source_type  = src->s.value;
-    key.target_type  = tgt->s.value;
-    key.target_class = cls->s.value;
+    key.source_type  = src->value;
+    key.target_type  = tgt->value;
+    key.target_class = cls->value;
     key.specified    = effect;
 
     node = avtab_search_node(&pdb->te_avtab, &key);
@@ -159,12 +159,12 @@ int fmac_sepolicy_add_rule(const char *sname, const char *tname,
 
     if (invert) {
         if (perm)
-            node->datum.u.data &= ~(1U << (perm->s.value - 1));
+            node->datum.u.data &= ~(1U << (perm->value - 1));
         else
             node->datum.u.data = 0U;
     } else {
         if (perm)
-            node->datum.u.data |= 1U << (perm->s.value - 1);
+            node->datum.u.data |= 1U << (perm->value - 1);
         else
             node->datum.u.data = ~0U;
     }
