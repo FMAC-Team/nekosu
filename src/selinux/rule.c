@@ -104,7 +104,7 @@ static void avtab_remove_node_safe(struct avtab *h, struct avtab_node *node)
 	kfree(node);
 }
 
-int fmac_sepolicy_add_rule(const char *sname, const char *tname,
+int sepolicy_add_rule(const char *sname, const char *tname,
 			   const char *cname, const char *pname,
 			   int effect, bool invert)
 {
