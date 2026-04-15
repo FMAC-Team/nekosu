@@ -146,17 +146,15 @@ int fmac_sepolicy_add_rule(const char *sname, const char *tname,
     if (!node) {
         memset(&datum, 0, sizeof(datum));
         datum.u.data = (effect == AVTAB_AUDITDENY) ? ~0U : 0U;
-        ret = avtab_insert(&pdb->te_avtab, &key, &datum);
-        if (ret) {
-            pr_err("[selinux]: avtab_insert failed: %d\n", ret);
-            goto out;
-        }
-        node = avtab_search_node(&pdb->te_avtab, &key);
+        
+        node = avtab_insert_nonunique(&pdb->te_avtab, &key, &datum);
         if (!node) {
+            pr_err("[selinux]: avtab_insert_nonunique failed\n");
             ret = -ENOMEM;
             goto out;
         }
     }
+
 
     if (invert) {
         if (perm)
