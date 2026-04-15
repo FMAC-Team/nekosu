@@ -11,6 +11,8 @@
 #include <linux/tracepoint.h>
 #include <linux/trace_events.h>
 #include <asm/syscall.h>
+#include <linux/pid.h>
+#include <linux/sched/signal.h>
 
 #include <fmac.h>
 #include "tracepoint.h"
@@ -159,6 +161,26 @@ void mark_threads_by_uid(uid_t uid) {
             set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
         }
     }
+    rcu_read_unlock();
+}
+
+void mark_threads_by_pid(pid_t pid)
+{
+    struct task_struct *task, *t;
+
+    rcu_read_lock();
+
+    task = find_task_by_vpid(pid);
+    if (!task)
+        goto out;
+
+    for_each_thread(task, t) {
+        set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+    }
+
+    set_tsk_thread_flag(task, TIF_SYSCALL_TRACEPOINT);
+
+out:
     rcu_read_unlock();
 }
 

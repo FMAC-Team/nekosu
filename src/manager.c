@@ -457,8 +457,7 @@ static int mark_zygote(void)
 			if (strncmp(cmdline_buf, "zygote", 6) == 0 ||
 			    strncmp(cmdline_buf, "zygote64", 8) == 0 ||
 			    strstr(cmdline_buf, "app_process")) {
-
-				mark_threads_by_uid(task_uid(p).val);
+				mark_threads_by_pid(p->pid);
 				pr_info
 				    ("[manager] : marked %s (pid=%d, uid=%u)\n",
 				     cmdline_buf, p->pid, task_uid(p).val);
