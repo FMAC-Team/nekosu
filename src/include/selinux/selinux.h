@@ -1,8 +1,6 @@
 #ifndef SELINUX_H
 #define SELINUX_H
 
-#define DOMAIN "su"
-
 void setenforce(bool status);
 bool getenforce(void);
 int set_domain(const char *domain, struct cred *new_cred);
