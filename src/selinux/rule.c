@@ -12,6 +12,7 @@
 #include "ss/policydb.h"
 #include "security.h"
 #include "avc_ss.h"
+#include "xfrm.h"
 
 static inline int avtab_hash(const struct avtab_key *keyp, u32 mask)
 {
@@ -218,7 +219,7 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
 
-	if (ret == 0)
+	if (ret == 0){
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
 		avc_ss_reset(0);
 		selnl_notify_policyload(0);
@@ -228,6 +229,6 @@ out:
 		selnl_notify_policyload(0);
  selinux_status_update_policyload(&selinux_state, 0);
 #endif
-selinux_xfrm_notify_policyload();
+selinux_xfrm_notify_policyload();}
 	return ret;
 }
