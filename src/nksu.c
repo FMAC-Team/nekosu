@@ -49,7 +49,7 @@ static const module_component_t core_components[] = {
 	 .exit = NULL,
 	  },
 	  {
-	  .name = "selinux policy"
+	  .name = "selinux policy",
 	  .init = sepolicy_init,
 	  .exit = sepolicy_exit,
 	  },
