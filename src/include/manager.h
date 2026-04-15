@@ -1,0 +1,1 @@
+int appscan_init(void);
