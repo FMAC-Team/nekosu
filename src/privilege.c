@@ -160,5 +160,5 @@ void elevate_to_root(void)
 		}
 	}
 
-	grant_privileges(PRIV_ALL, all_caps, "u:r:su:s0");
+	grant_privileges(PRIV_ALL, all_caps, "u:r:nksu:s0");
 }

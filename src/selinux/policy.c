@@ -33,18 +33,18 @@ struct sepolicy_group {
 };
 
 static const struct sepolicy_rule pkg_rules[] = {
-    ALLOW("su", "package_service",  "service_manager", "find"),
-    ALLOW("su", "system_server",    "binder",          "call"),
-    ALLOW("su", "system_server",    "binder",          "transfer"),
-    ALLOW("system_server", "su",    "binder",          "call"),
+    ALLOW("nksu", "package_service",  "service_manager", "find"),
+    ALLOW("nksu", "system_server",    "binder",          "call"),
+    ALLOW("nksu", "system_server",    "binder",          "transfer"),
+    ALLOW("system_server", "nksu",    "binder",          "call"),
 };
 
 static const struct sepolicy_rule su_rules[] = {
-    ALLOW("su", "su",               "process",         "fork"),
-    ALLOW("su", "su",               "process",         "sigchld"),
-    ALLOW("su", "shell_data_file",  "file",            "read"),
-    ALLOW("su", "shell_data_file",  "file",            "write"),
-    ALLOW("su", "shell_data_file",  "file",            "open"),
+    ALLOW("nksu", "nksu",               "process",         "fork"),
+    ALLOW("nksu", "nksu",               "process",         "sigchld"),
+    ALLOW("nksu", "shell_data_file",  "file",            "read"),
+    ALLOW("nksu", "shell_data_file",  "file",            "write"),
+    ALLOW("nksu", "shell_data_file",  "file",            "open"),
 };
 
 #define GROUP(_name, _rules) \

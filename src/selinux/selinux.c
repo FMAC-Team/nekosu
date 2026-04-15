@@ -7,7 +7,7 @@
 
 #include <fmac.h>
 
-#define DOMAIN "su"
+#define DOMAIN "nksu"
 
 void setenforce(bool status)
 {
