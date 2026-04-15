@@ -74,7 +74,7 @@ int init_selinux_hook(void)
 
 	db = &selinux_state.policy->policydb;
 	if (!getenforce()) {
-		pr_info("enforcing is false,set 1\n");
+		pr_info("[selinux]: enforcing is false,set 1\n");
 		setenforce(true);
 	}
 	do_allow(db, DOMAIN);
