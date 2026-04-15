@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -16,43 +15,57 @@ struct sepolicy_rule {
 	bool invert;
 };
 
-#define RULE(_src, _tgt, _cls, _perm, _effect) \
+#define RULE(_src, _tgt, _cls, _perm, _effect, _invert) \
     { .src = (_src), .tgt = (_tgt), .cls = (_cls), .perm = (_perm), \
-      .effect = (_effect), .invert = false }
+      .effect = (_effect), .invert = (_invert) }
 
 #define ALLOW(_src, _tgt, _cls, _perm) \
-    RULE(_src, _tgt, _cls, _perm, AVTAB_ALLOWED)
+    RULE(_src, _tgt, _cls, _perm, AVTAB_ALLOWED, false)
 
 #define DENY(_src, _tgt, _cls, _perm) \
-    RULE(_src, _tgt, _cls, _perm, AVTAB_ALLOWED)	/* invert handled separately if needed */
+    RULE(_src, _tgt, _cls, _perm, AVTAB_AUDITDENY, true)
 
 struct sepolicy_group {
 	const char *name;
 	const struct sepolicy_rule *rules;
 	size_t count;
+	bool required;
 };
 
 static const struct sepolicy_rule pkg_rules[] = {
-	ALLOW("nksu", "package_service", "service_manager", "find"),
-	ALLOW("nksu", "system_server", "binder", "call"),
-	ALLOW("nksu", "system_server", "binder", "transfer"),
-	ALLOW("system_server", "nksu", "binder", "call"),
+	ALLOW("nksu", "package_native_service",  "service_manager", "find"),
+	ALLOW("nksu", "activity_service",        "service_manager", "find"),
+	ALLOW("nksu",          "system_server", "binder", "call"),
+	ALLOW("nksu",          "system_server", "binder", "transfer"),
+	ALLOW("system_server", "nksu",          "binder", "call"),
+	ALLOW("system_server", "nksu",          "binder", "transfer"),
 };
 
 static const struct sepolicy_rule su_rules[] = {
 	ALLOW("nksu", "nksu", "process", "fork"),
 	ALLOW("nksu", "nksu", "process", "sigchld"),
+	ALLOW("nksu", "nksu", "process", "transition"),
+	ALLOW("nksu", "nksu",           "fd",        "use"),
+	ALLOW("nksu", "nksu",           "fifo_file", "read"),
+	ALLOW("nksu", "nksu",           "fifo_file", "write"),
+	ALLOW("nksu", "nksu",           "fifo_file", "open"),
+	ALLOW("nksu", "nksu",           "fifo_file", "getattr"),
+	ALLOW("nksu", "system_file", "file", "read"),
+	ALLOW("nksu", "system_file", "file", "open"),
+	ALLOW("nksu", "system_file", "file", "execute"),
+	ALLOW("nksu", "system_file", "file", "getattr"),
 	ALLOW("nksu", "shell_data_file", "file", "read"),
 	ALLOW("nksu", "shell_data_file", "file", "write"),
 	ALLOW("nksu", "shell_data_file", "file", "open"),
 };
 
-#define GROUP(_name, _rules) \
-    { .name = (_name), .rules = (_rules), .count = ARRAY_SIZE(_rules) }
+#define GROUP(_name, _rules, _required) \
+    { .name = (_name), .rules = (_rules), .count = ARRAY_SIZE(_rules), \
+      .required = (_required) }
 
 static const struct sepolicy_group policy_groups[] = {
-	GROUP("package_manager", pkg_rules),
-	GROUP("su_basic", su_rules),
+	GROUP("package_manager", pkg_rules, true),
+	GROUP("su_basic",        su_rules,  true),
 };
 
 static int apply_group(const struct sepolicy_group *grp)
@@ -67,9 +80,8 @@ static int apply_group(const struct sepolicy_group *grp)
 		ret = sepolicy_add_rule(r->src, r->tgt, r->cls, r->perm,
 					r->effect, r->invert);
 		if (ret) {
-			pr_warn
-			    ("[selinux:%s]: %s %s:%s %s -> err %d (skipped)\n",
-			     grp->name, r->src, r->tgt, r->cls, r->perm, ret);
+			pr_warn("[selinux:%s]: %s %s:%s %s -> err %d (skipped)\n",
+				grp->name, r->src, r->tgt, r->cls, r->perm, ret);
 			failed++;
 		}
 	}
@@ -77,10 +89,12 @@ static int apply_group(const struct sepolicy_group *grp)
 	if (failed) {
 		pr_warn("[selinux:%s]: %d/%zu rule(s) failed\n",
 			grp->name, failed, grp->count);
-		return -ENOEXEC;
+		if (grp->required)
+			return -ENOEXEC;
 	}
 
-	pr_info("[selinux:%s]: %zu rule(s) applied\n", grp->name, grp->count);
+	pr_info("[selinux:%s]: %zu rule(s) applied (%d failed)\n",
+		grp->name, grp->count - failed, failed);
 	return 0;
 }
 
@@ -115,10 +129,11 @@ int __init sepolicy_init(void)
 	pr_info("[selinux]: sepolicy init\n");
 
 	ret = load_policy();
-	if (ret)
-		pr_err("[selinux]: load_policy failed: %d\n", ret);
+	if (ret) {
+		pr_err("[selinux]: load_policy failed: %d, continuing with partial policy\n", ret);
+	}
 
-	return ret;
+	return 0;
 }
 
 void __exit sepolicy_exit(void)
