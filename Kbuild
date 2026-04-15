@@ -1,8 +1,6 @@
-fmac-y += src/anonfd.o src/nksu.o \
-           src/privilege.o src/selinux/selinux.o src/tracepoint.o src/ioctl.o \
-           src/uid_cap.o src/manager.o
+fmac-y += src/anonfd.o src/nksu.o src/privilege.o src/tracepoint.o src/ioctl.o src/uid_cap.o src/manager.o
 
-fmac-y += src/selinux/rule.o
+fmac-y += src/selinux/rule.o src/selinux/selinux.o 
 
 
 obj-$(CONFIG_FMAC) += fmac.o
@@ -19,4 +17,4 @@ ccflags-y += -Werror=implicit-function-declaration
 ccflags-y += -Werror=return-type
 
 CFLAGS_src/manager.o     := -O3
-CFLAGS_src/hijack.o   := -O3
+CFLAGS_src/tracepoint.o  := -O3
