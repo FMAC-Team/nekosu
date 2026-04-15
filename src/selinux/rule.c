@@ -9,6 +9,7 @@
 #include "ss/symtab.h"
 #include "ss/policydb.h"
 #include "security.h"
+#include "avc_ss.h"
 
 extern struct selinux_state selinux_state;
 
