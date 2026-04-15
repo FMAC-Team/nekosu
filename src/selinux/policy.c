@@ -16,101 +16,111 @@ struct sepolicy_rule {
     bool invert;
 };
 
-static int apply_rule(const struct sepolicy_rule *rule)
-{
-    int ret;
+#define RULE(_src, _tgt, _cls, _perm, _effect) \
+    { .src = (_src), .tgt = (_tgt), .cls = (_cls), .perm = (_perm), \
+      .effect = (_effect), .invert = false }
 
-    ret = sepolicy_add_rule(
-        rule->src,
-        rule->tgt,
-        rule->cls,
-        rule->perm,
-        rule->effect,
-        rule->invert
-    );
+#define ALLOW(_src, _tgt, _cls, _perm) \
+    RULE(_src, _tgt, _cls, _perm, AVTAB_ALLOWED)
 
-    if (ret) {
-        pr_err("[selinux]: allow %s %s:%s %s failed: %d\n",
-               rule->src, rule->tgt, rule->cls, rule->perm, ret);
-        return ret;
-    }
+#define DENY(_src, _tgt, _cls, _perm) \
+    RULE(_src, _tgt, _cls, _perm, AVTAB_ALLOWED) /* invert handled separately if needed */
 
-    pr_info("[selinux]: allow %s %s:%s %s success\n",
-            rule->src, rule->tgt, rule->cls, rule->perm);
+struct sepolicy_group {
+    const char *name;
+    const struct sepolicy_rule *rules;
+    size_t count;
+};
 
-    return 0;
-}
+static const struct sepolicy_rule pkg_rules[] = {
+    ALLOW("su", "package_service",  "service_manager", "find"),
+    ALLOW("su", "system_server",    "binder",          "call"),
+    ALLOW("su", "system_server",    "binder",          "transfer"),
+    ALLOW("system_server", "su",    "binder",          "call"),
+};
 
-static int apply_rules(const struct sepolicy_rule *rules, size_t count)
+static const struct sepolicy_rule su_rules[] = {
+    ALLOW("su", "su",               "process",         "fork"),
+    ALLOW("su", "su",               "process",         "sigchld"),
+    ALLOW("su", "shell_data_file",  "file",            "read"),
+    ALLOW("su", "shell_data_file",  "file",            "write"),
+    ALLOW("su", "shell_data_file",  "file",            "open"),
+};
+
+#define GROUP(_name, _rules) \
+    { .name = (_name), .rules = (_rules), .count = ARRAY_SIZE(_rules) }
+
+static const struct sepolicy_group policy_groups[] = {
+    GROUP("package_manager", pkg_rules),
+    GROUP("su_basic",        su_rules),
+};
+
+static int apply_group(const struct sepolicy_group *grp)
 {
     size_t i;
     int ret;
+    int failed = 0;
 
-    for (i = 0; i < count; i++) {
-        ret = apply_rule(&rules[i]);
-        if (ret)
-            return ret;
-    }
+    for (i = 0; i < grp->count; i++) {
+        const struct sepolicy_rule *r = &grp->rules[i];
 
-    return 0;
-}
-
-static struct sepolicy_rule pkg_rules[] = {
-    {
-        .src = "su",
-        .tgt = "package_service",
-        .cls = "service_manager",
-        .perm = "find",
-        .effect = AVTAB_ALLOWED,
-        .invert = false,
-    },
-};
-
-static int policy_package_manager(void)
-{
-    return apply_rules(pkg_rules, ARRAY_SIZE(pkg_rules));
-}
-
-typedef int (*policy_fn_t)(void);
-
-static policy_fn_t policy_table[] = {
-    policy_package_manager,
-};
-
-int load_policy(void)
-{
-    int i, ret;
-
-    pr_info("[selinux]: dynamic policy loading start\n");
-
-    for (i = 0; i < ARRAY_SIZE(policy_table); i++) {
-        ret = policy_table[i]();
+        ret = sepolicy_add_rule(r->src, r->tgt, r->cls, r->perm,
+                                r->effect, r->invert);
         if (ret) {
-            pr_err("[selinux]: policy[%d] failed: %d\n", i, ret);
-            return ret;
+            pr_warn("[selinux:%s]: %s %s:%s %s -> err %d (skipped)\n",
+                    grp->name, r->src, r->tgt, r->cls, r->perm, ret);
+            failed++;
         }
     }
 
-    pr_info("[selinux]: dynamic policy loading success\n");
+    if (failed) {
+        pr_warn("[selinux:%s]: %d/%zu rule(s) failed\n",
+                grp->name, failed, grp->count);
+        return -ENOEXEC;
+    }
+
+    pr_info("[selinux:%s]: %zu rule(s) applied\n", grp->name, grp->count);
     return 0;
 }
 
- int __init sepolicy_init(void)
+int load_policy(void)
+{
+    size_t i;
+    int ret;
+    int failed_groups = 0;
+
+    pr_info("[selinux]: loading %zu policy group(s)\n",
+            ARRAY_SIZE(policy_groups));
+
+    for (i = 0; i < ARRAY_SIZE(policy_groups); i++) {
+        ret = apply_group(&policy_groups[i]);
+        if (ret)
+            failed_groups++;
+    }
+
+    if (failed_groups) {
+        pr_err("[selinux]: %d group(s) had failures\n", failed_groups);
+        return -ENOEXEC;
+    }
+
+    pr_info("[selinux]: all policy groups applied successfully\n");
+    return 0;
+}
+
+int __init sepolicy_init(void)
 {
     int ret;
 
     pr_info("[selinux]: sepolicy init\n");
 
     ret = load_policy();
-    if (ret) {
+    if (ret)
         pr_err("[selinux]: load_policy failed: %d\n", ret);
-        return ret;
-    }
 
-    return 0;
+    return ret;
 }
 
- void __exit sepolicy_exit(void)
+void __exit sepolicy_exit(void)
 {
     pr_info("[selinux]: sepolicy exit\n");
 }
