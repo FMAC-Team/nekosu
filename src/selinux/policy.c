@@ -68,11 +68,6 @@ static const struct sepolicy_rule prop_rules[] = {
 	ALLOW("nksu", "system_prop", "file", "open"),
 	ALLOW("nksu", "system_prop", "file", "getattr"),
 	ALLOW("nksu", "system_prop", "file", "map"),
-
-	ALLOW("nksu", "vendor_prop", "file", "read"),
-	ALLOW("nksu", "vendor_prop", "file", "open"),
-	ALLOW("nksu", "vendor_prop", "file", "getattr"),
-	ALLOW("nksu", "vendor_prop", "file", "map"),
 };
 
 static const struct sepolicy_rule exec_rules[] = {
