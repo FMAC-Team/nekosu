@@ -1,6 +1,7 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/errno.h>
+#include <linux/version.h>
 
 #include "ss/policydb.h"
 #include "ss/services.h"
