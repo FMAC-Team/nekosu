@@ -1,88 +1,118 @@
 #include <linux/slab.h>
 #include <linux/string.h>
-#include <linux/rwlock.h>
+#include <linux/errno.h>
+#include <linux/jhash.h>
 #include "ss/policydb.h"
 #include "ss/services.h"
-#include "ss/ebitmap.h"
+#include "ss/hashtab.h"
+#include "security.h"
 
-static int add_type_to_role(struct policydb *p, const char *role_name, uint32_t type_value)
+static u32 symhash(const void *key, u32 size)
 {
-    struct role_datum *role;
-
-    role = hashtab_search(p->p_roles.table, role_name);
-    if (!role) {
-        pr_err("[selinux] Role %s not found\n", role_name);
-        return -EINVAL;
-    }
-
-    return ebitmap_set_bit(&role->types, type_value - 1, 1);
+    const char *s = key;
+    return jhash(s, strlen(s), 0) & (size - 1);
 }
 
-static int policydb_reindex_types(struct policydb *p, uint32_t new_nprim, char *name_copy)
+static int symcmp(const void *key1, const void *key2)
 {
-    char **new_val_to_name;
-    struct ebitmap *new_attr_map;
+    return strcmp(key1, key2);
+}
 
-    new_val_to_name = krealloc(p->type_val_to_name, 
-                               sizeof(char *) * new_nprim, GFP_KERNEL);
-    if (!new_val_to_name)
-        return -ENOMEM;
-    p->type_val_to_name = new_val_to_name;
-    p->type_val_to_name[new_nprim - 1] = name_copy;
+static const struct hashtab_key_params sym_params = {
+    .hash = symhash,
+    .cmp = symcmp,
+};
 
-    new_attr_map = krealloc(p->type_attr_map_array, 
-                            sizeof(struct ebitmap) * new_nprim, GFP_KERNEL);
-    if (!new_attr_map)
-        return -ENOMEM;
-    p->type_attr_map_array = new_attr_map;
-    
-    ebitmap_init(&p->type_attr_map_array[new_nprim - 1]);
+static int add_type_to_attr(struct policydb *p, const char *type_name, const char *attr_name)
+{
+    struct type_datum *type;
+    struct type_datum *attr;
+
+    type = hashtab_search(p->p_types.table, type_name, sym_params);
+    attr = hashtab_search(p->p_types.table, attr_name, sym_params);
+
+    if (!type || !attr)
+        return -EINVAL;
+
+    ebitmap_set_bit(&attr->types, type->value - 1, 1);
+
+    if (p->type_attr_map_array) {
+        ebitmap_set_bit(&p->type_attr_map_array[type->value - 1], attr->value - 1, 1);
+    }
 
     return 0;
 }
 
-int sepolicy_add_domain(const char *name)
+static int add_type_to_policy(struct policydb *p, const char *name)
 {
-    struct policydb *p = &selinux_state.policydb;
-    struct type_datum *type_dat;
+    struct type_datum *type;
     char *name_copy;
     int rc;
+    uint32_t new_value;
 
-    if (hashtab_search(p->p_types.table, name))
+    if (hashtab_search(p->p_types.table, name, sym_params))
         return 0;
 
-    type_dat = kzalloc(sizeof(*type_dat), GFP_KERNEL);
-    if (!type_dat)
+    type = kzalloc(sizeof(*type), GFP_KERNEL);
+    if (!type)
         return -ENOMEM;
 
     name_copy = kstrdup(name, GFP_KERNEL);
     if (!name_copy) {
-        kfree(type_dat);
+        kfree(type);
         return -ENOMEM;
     }
 
-    type_dat->primary = 1;
-    type_dat->value = p->p_types.nprim + 1;
+    new_value = p->p_types.nprim + 1;
+    type->primary = 1;
+    type->value = new_value;
 
-    rc = policydb_reindex_types(p, type_dat->value, name_copy);
-    if (rc) {
-        kfree(name_copy);
-        kfree(type_dat);
-        return rc;
-    }
+    void *tmp_names = krealloc(p->sym_val_to_name[SYM_TYPES], 
+                               sizeof(char *) * new_value, GFP_KERNEL);
+    if (!tmp_names) goto err;
+    p->sym_val_to_name[SYM_TYPES] = tmp_names;
+    p->sym_val_to_name[SYM_TYPES][new_value - 1] = name_copy;
 
-    rc = hashtab_insert(p->p_types.table, name_copy, type_dat);
-    if (rc) {
-        return rc;
-    }
+    void *tmp_structs = krealloc(p->type_val_to_struct, 
+                                 sizeof(struct type_datum *) * new_value, GFP_KERNEL);
+    if (!tmp_structs) goto err;
+    p->type_val_to_struct = tmp_structs;
+    p->type_val_to_struct[new_value - 1] = type;
+
+    void *tmp_map = krealloc(p->type_attr_map_array, 
+                             sizeof(struct ebitmap) * new_value, GFP_KERNEL);
+    if (!tmp_map) goto err;
+    p->type_attr_map_array = tmp_map;
+    ebitmap_init(&p->type_attr_map_array[new_value - 1]);
+
+    rc = hashtab_insert(p->p_types.table, name_copy, type, sym_params);
+    if (rc) goto err;
+
     p->p_types.nprim++;
+    return 0;
+
+err:
+    kfree(name_copy);
+    kfree(type);
+    return -ENOMEM;
+}
+
+int sepolicy_add_domain(const char *name)
+{
+    struct selinux_policy *policy;
+    struct policydb *p;
+    int rc;
+
+    policy = rcu_dereference_raw(selinux_state.policy);
+    if (!policy)
+        return -EINVAL;
+
+    p = &policy->policydb;
+
+    rc = add_type_to_policy(p, name);
+    if (rc)
+        return rc;
 
     rc = add_type_to_attr(p, name, "domain");
-    if (rc) pr_warn("[selinux] Failed to add domain attr\n");
-
-    rc = add_type_to_role(p, "system_r", type_dat->value);
-    if (rc) pr_warn("[selinux] Failed to link to system_r\n");
-
-    pr_info("[selinux] Domain '%s' added successfully with ID %d\n", name, type_dat->value);
-    return 0;
+    return rc;
 }
