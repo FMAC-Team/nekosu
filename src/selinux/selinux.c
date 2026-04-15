@@ -23,21 +23,6 @@ bool getenforce(void)
 	return READ_ONCE(selinux_state.enforcing);
 }
 
-bool do_allow(struct policydb *db, const char *type_name)
-{
-	struct type_datum *type;
-	type = (struct type_datum *)symtab_search(&db->p_types, type_name);
-	if (type == NULL) {
-		pr_err("type null,do_allow false\n");
-		return false;
-	}
-	if (ebitmap_set_bit(&db->permissive_map, type->value, true)) {
-		pr_err("can't set bitmap\n");
-		return false;
-	}
-	return true;
-}
-
 int set_domain(const char *domain, struct cred *new_cred)
 {
 	u32 newsid;
