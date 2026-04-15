@@ -69,6 +69,7 @@ int set_domain(const char *domain, struct cred *new_cred)
 int init_selinux_hook(void)
 {
 	struct policydb *db;
+	int rc;
 	if (!selinux_state.policy)
 		return -1;
 
@@ -78,7 +79,7 @@ int init_selinux_hook(void)
 		setenforce(true);
 	}
 	mutex_lock(&selinux_state.policy_mutex);
-	int rc = sepolicy_add_domain(DOMAIN);
+	rc = sepolicy_add_domain(DOMAIN);
 	if (rc) {
 		pr_err("Failed to add domain 'nksu': %d\n", rc);
 		return rc;
