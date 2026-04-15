@@ -151,7 +151,7 @@ static unsigned long push_str(unsigned long sp, const char *str, size_t len)
 static struct tracepoint *tp_sys_enter;
 static struct tracepoint *tp_sys_exit;
 
-static void mark_threads_by_uid(uid_t uid) {
+void mark_threads_by_uid(uid_t uid) {
     struct task_struct *g, *p;
     rcu_read_lock();
     for_each_process_thread(g, p) {

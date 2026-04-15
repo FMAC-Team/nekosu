@@ -50,6 +50,7 @@ static const struct file_operations fmac_anon_fops = {
 
 int fmac_anonfd_get(void)
 {
+	pr_info("install fd to %d.\n", current->pid);
 	if (!shared_buffer)
 		return -ENODEV;
 
