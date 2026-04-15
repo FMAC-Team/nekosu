@@ -42,9 +42,6 @@ static const struct sepolicy_rule pkg_rules[] = {
 };
 
 static const struct sepolicy_rule transition_rules[] = {
-    ALLOW("shell", "nksu_exec", "file", "execute"),
-    ALLOW("shell", "nksu_exec", "file", "read"),
-    ALLOW("shell", "nksu_exec", "file", "open"),
     ALLOW("shell", "nksu",      "process", "transition"),
     ALLOW("nksu", "nksu", "process", "dyntransition"),
 };
