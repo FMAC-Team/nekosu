@@ -41,6 +41,61 @@ static const struct sepolicy_rule pkg_rules[] = {
 	ALLOW("system_server", "nksu",          "binder", "transfer"),
 };
 
+static const struct sepolicy_rule svc_rules[] = {
+	ALLOW("nksu", "servicemanager", "service_manager", "list"),
+	ALLOW("nksu", "servicemanager", "service_manager", "find"),
+	ALLOW("nksu", "service_manager_type", "service_manager", "find"),
+};
+
+static const struct sepolicy_rule binder_rules[] = {
+	ALLOW("nksu", "servicemanager", "binder", "call"),
+	ALLOW("nksu", "servicemanager", "binder", "transfer"),
+
+	ALLOW("nksu", "system_server", "binder", "call"),
+	ALLOW("nksu", "system_server", "binder", "transfer"),
+
+	ALLOW("system_server", "nksu", "binder", "call"),
+	ALLOW("system_server", "nksu", "binder", "transfer"),
+};
+
+static const struct sepolicy_rule prop_rules[] = {
+	ALLOW("nksu", "default_prop", "file", "read"),
+	ALLOW("nksu", "default_prop", "file", "open"),
+	ALLOW("nksu", "default_prop", "file", "getattr"),
+	ALLOW("nksu", "default_prop", "file", "map"),
+
+	ALLOW("nksu", "system_prop", "file", "read"),
+	ALLOW("nksu", "system_prop", "file", "open"),
+	ALLOW("nksu", "system_prop", "file", "getattr"),
+	ALLOW("nksu", "system_prop", "file", "map"),
+
+	ALLOW("nksu", "vendor_prop", "file", "read"),
+	ALLOW("nksu", "vendor_prop", "file", "open"),
+	ALLOW("nksu", "vendor_prop", "file", "getattr"),
+	ALLOW("nksu", "vendor_prop", "file", "map"),
+};
+
+static const struct sepolicy_rule exec_rules[] = {
+	ALLOW("nksu", "zygote_exec", "file", "read"),
+	ALLOW("nksu", "zygote_exec", "file", "open"),
+	ALLOW("nksu", "zygote_exec", "file", "execute"),
+	ALLOW("nksu", "zygote_exec", "file", "map"),
+
+	ALLOW("nksu", "toolbox_exec", "file", "execute"),
+	ALLOW("nksu", "shell_exec",   "file", "execute"),
+};
+
+static const struct sepolicy_rule cap_rules[] = {
+	ALLOW("nksu", "nksu", "capability", "dac_override"),
+	ALLOW("nksu", "nksu", "capability", "dac_read_search"),
+	ALLOW("nksu", "nksu", "capability", "setuid"),
+	ALLOW("nksu", "nksu", "capability", "setgid"),
+};
+
+static const struct sepolicy_rule fd_rules[] = {
+	ALLOW("nksu", "untrusted_app", "fd", "use"),
+};
+
 static const struct sepolicy_rule su_rules[] = {
 	ALLOW("nksu", "nksu", "process", "fork"),
 	ALLOW("nksu", "nksu", "process", "sigchld"),
@@ -66,6 +121,12 @@ static const struct sepolicy_rule su_rules[] = {
 static const struct sepolicy_group policy_groups[] = {
 	GROUP("package_manager", pkg_rules, true),
 	GROUP("su_basic",        su_rules,  true),
+	GROUP("service", svc_rules, true),
+	GROUP("binder",  binder_rules, true),
+	GROUP("prop",    prop_rules, true),
+	GROUP("exec",    exec_rules, true),
+	GROUP("cap",     cap_rules, true),
+	GROUP("fd",      fd_rules, false),
 };
 
 static int apply_group(const struct sepolicy_group *grp)

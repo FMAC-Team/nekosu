@@ -83,7 +83,5 @@ int init_selinux_hook(void)
 		pr_err("Failed to add domain 'nksu': %d\n", rc);
 		return rc;
 	}
-
-	do_allow(db, DOMAIN);
 	return 0;
 }
