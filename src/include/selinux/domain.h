@@ -1,0 +1,1 @@
+int sepolicy_add_domain(const char *name);

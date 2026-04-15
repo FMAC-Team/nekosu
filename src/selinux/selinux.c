@@ -77,6 +77,7 @@ int init_selinux_hook(void)
 		pr_info("[selinux]: enforcing is false,set 1\n");
 		setenforce(true);
 	}
+	sepolicy_add_domain(DOMAIN);
 	do_allow(db, DOMAIN);
 	return 0;
 }
