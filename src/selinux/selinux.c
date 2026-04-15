@@ -77,8 +77,13 @@ int init_selinux_hook(void)
 		pr_info("[selinux]: enforcing is false,set 1\n");
 		setenforce(true);
 	}
-		mutex_lock(&selinux_state.policy_mutex);
-	sepolicy_add_domain(DOMAIN);
+	mutex_lock(&selinux_state.policy_mutex);
+	int rc = sepolicy_add_domain(DOMAIN);
+	if (rc) {
+		pr_err("Failed to add domain 'nksu': %d\n", rc);
+		return rc;
+	}
+
 	do_allow(db, DOMAIN);
 	mutex_unlock(&selinux_state.policy_mutex);
 	return 0;

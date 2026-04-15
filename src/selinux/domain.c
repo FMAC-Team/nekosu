@@ -9,112 +9,119 @@
 
 static u32 symhash(const void *key)
 {
-    const char *s = key;
-    return jhash(s, strlen(s), 0);
+	const char *s = key;
+	return jhash(s, strlen(s), 0);
 }
 
 static int symcmp(const void *key1, const void *key2)
 {
-    return strcmp(key1, key2);
+	return strcmp(key1, key2);
 }
 
 static const struct hashtab_key_params sym_params = {
-    .hash = symhash,
-    .cmp = symcmp,
+	.hash = symhash,
+	.cmp = symcmp,
 };
 
-static int add_type_to_attr(struct policydb *p, const char *type_name, const char *attr_name)
+static int add_type_to_attr(struct policydb *p, const char *type_name,
+			    const char *attr_name)
 {
-    struct type_datum *type;
-    struct type_datum *attr;
+	struct type_datum *type;
+	struct type_datum *attr;
 
-    type = hashtab_search(&p->p_types.table, type_name, sym_params);
-    attr = hashtab_search(&p->p_types.table, attr_name, sym_params);
+	type = hashtab_search(&p->p_types.table, type_name, sym_params);
+	attr = hashtab_search(&p->p_types.table, attr_name, sym_params);
 
-    if (!type || !attr)
-        return -EINVAL;
-    
-    if (p->type_attr_map_array) {
-        ebitmap_set_bit(&p->type_attr_map_array[type->value - 1], attr->value - 1, 1);
-    }
+	if (!type || !attr)
+		return -EINVAL;
 
-    return 0;
+	if (p->type_attr_map_array) {
+		ebitmap_set_bit(&p->type_attr_map_array[type->value - 1],
+				attr->value - 1, 1);
+	}
+
+	return 0;
 }
 
 static int add_type_to_policy(struct policydb *p, const char *name)
 {
-    struct type_datum *type;
-    char *name_copy;
-    int rc;
-    uint32_t new_value;
-    
-    void *tmp_names;
-    void *tmp_structs;
-    void *tmp_map;
+	struct type_datum *type;
+	char *name_copy;
+	int rc;
+	uint32_t new_value;
 
-    if (hashtab_search(&p->p_types.table, name, sym_params))
-        return 0;
+	void *tmp_names;
+	void *tmp_structs;
+	void *tmp_map;
 
-    type = kzalloc(sizeof(*type), GFP_KERNEL);
-    if (!type)
-        return -ENOMEM;
+	if (hashtab_search(&p->p_types.table, name, sym_params))
+		return 0;
 
-    name_copy = kstrdup(name, GFP_KERNEL);
-    if (!name_copy) {
-        kfree(type);
-        return -ENOMEM;
-    }
+	type = kzalloc(sizeof(*type), GFP_KERNEL);
+	if (!type)
+		return -ENOMEM;
 
-    new_value = p->p_types.nprim + 1;
-    type->primary = 1;
-    type->value = new_value;
+	name_copy = kstrdup(name, GFP_KERNEL);
+	if (!name_copy) {
+		kfree(type);
+		return -ENOMEM;
+	}
 
-    tmp_names = krealloc(p->sym_val_to_name[SYM_TYPES], 
-                               sizeof(char *) * new_value, GFP_KERNEL);
-    if (!tmp_names) goto err;
-    p->sym_val_to_name[SYM_TYPES] = tmp_names;
-    p->sym_val_to_name[SYM_TYPES][new_value - 1] = name_copy;
+	new_value = p->p_types.nprim + 1;
+	type->primary = 1;
+	type->value = new_value;
 
-    tmp_structs = krealloc(p->type_val_to_struct, 
-                                 sizeof(struct type_datum *) * new_value, GFP_KERNEL);
-    if (!tmp_structs) goto err;
-    p->type_val_to_struct = tmp_structs;
-    p->type_val_to_struct[new_value - 1] = type;
+	tmp_names = krealloc(p->sym_val_to_name[SYM_TYPES],
+			     sizeof(char *) * new_value, GFP_KERNEL);
+	if (!tmp_names)
+		goto err;
+	p->sym_val_to_name[SYM_TYPES] = tmp_names;
+	p->sym_val_to_name[SYM_TYPES][new_value - 1] = name_copy;
 
-    tmp_map = krealloc(p->type_attr_map_array, 
-                             sizeof(struct ebitmap) * new_value, GFP_KERNEL);
-    if (!tmp_map) goto err;
-    p->type_attr_map_array = tmp_map;
-    ebitmap_init(&p->type_attr_map_array[new_value - 1]);
+	tmp_structs = krealloc(p->type_val_to_struct,
+			       sizeof(struct type_datum *) * new_value,
+			       GFP_KERNEL);
+	if (!tmp_structs)
+		goto err;
+	p->type_val_to_struct = tmp_structs;
+	p->type_val_to_struct[new_value - 1] = type;
 
-    rc = hashtab_insert(&p->p_types.table, name_copy, type, sym_params);
-    if (rc) goto err;
+	tmp_map = krealloc(p->type_attr_map_array,
+			   sizeof(struct ebitmap) * new_value, GFP_KERNEL);
+	if (!tmp_map)
+		goto err;
+	p->type_attr_map_array = tmp_map;
+	ebitmap_init(&p->type_attr_map_array[new_value - 1]);
 
-    p->p_types.nprim++;
-    return 0;
+	rc = hashtab_insert(&p->p_types.table, name_copy, type, sym_params);
+	if (rc)
+		goto err;
+
+	p->p_types.nprim++;
+	return 0;
 
 err:
-    kfree(name_copy);
-    kfree(type);
-    return -ENOMEM;
+	kfree(name_copy);
+	kfree(type);
+	return -ENOMEM;
 }
 
 int sepolicy_add_domain(const char *name)
 {
-    struct selinux_policy *policy;
-    struct policydb *p;
-    int rc;
+	struct selinux_policy *policy;
+	struct policydb *p;
+	int rc;
 
-    policy = rcu_dereference_raw(selinux_state.policy);
-    if (!policy)
-        return -EINVAL;
+	policy = rcu_dereference_raw(selinux_state.policy);
+	if (!policy)
+		return -EINVAL;
 
-    p = &policy->policydb;
+	p = &policy->policydb;
 
-    rc = add_type_to_policy(p, name);
-    if (rc)
-        return rc;
+	rc = add_type_to_policy(p, name);
+	if (rc)
+		return rc;
 
-    rc = add_type_to_attr(p, name, "domain");
-    return rc;
+	rc = add_type_to_attr(p, name, "domain");
+	return rc;
 }

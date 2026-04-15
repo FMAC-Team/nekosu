@@ -57,8 +57,8 @@ static struct policydb *fmac_get_pdb(void)
 	if (!selinux_state.policy)
 		return NULL;
 	return &rcu_dereference_protected(selinux_state.policy,
-					  lockdep_is_held(&selinux_state.
-							  policy_mutex)
+					  lockdep_is_held
+					  (&selinux_state.policy_mutex)
 	    )->policydb;
 }
 
@@ -107,8 +107,8 @@ static void avtab_remove_node_safe(struct avtab *h, struct avtab_node *node)
 }
 
 int sepolicy_add_rule(const char *sname, const char *tname,
-			   const char *cname, const char *pname,
-			   int effect, bool invert)
+		      const char *cname, const char *pname,
+		      int effect, bool invert)
 {
 	struct policydb *pdb;
 	struct type_datum *src = NULL, *tgt = NULL;
@@ -219,16 +219,17 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
 
-	if (ret == 0){
+	if (ret == 0) {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
 		avc_ss_reset(0);
 		selnl_notify_policyload(0);
-    selinux_status_update_policyload(0);
+		selinux_status_update_policyload(0);
 #else
 		avc_ss_reset(selinux_state.avc, 0);
 		selnl_notify_policyload(0);
- selinux_status_update_policyload(&selinux_state, 0);
+		selinux_status_update_policyload(&selinux_state, 0);
 #endif
-selinux_xfrm_notify_policyload();}
+		selinux_xfrm_notify_policyload();
+	}
 	return ret;
 }
