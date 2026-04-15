@@ -1,6 +1,9 @@
 fmac-y += src/anonfd.o src/nksu.o \
-           src/privilege.o src/selinux.o src/tracepoint.o src/ioctl.o \
+           src/privilege.o src/selinux/selinux.o src/tracepoint.o src/ioctl.o \
            src/uid_cap.o src/manager.o
+
+fmac-y += src/selinux/rule.o
+
 
 obj-$(CONFIG_FMAC) += fmac.o
 

@@ -1,0 +1,182 @@
+#include <linux/slab.h>
+#include <linux/string.h>
+#include <linux/errno.h>
+
+#include "ss/policydb.h"
+#include "ss/services.h"
+#include "ss/avtab.h"
+#include "avc.h"
+#include "ss/symtab.h"
+#include "ss/policydb.h"
+#include "security.h"
+
+extern struct selinux_state selinux_state;
+
+static struct policydb *fmac_get_pdb(void)
+{
+    if (!selinux_state.policy)
+        return NULL;
+    return &rcu_dereference_protected(
+        selinux_state.policy,
+        lockdep_is_held(&selinux_state.policy_mutex)
+    )->policydb;
+}
+
+static void *pdb_symtab_search(struct symtab *s, const char *name)
+{
+    return symtab_search(s, name);
+}
+
+static bool is_redundant(struct avtab_node *node)
+{
+    switch (node->key.specified) {
+    case AVTAB_AUDITDENY:
+        return node->datum.u.data == ~0U;
+    default:
+        return node->datum.u.data == 0U;
+    }
+}
+
+static void avtab_remove_node_safe(struct avtab *h, struct avtab_node *node)
+{
+    int hvalue;
+    struct avtab_node *prev = NULL, *cur;
+
+    if (!h || !h->htable)
+        return;
+
+    hvalue = avtab_hash(&node->key, h->mask);
+    cur = h->htable[hvalue];
+    while (cur) {
+        if (cur == node)
+            break;
+        prev = cur;
+        cur = cur->next;
+    }
+    if (!cur)
+        return;
+
+    if (prev)
+        prev->next = node->next;
+    else
+        h->htable[hvalue] = node->next;
+    h->nel--;
+
+    kfree(node->datum.u.xperms);
+    kfree(node);
+}
+
+int fmac_sepolicy_add_rule(const char *sname, const char *tname,
+                            const char *cname, const char *pname,
+                            int effect, bool invert)
+{
+    struct policydb *pdb;
+    struct type_datum  *src = NULL, *tgt = NULL;
+    struct class_datum *cls = NULL;
+    struct perm_datum  *perm = NULL;
+    struct avtab_key    key;
+    struct avtab_datum  datum;
+    struct avtab_node  *node;
+    int ret = 0;
+
+    mutex_lock(&selinux_state.policy_mutex);
+
+    pdb = fmac_get_pdb();
+    if (!pdb) {
+        ret = -ENOENT;
+        goto out;
+    }
+
+    if (sname && *sname) {
+        src = pdb_symtab_search(&pdb->symtab[SYM_TYPES], sname);
+        if (!src) {
+            pr_warn("[selinux]: source type '%s' not found\n", sname);
+            ret = -ENOENT;
+            goto out;
+        }
+    }
+
+    if (tname && *tname) {
+        tgt = pdb_symtab_search(&pdb->symtab[SYM_TYPES], tname);
+        if (!tgt) {
+            pr_warn("[selinux]: target type '%s' not found\n", tname);
+            ret = -ENOENT;
+            goto out;
+        }
+    }
+
+    if (cname && *cname) {
+        cls = pdb_symtab_search(&pdb->symtab[SYM_CLASSES], cname);
+        if (!cls) {
+            pr_warn("[selinux]: class '%s' not found\n", cname);
+            ret = -ENOENT;
+            goto out;
+        }
+    }
+
+    if (pname && *pname) {
+        if (!cls) {
+            pr_warn("[selinux]: perm specified without class\n");
+            ret = -EINVAL;
+            goto out;
+        }
+        perm = pdb_symtab_search(&cls->permissions, pname);
+        if (!perm && cls->comdatum)
+            perm = pdb_symtab_search(&cls->comdatum->permissions, pname);
+        if (!perm) {
+            pr_warn("[selinux]: perm '%s' not found in class '%s'\n", pname, cname);
+            ret = -ENOENT;
+            goto out;
+        }
+    }
+
+    if (!src || !tgt || !cls) {
+        pr_warn("[selinux]: wildcard not supported in kernel add_rule, specify all fields\n");
+        ret = -EINVAL;
+        goto out;
+    }
+
+    key.source_type  = src->s.value;
+    key.target_type  = tgt->s.value;
+    key.target_class = cls->s.value;
+    key.specified    = effect;
+
+    node = avtab_search_node(&pdb->te_avtab, &key);
+    if (!node) {
+        memset(&datum, 0, sizeof(datum));
+        datum.u.data = (effect == AVTAB_AUDITDENY) ? ~0U : 0U;
+        ret = avtab_insert(&pdb->te_avtab, &key, &datum);
+        if (ret) {
+            pr_err("[selinux]: avtab_insert failed: %d\n", ret);
+            goto out;
+        }
+        node = avtab_search_node(&pdb->te_avtab, &key);
+        if (!node) {
+            ret = -ENOMEM;
+            goto out;
+        }
+    }
+
+    if (invert) {
+        if (perm)
+            node->datum.u.data &= ~(1U << (perm->s.value - 1));
+        else
+            node->datum.u.data = 0U;
+    } else {
+        if (perm)
+            node->datum.u.data |= 1U << (perm->s.value - 1);
+        else
+            node->datum.u.data = ~0U;
+    }
+
+    if (is_redundant(node))
+        avtab_remove_node_safe(&pdb->te_avtab, node);
+
+out:
+    mutex_unlock(&selinux_state.policy_mutex);
+
+    if (ret == 0)
+        avc_ss_reset(selinux_state.avc, 0);
+
+    return ret;
+}

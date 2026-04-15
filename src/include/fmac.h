@@ -21,7 +21,8 @@
 #include <asm/syscall.h>
 
 #include "anonfd.h"
-#include "selinux.h"
+#include "selinux/selinux.h"
+#include "selinux/rule.h"
 #include "privilege.h"
 #include "tracepoint.h"
 #include "ioctl.h"
