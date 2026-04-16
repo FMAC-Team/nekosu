@@ -70,6 +70,7 @@ static const struct sepolicy_rule fs_rules[] = {
     ALLOW("nksu", "adb_data_file", "file", "getattr"),
     ALLOW("nksu", "adb_data_file", "file", "write"),
     ALLOW("nksu", "adb_data_file", "file", "create"),
+    ALLOW("nksu", "adb_data_file", "file", "execute"), 
 };
 
 static const struct sepolicy_rule svc_rules[] = {
@@ -147,8 +148,9 @@ static const struct sepolicy_rule cap_rules[] = {
 };
 
 static const struct sepolicy_rule fd_rules[] = {
-	ALLOW("nksu", "untrusted_app", "fd", "use"),
 	ALLOW("nksu", "devpts", "chr_file", "getattr"),
+	ALLOW("nksu", "domain", "fd", "use"),
+
 };
 
 static const struct sepolicy_rule su_rules[] = {
