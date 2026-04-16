@@ -16,6 +16,7 @@
 #include "avc_ss.h"
 #include "xfrm.h"
 #include "ss/hashtab.h"
+#include "ss/constraint.h"
 
 #ifndef hashtab_for_each
 #define hashtab_for_each(h, node) \
@@ -276,5 +277,86 @@ out:
 
 	if (ret == 0)
 		avc_reset();
+	return ret;
+}
+
+static void sepolicy_add_typeattribute_raw(struct policydb *pdb,
+					  struct type_datum *type_dat,
+					  struct type_datum *attr_dat)
+{
+	struct hashtab_node *node;
+	struct constraint_node *n;
+	struct constraint_expr *e;
+
+	struct ebitmap *sattr = &pdb->type_attr_map_array[type_dat->value - 1];
+	ebitmap_set_bit(sattr, attr_dat->value - 1, 1);
+	ebitmap_set_bit(&attr_dat->types, type_dat->value - 1, 1);
+
+	hashtab_for_each(pdb->p_classes.table, node) {
+		struct class_datum *cls = (struct class_datum *)(node->datum);
+		for (n = cls->constraints; n; n = n->next) {
+			for (e = n->expr; e; e = e->next) {
+				if (e->expr_type == CEXPR_NAMES && 
+				    ebitmap_get_bit(&e->type_names->types, attr_dat->value - 1)) {
+					ebitmap_set_bit(&e->names, type_dat->value - 1, 1);
+				}
+			}
+		}
+	}
+}
+
+int sepolicy_add_typeattribute(const char *type_name, const char *attr_name)
+{
+	struct policydb *pdb;
+	struct type_datum *type_dat = NULL;
+	struct type_datum *attr_dat = NULL;
+	int ret = 0;
+
+	if (!type_name || !attr_name)
+		return -EINVAL;
+
+	mutex_lock(&selinux_state.policy_mutex);
+
+	pdb = fmac_get_pdb();
+	if (!pdb) {
+		ret = -ENOENT;
+		goto out;
+	}
+
+	type_dat = symtab_search(&pdb->symtab[SYM_TYPES], type_name);
+	if (!type_dat) {
+		pr_warn("[selinux]: type '%s' not found\n", type_name);
+		ret = -ENOENT;
+		goto out;
+	}
+
+	attr_dat = symtab_search(&pdb->symtab[SYM_TYPES], attr_name);
+	if (!attr_dat) {
+		pr_warn("[selinux]: attribute '%s' not found\n", attr_name);
+		ret = -ENOENT;
+		goto out;
+	}
+
+	if (type_dat->attribute) {
+		pr_warn("[selinux]: '%s' is an attribute, not a type\n", type_name);
+		ret = -EINVAL;
+		goto out;
+	}
+	if (!attr_dat->attribute) {
+		pr_warn("[selinux]: '%s' is a type, not an attribute\n", attr_name);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	sepolicy_add_typeattribute_raw(pdb, type_dat, attr_dat);
+
+	pr_info("[selinux]: added attribute '%s' to type '%s'\n", attr_name, type_name);
+
+out:
+	mutex_unlock(&selinux_state.policy_mutex);
+
+	if (ret == 0) {
+		avc_reset();
+	}
 	return ret;
 }
