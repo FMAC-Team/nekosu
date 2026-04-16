@@ -128,16 +128,16 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 		set_domain(target_domain, new_cred);
 		needs_commit = true;
 	}
+	
+	if (flags & PRIV_SECCOMP) {
+		disable_seccomp();
+	}
 
 	if (needs_commit) {
 		commit_creds(new_cred);
 		pr_info("privileges committed for PID %d.\n", current->pid);
 	} else {
 		abort_creds(new_cred);
-	}
-
-	if (flags & PRIV_SECCOMP) {
-		disable_seccomp();
 	}
 }
 

@@ -41,9 +41,14 @@ int set_domain(const char *domain, struct cred *new_cred)
 	}
 
 	if (new_cred->security) {
-		struct task_security_struct *tsec = new_cred->security;
-		tsec->sid = newsid;
-		// tsec->osid = newsid; 
+struct task_security_struct *tsec = new_cred->security;
+
+tsec->osid = tsec->sid;
+tsec->sid = newsid;
+tsec->exec_sid = 0;
+tsec->create_sid = 0;
+tsec->keycreate_sid = 0;
+tsec->sockcreate_sid = 0;
 		return 0;
 	}
 
@@ -83,7 +88,7 @@ int init_selinux_hook(void)
 		pr_err("Failed to add domain 'nksu': %d\n", rc);
 		return rc;
 	}
-	do_allow(db,DOMAIN);
+	// do_allow(db,DOMAIN);
     rc = sepolicy_allow_any_any(DOMAIN);
 	if (rc) {
 		pr_err("Failed to allow all 'nksu': %d\n", rc);

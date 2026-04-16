@@ -160,6 +160,21 @@ static const struct sepolicy_rule su_rules[] = {
 	ALLOW("nksu", "shell_data_file", "file", "open"),
 };
 
+static const struct sepolicy_rule su_fix_rules[] = {
+	ALLOW("nksu", "system_file", "file", "execute_no_trans"),
+	ALLOW("nksu", "system_file", "file", "entrypoint"),
+	ALLOW("nksu", "system_file", "file", "map"),
+	ALLOW("nksu", "nksu", "process", "execmem"),
+	ALLOW("nksu", "nksu", "process", "execstack"),
+	ALLOW("nksu", "shell", "fd", "use"),
+	ALLOW("shell", "nksu", "fd", "use"),
+	ALLOW("nksu", "devpts", "chr_file", "read"),
+	ALLOW("nksu", "devpts", "chr_file", "write"),
+	ALLOW("nksu", "devpts", "chr_file", "ioctl"),
+	ALLOW("nksu", "devpts", "chr_file", "open"),
+	ALLOW("shell", "nksu", "process", "sigchld"),
+};
+
 #define GROUP(_name, _rules, _required) \
     { .name = (_name), .rules = (_rules), .count = ARRAY_SIZE(_rules), \
       .required = (_required) }
@@ -167,6 +182,7 @@ static const struct sepolicy_rule su_rules[] = {
 static const struct sepolicy_group policy_groups[] = {
 	GROUP("package_manager", pkg_rules, true),
 	GROUP("su_basic", su_rules, true),
+    GROUP("su_fix", su_fix_rules, true),
 	GROUP("service", svc_rules, true),
 	GROUP("binder", binder_rules, true),
 	GROUP("prop", prop_rules, true),
