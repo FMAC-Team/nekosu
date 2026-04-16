@@ -14,47 +14,6 @@
 #include "avc_ss.h"
 #include "xfrm.h"
 
-static int avtab_remove_nohash(struct avtab *h, const struct avtab_key *key)
-{
-	u32 i;
-	int removed = 0;
-
-	if (!h || !h->htable)
-		return -EINVAL;
-
-	for (i = 0; i < h->nslot; i++) {
-		struct avtab_node *cur = h->htable[i];
-		struct avtab_node *prev = NULL;
-
-		while (cur) {
-			struct avtab_node *next = cur->next;
-
-			if (cur->key.source_type == key->source_type &&
-			    cur->key.target_type == key->target_type &&
-			    cur->key.target_class == key->target_class &&
-			    cur->key.specified == key->specified) {
-
-				if (prev)
-					prev->next = next;
-				else
-					h->htable[i] = next;
-
-				h->nel--;
-
-				if (cur->key.specified & AVTAB_XPERMS)
-					kfree(cur->datum.u.xperms);
-
-				kfree(cur);
-				removed++;
-			} else {
-				prev = cur;
-			}
-			cur = next;
-		}
-	}
-	return removed;
-}
-
 static struct policydb *fmac_get_pdb(void)
 {
 	if (!selinux_state.policy)
@@ -63,16 +22,6 @@ static struct policydb *fmac_get_pdb(void)
 					  lockdep_is_held
 					  (&selinux_state.policy_mutex)
 	    )->policydb;
-}
-
-static bool is_redundant(struct avtab_node *node)
-{
-	switch (node->key.specified) {
-	case AVTAB_AUDITDENY:
-		return node->datum.u.data == ~0U;
-	default:
-		return node->datum.u.data == 0U;
-	}
 }
 
 int sepolicy_add_rule(const char *sname, const char *tname,
@@ -181,9 +130,6 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 		else
 			node->datum.u.data = ~0U;
 	}
-
-	if (is_redundant(node))
-		avtab_remove_nohash(&pdb->te_avtab, node->key);
 
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
