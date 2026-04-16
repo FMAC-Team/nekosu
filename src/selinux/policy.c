@@ -201,6 +201,7 @@ static const struct sepolicy_rule su_fix_rules[] = {
     ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "read"),
     ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "open"),
     ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "ioctl"),
+    ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "getattr"),
     ALLOW("nksu", "nksu", "process", "getsched"),
 ALLOW("nksu", "nksu", "dir", "search"),
 ALLOW("nksu", "nksu", "lnk_file", "read"),
