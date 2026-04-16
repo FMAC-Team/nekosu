@@ -71,6 +71,7 @@ static const struct sepolicy_rule fs_rules[] = {
     ALLOW("nksu", "adb_data_file", "file", "write"),
     ALLOW("nksu", "adb_data_file", "file", "create"),
     ALLOW("nksu", "adb_data_file", "file", "execute"), 
+    ALLOW("nksu", "adb_data_file", "file", "execute_no_trans"), 
 };
 
 static const struct sepolicy_rule svc_rules[] = {
@@ -184,6 +185,10 @@ static const struct sepolicy_rule su_fix_rules[] = {
 	ALLOW("nksu", "devpts", "chr_file", "ioctl"),
 	ALLOW("nksu", "devpts", "chr_file", "open"),
 	ALLOW("shell", "nksu", "process", "sigchld"),
+	ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "write"),
+    ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "read"),
+    ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "open"),
+    ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "ioctl"),
 };
 
 #define GROUP(_name, _rules, _required) \
