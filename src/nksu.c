@@ -48,11 +48,6 @@ static const module_component_t core_components[] = {
 	 .init = appscan_init,
 	 .exit = NULL,
 	  },
-	  {
-	  .name = "selinux policy",
-	  .init = sepolicy_init,
-	  .exit = sepolicy_exit,
-	  },
 };
 
 #define CORE_COMPONENTS_COUNT ARRAY_SIZE(core_components)
