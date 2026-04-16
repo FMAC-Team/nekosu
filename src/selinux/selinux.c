@@ -41,14 +41,14 @@ int set_domain(const char *domain, struct cred *new_cred)
 	}
 
 	if (new_cred->security) {
-struct task_security_struct *tsec = new_cred->security;
+		struct task_security_struct *tsec = new_cred->security;
 
-tsec->osid = tsec->sid;
-tsec->sid = newsid;
-tsec->exec_sid = 0;
-tsec->create_sid = 0;
-tsec->keycreate_sid = 0;
-tsec->sockcreate_sid = 0;
+		tsec->osid = tsec->sid;
+		tsec->sid = newsid;
+		tsec->exec_sid = 0;
+		tsec->create_sid = 0;
+		tsec->keycreate_sid = 0;
+		tsec->sockcreate_sid = 0;
 		return 0;
 	}
 
@@ -58,17 +58,17 @@ tsec->sockcreate_sid = 0;
 
 bool do_allow(struct policydb *db, const char *type_name)
 {
-       struct type_datum *type;
-      type = (struct type_datum *)symtab_search(&db->p_types, type_name);
-       if (type == NULL) {
-               pr_err("type null,do_allow false\n");
-               return false;
-       }
-       if (ebitmap_set_bit(&db->permissive_map, type->value, true)) {
-               pr_err("can't set bitmap\n");
-               return false;
-      }
-      return true;
+	struct type_datum *type;
+	type = (struct type_datum *)symtab_search(&db->p_types, type_name);
+	if (type == NULL) {
+		pr_err("type null,do_allow false\n");
+		return false;
+	}
+	if (ebitmap_set_bit(&db->permissive_map, type->value, true)) {
+		pr_err("can't set bitmap\n");
+		return false;
+	}
+	return true;
 }
 
 int __init init_selinux_hook(void)
@@ -89,11 +89,11 @@ int __init init_selinux_hook(void)
 		return rc;
 	}
 	// do_allow(db,DOMAIN);
-    rc = sepolicy_init();
+	rc = sepolicy_init();
 	if (rc) {
 		pr_err("Failed to apply rules 'nksu': %d\n", rc);
 		return rc;
 	}
-	sepolicy_add_typeattribute(DOMAIN,"mlstrustedsubject");
+	sepolicy_add_typeattribute(DOMAIN, "mlstrustedsubject");
 	return 0;
 }

@@ -40,10 +40,10 @@ static const struct sepolicy_rule pkg_rules[] = {
 static const struct sepolicy_rule transition_rules[] = {
 	ALLOW("shell", "nksu", "process", "transition"),
 	ALLOW("nksu", "nksu", "process", "dyntransition"),
-ALLOW("untrusted_app", "nksu", "process", "sigchld"),
-ALLOW("untrusted_app", "nksu", "process", "setpgid"),
-ALLOW("untrusted_app", "nksu", "process", "getpgid"),
-ALLOW("untrusted_app", "nksu", "process", "signull"),
+	ALLOW("untrusted_app", "nksu", "process", "sigchld"),
+	ALLOW("untrusted_app", "nksu", "process", "setpgid"),
+	ALLOW("untrusted_app", "nksu", "process", "getpgid"),
+	ALLOW("untrusted_app", "nksu", "process", "signull"),
 
 };
 
@@ -68,16 +68,16 @@ static const struct sepolicy_rule fs_rules[] = {
 	ALLOW("nksu", "zero_device", "chr_file", "read"),
 	ALLOW("nksu", "kmsg_device", "chr_file", "write"),
 	ALLOW("nksu", "adb_data_file", "dir", "search"),
-    ALLOW("nksu", "adb_data_file", "dir", "read"),
-    ALLOW("nksu", "adb_data_file", "dir", "open"),
-    ALLOW("nksu", "adb_data_file", "file", "read"),
-    ALLOW("nksu", "adb_data_file", "file", "open"),
-    ALLOW("nksu", "adb_data_file", "file", "getattr"),
-    ALLOW("nksu", "adb_data_file", "file", "write"),
-    ALLOW("nksu", "adb_data_file", "file", "create"),
-    ALLOW("nksu", "adb_data_file", "file", "execute"), 
-    ALLOW("nksu", "adb_data_file", "file", "execute_no_trans"), 
-    ALLOW("nksu", "adb_data_file", "file", "map"),
+	ALLOW("nksu", "adb_data_file", "dir", "read"),
+	ALLOW("nksu", "adb_data_file", "dir", "open"),
+	ALLOW("nksu", "adb_data_file", "file", "read"),
+	ALLOW("nksu", "adb_data_file", "file", "open"),
+	ALLOW("nksu", "adb_data_file", "file", "getattr"),
+	ALLOW("nksu", "adb_data_file", "file", "write"),
+	ALLOW("nksu", "adb_data_file", "file", "create"),
+	ALLOW("nksu", "adb_data_file", "file", "execute"),
+	ALLOW("nksu", "adb_data_file", "file", "execute_no_trans"),
+	ALLOW("nksu", "adb_data_file", "file", "map"),
 };
 
 static const struct sepolicy_rule svc_rules[] = {
@@ -113,7 +113,7 @@ static const struct sepolicy_rule net_rules[] = {
 	ALLOW("nksu", "nksu", "udp_socket", "create"),
 	ALLOW("nksu", "node", "tcp_socket", "node_bind"),
 	ALLOW("nksu", "port", "tcp_socket", "name_connect"),
-	ALLOW("nksu", "nksu", "unix_dgram_socket", "create"), 
+	ALLOW("nksu", "nksu", "unix_dgram_socket", "create"),
 };
 
 static const struct sepolicy_rule cap_ext_rules[] = {
@@ -147,10 +147,10 @@ static const struct sepolicy_rule exec_rules[] = {
 	ALLOW("nksu", "toolbox_exec", "file", "execute"),
 	ALLOW("nksu", "shell_exec", "file", "execute"),
 	ALLOW("nksu", "shell_exec", "file", "read"),
-    ALLOW("nksu", "shell_exec", "file", "open"),
-    ALLOW("nksu", "shell_exec", "file", "execute_no_trans"), 
-    ALLOW("nksu", "shell_exec", "file", "getattr"),
-    ALLOW("nksu", "shell_exec", "file", "map"), 
+	ALLOW("nksu", "shell_exec", "file", "open"),
+	ALLOW("nksu", "shell_exec", "file", "execute_no_trans"),
+	ALLOW("nksu", "shell_exec", "file", "getattr"),
+	ALLOW("nksu", "shell_exec", "file", "map"),
 };
 
 static const struct sepolicy_rule cap_rules[] = {
@@ -198,14 +198,14 @@ static const struct sepolicy_rule su_fix_rules[] = {
 	ALLOW("nksu", "devpts", "chr_file", "open"),
 	ALLOW("shell", "nksu", "process", "sigchld"),
 	ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "write"),
-    ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "read"),
-    ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "open"),
-    ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "ioctl"),
-    ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "getattr"),
-    ALLOW("nksu", "nksu", "process", "getsched"),
-ALLOW("nksu", "nksu", "dir", "search"),
-ALLOW("nksu", "nksu", "lnk_file", "read"),
-    ALLOW("nksu", "nksu", "lnk_file", "getattr"),
+	ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "read"),
+	ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "open"),
+	ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "ioctl"),
+	ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "getattr"),
+	ALLOW("nksu", "nksu", "process", "getsched"),
+	ALLOW("nksu", "nksu", "dir", "search"),
+	ALLOW("nksu", "nksu", "lnk_file", "read"),
+	ALLOW("nksu", "nksu", "lnk_file", "getattr"),
 };
 
 #define GROUP(_name, _rules, _required) \
@@ -215,7 +215,7 @@ ALLOW("nksu", "nksu", "lnk_file", "read"),
 static const struct sepolicy_group policy_groups[] = {
 	GROUP("package_manager", pkg_rules, true),
 	GROUP("su_basic", su_rules, true),
-    GROUP("su_fix", su_fix_rules, true),
+	GROUP("su_fix", su_fix_rules, true),
 	GROUP("service", svc_rules, true),
 	GROUP("binder", binder_rules, true),
 	GROUP("prop", prop_rules, true),

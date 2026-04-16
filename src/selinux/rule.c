@@ -52,8 +52,7 @@ static void sepolicy_add_rule_raw(struct policydb *pdb,
 				  struct type_datum *src,
 				  struct type_datum *tgt,
 				  struct class_datum *cls,
-				  int perm_value,
-				  int effect, bool invert)
+				  int perm_value, int effect, bool invert)
 {
 	struct hashtab_node *node;
 
@@ -68,15 +67,13 @@ static void sepolicy_add_rule_raw(struct policydb *pdb,
 		hashtab_for_each(pdb->p_types.table, node) {
 			sepolicy_add_rule_raw(pdb, src,
 					      (struct type_datum *)node->datum,
-					      cls, perm_value,
-					      effect, invert);
+					      cls, perm_value, effect, invert);
 		}
 	} else if (cls == NULL) {
 		hashtab_for_each(pdb->p_classes.table, node) {
 			sepolicy_add_rule_raw(pdb, src, tgt,
 					      (struct class_datum *)node->datum,
-					      perm_value,
-					      effect, invert);
+					      perm_value, effect, invert);
 		}
 	} else {
 		struct avtab_key key;
@@ -269,8 +266,7 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 	}
 
 	sepolicy_add_rule_raw(pdb, src, tgt, cls,
-			      perm ? (int)perm->value : 0,
-			      effect, invert);
+			      perm ? (int)perm->value : 0, effect, invert);
 
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
@@ -281,8 +277,8 @@ out:
 }
 
 static void sepolicy_add_typeattribute_raw(struct policydb *pdb,
-					  struct type_datum *type_dat,
-					  struct type_datum *attr_dat)
+					   struct type_datum *type_dat,
+					   struct type_datum *attr_dat)
 {
 	struct hashtab_node *node;
 	struct constraint_node *n;
@@ -294,9 +290,11 @@ static void sepolicy_add_typeattribute_raw(struct policydb *pdb,
 		struct class_datum *cls = (struct class_datum *)(node->datum);
 		for (n = cls->constraints; n; n = n->next) {
 			for (e = n->expr; e; e = e->next) {
-				if (e->expr_type == CEXPR_NAMES && e->type_names &&
-				    ebitmap_get_bit(&e->type_names->types, attr_dat->value - 1)) {
-					ebitmap_set_bit(&e->names, type_dat->value - 1, 1);
+				if (e->expr_type == CEXPR_NAMES && e->type_names
+				    && ebitmap_get_bit(&e->type_names->types,
+						       attr_dat->value - 1)) {
+					ebitmap_set_bit(&e->names,
+							type_dat->value - 1, 1);
 				}
 			}
 		}
@@ -336,19 +334,22 @@ int sepolicy_add_typeattribute(const char *type_name, const char *attr_name)
 	}
 
 	if (type_dat->attribute) {
-		pr_warn("[selinux]: '%s' is an attribute, not a type\n", type_name);
+		pr_warn("[selinux]: '%s' is an attribute, not a type\n",
+			type_name);
 		ret = -EINVAL;
 		goto out;
 	}
 	if (!attr_dat->attribute) {
-		pr_warn("[selinux]: '%s' is a type, not an attribute\n", attr_name);
+		pr_warn("[selinux]: '%s' is a type, not an attribute\n",
+			attr_name);
 		ret = -EINVAL;
 		goto out;
 	}
 
 	sepolicy_add_typeattribute_raw(pdb, type_dat, attr_dat);
 
-	pr_info("[selinux]: added attribute '%s' to type '%s'\n", attr_name, type_name);
+	pr_info("[selinux]: added attribute '%s' to type '%s'\n", attr_name,
+		type_name);
 
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
