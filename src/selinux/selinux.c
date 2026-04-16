@@ -7,8 +7,6 @@
 
 #include <fmac.h>
 
-#define DOMAIN "nksu"
-
 void setenforce(bool status)
 {
 // true or false
@@ -94,6 +92,5 @@ int __init init_selinux_hook(void)
 		pr_err("Failed to apply rules 'nksu': %d\n", rc);
 		return rc;
 	}
-	sepolicy_add_typeattribute(DOMAIN, "mlstrustedsubject");
 	return 0;
 }

@@ -5,6 +5,10 @@ fmac-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/seli
 
 obj-$(CONFIG_FMAC) += fmac.o
 
+ifeq($(CONFIG_FMAC_DEBUG),y)
+	ccflags-y += -DCONFIG_FMAC_DEBUG=1
+endif
+
 ccflags-y += -I$(srctree)/security/selinux
 ccflags-y += -I$(srctree)/security/selinux/include
 ccflags-y += -I$(IDIR)
