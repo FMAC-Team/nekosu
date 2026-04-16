@@ -63,7 +63,7 @@ int init_selinux_hook(void)
 		pr_info("[selinux]: enforcing is false,set 1\n");
 		setenforce(true);
 	}
-	rc = sepolicy_add_domain(DOMAIN);
+	rc = sepolicy_allow_any_any(DOMAIN);
 	if (rc) {
 		pr_err("Failed to add domain 'nksu': %d\n", rc);
 		return rc;
