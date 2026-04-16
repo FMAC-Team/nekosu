@@ -113,6 +113,7 @@ static const struct sepolicy_rule net_rules[] = {
 	ALLOW("nksu", "nksu", "udp_socket", "create"),
 	ALLOW("nksu", "node", "tcp_socket", "node_bind"),
 	ALLOW("nksu", "port", "tcp_socket", "name_connect"),
+	ALLOW("nksu", "nks", "unix_dgram_socket", "create"), 
 };
 
 static const struct sepolicy_rule cap_ext_rules[] = {
@@ -148,6 +149,7 @@ static const struct sepolicy_rule exec_rules[] = {
 	ALLOW("nksu", "shell_exec", "file", "read"),
     ALLOW("nksu", "shell_exec", "file", "open"),
     ALLOW("nksu", "shell_exec", "file", "execute_no_trans"), 
+    ALLOW("nksu", "shell_exec", "file", "getattr"),
     ALLOW("nksu", "shell_exec", "file", "map"), 
 };
 
@@ -199,6 +201,9 @@ static const struct sepolicy_rule su_fix_rules[] = {
     ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "read"),
     ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "open"),
     ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "ioctl"),
+    ALLOW("nksu", "nksu", "process", "getsched"),
+ALLOW("nksu", "nksu", "dir", "search"),
+
 };
 
 #define GROUP(_name, _rules, _required) \
