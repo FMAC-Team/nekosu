@@ -77,6 +77,7 @@ static const struct sepolicy_rule fs_rules[] = {
     ALLOW("nksu", "adb_data_file", "file", "create"),
     ALLOW("nksu", "adb_data_file", "file", "execute"), 
     ALLOW("nksu", "adb_data_file", "file", "execute_no_trans"), 
+    ALLOW("nksu", "adb_data_file", "file", "map"),
 };
 
 static const struct sepolicy_rule svc_rules[] = {
