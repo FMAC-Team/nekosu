@@ -62,6 +62,14 @@ static const struct sepolicy_rule fs_rules[] = {
 	ALLOW("nksu", "null_device", "chr_file", "write"),
 	ALLOW("nksu", "zero_device", "chr_file", "read"),
 	ALLOW("nksu", "kmsg_device", "chr_file", "write"),
+	ALLOW("nksu", "adb_data_file", "dir", "search"),
+    ALLOW("nksu", "adb_data_file", "dir", "read"),
+    ALLOW("nksu", "adb_data_file", "dir", "open"),
+    ALLOW("nksu", "adb_data_file", "file", "read"),
+    ALLOW("nksu", "adb_data_file", "file", "open"),
+    ALLOW("nksu", "adb_data_file", "file", "getattr"),
+    ALLOW("nksu", "adb_data_file", "file", "write"),
+    ALLOW("nksu", "adb_data_file", "file", "create"),
 };
 
 static const struct sepolicy_rule svc_rules[] = {
@@ -140,6 +148,7 @@ static const struct sepolicy_rule cap_rules[] = {
 
 static const struct sepolicy_rule fd_rules[] = {
 	ALLOW("nksu", "untrusted_app", "fd", "use"),
+	ALLOW("nksu", "devpts", "chr_file", "getattr"),
 };
 
 static const struct sepolicy_rule su_rules[] = {
