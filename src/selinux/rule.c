@@ -47,6 +47,160 @@ static void avc_reset(void)
 	selinux_xfrm_notify_policyload();
 }
 
+static void sepolicy_add_rule_raw(struct policydb *pdb,
+				  struct type_datum *src,
+				  struct type_datum *tgt,
+				  struct class_datum *cls,
+				  int perm_value,
+				  int effect, bool invert)
+{
+	struct hashtab_node *node;
+
+	if (src == NULL) {
+		hashtab_for_each(pdb->p_types.table, node) {
+			sepolicy_add_rule_raw(pdb,
+					      (struct type_datum *)node->datum,
+					      tgt, cls, perm_value,
+					      effect, invert);
+		}
+	} else if (tgt == NULL) {
+		hashtab_for_each(pdb->p_types.table, node) {
+			sepolicy_add_rule_raw(pdb, src,
+					      (struct type_datum *)node->datum,
+					      cls, perm_value,
+					      effect, invert);
+		}
+	} else if (cls == NULL) {
+		hashtab_for_each(pdb->p_classes.table, node) {
+			sepolicy_add_rule_raw(pdb, src, tgt,
+					      (struct class_datum *)node->datum,
+					      perm_value,
+					      effect, invert);
+		}
+	} else {
+		struct avtab_key key;
+		struct avtab_node *av_node;
+		struct avtab_datum datum;
+
+		key.source_type = src->value;
+		key.target_type = tgt->value;
+		key.target_class = cls->value;
+		key.specified = effect;
+
+		av_node = avtab_search_node(&pdb->te_avtab, &key);
+		if (!av_node) {
+			memset(&datum, 0, sizeof(datum));
+			datum.u.data = (effect == AVTAB_AUDITDENY) ? ~0U : 0U;
+			av_node = avtab_insert_nonunique(&pdb->te_avtab, &key,
+							 &datum);
+		}
+
+		if (av_node) {
+			if (perm_value) {
+				if (invert)
+					av_node->datum.u.data &=
+					    ~(1U << (perm_value - 1));
+				else
+					av_node->datum.u.data |=
+					    1U << (perm_value - 1);
+			} else {
+				av_node->datum.u.data = invert ? 0U : ~0U;
+			}
+		}
+	}
+}
+
+int sepolicy_allow_all_types(const char *sname, const char *cname)
+{
+	struct policydb *pdb;
+	struct type_datum *src = NULL;
+	struct class_datum *cls = NULL;
+	int ret = 0;
+
+	mutex_lock(&selinux_state.policy_mutex);
+
+	pdb = fmac_get_pdb();
+	if (!pdb) {
+		ret = -ENOENT;
+		goto out;
+	}
+
+	if (sname) {
+		src = symtab_search(&pdb->symtab[SYM_TYPES], sname);
+		if (!src) {
+			pr_warn("[selinux]: source type '%s' not found\n",
+				sname);
+			ret = -ENOENT;
+			goto out;
+		}
+	}
+
+	if (cname) {
+		cls = symtab_search(&pdb->symtab[SYM_CLASSES], cname);
+		if (!cls) {
+			pr_warn("[selinux]: class '%s' not found\n", cname);
+			ret = -ENOENT;
+			goto out;
+		}
+	}
+
+	sepolicy_add_rule_raw(pdb, src, NULL, cls, 0, AVTAB_ALLOWED, false);
+
+	sepolicy_add_rule_raw(pdb, src, NULL, cls, 0, AVTAB_AUDITDENY, true);
+
+	pr_info
+	    ("[selinux]: granted '%s' all perms to all types over class '%s'\n",
+	     sname, cname);
+
+out:
+	mutex_unlock(&selinux_state.policy_mutex);
+
+	if (ret == 0) {
+		avc_reset();
+	}
+	return ret;
+}
+
+int sepolicy_allow_any_any(const char *sname)
+{
+	struct policydb *pdb;
+	struct type_datum *src = NULL;
+	int ret = 0;
+
+	mutex_lock(&selinux_state.policy_mutex);
+
+	pdb = fmac_get_pdb();
+	if (!pdb) {
+		ret = -ENOENT;
+		goto out;
+	}
+
+	if (sname) {
+		src = symtab_search(&pdb->symtab[SYM_TYPES], sname);
+		if (!src) {
+			pr_warn("[selinux]: source type '%s' not found\n",
+				sname);
+			ret = -ENOENT;
+			goto out;
+		}
+	}
+
+	sepolicy_add_rule_raw(pdb, src, NULL, NULL, 0, AVTAB_ALLOWED, false);
+
+	sepolicy_add_rule_raw(pdb, src, NULL, NULL, 0, AVTAB_AUDITDENY, true);
+
+	pr_info("[selinux]: '%s' has been elevated to any-any allow.\n",
+		sname ? sname : "ALL DOMAINS");
+
+out:
+	mutex_unlock(&selinux_state.policy_mutex);
+
+	if (ret == 0) {
+		avc_reset();
+	}
+	return ret;
+}
+
 int sepolicy_add_rule(const char *sname, const char *tname,
 		      const char *cname, const char *pname,
 		      int effect, bool invert)
@@ -55,9 +209,6 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 	struct type_datum *src = NULL, *tgt = NULL;
 	struct class_datum *cls = NULL;
 	struct perm_datum *perm = NULL;
-	struct avtab_key key;
-	struct avtab_datum datum;
-	struct avtab_node *node;
 	int ret = 0;
 
 	mutex_lock(&selinux_state.policy_mutex);
@@ -116,195 +267,14 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 		}
 	}
 
-	if (!src || !tgt || !cls) {
-		pr_warn
-		    ("[selinux]: wildcard not supported in kernel add_rule, specify all fields\n");
-		ret = -EINVAL;
-		goto out;
-	}
-
-	key.source_type = src->value;
-	key.target_type = tgt->value;
-	key.target_class = cls->value;
-	key.specified = effect;
-
-	node = avtab_search_node(&pdb->te_avtab, &key);
-	if (!node) {
-		memset(&datum, 0, sizeof(datum));
-		datum.u.data = (effect == AVTAB_AUDITDENY) ? ~0U : 0U;
-
-		node = avtab_insert_nonunique(&pdb->te_avtab, &key, &datum);
-		if (!node) {
-			pr_err("[selinux]: avtab_insert_nonunique failed\n");
-			ret = -ENOMEM;
-			goto out;
-		}
-	}
-
-	if (invert) {
-		if (perm)
-			node->datum.u.data &= ~(1U << (perm->value - 1));
-		else
-			node->datum.u.data = 0U;
-	} else {
-		if (perm)
-			node->datum.u.data |= 1U << (perm->value - 1);
-		else
-			node->datum.u.data = ~0U;
-	}
+	sepolicy_add_rule_raw(pdb, src, tgt, cls,
+			      perm ? (int)perm->value : 0,
+			      effect, invert);
 
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
 
-	if (ret == 0) {
+	if (ret == 0)
 		avc_reset();
-	}
-	return ret;
-}
-
-static void sepolicy_add_rule_raw(struct policydb *pdb,
-				  struct type_datum *src,
-				  struct type_datum *tgt,
-				  struct class_datum *cls,
-				  int effect, bool invert)
-{
-	struct hashtab_node *node;
-
-	if (src == NULL) {
-		int i;
-		hashtab_for_each(pdb->p_types.table, node) {
-			sepolicy_add_rule_raw(pdb,
-					      (struct type_datum *)node->datum,
-					      tgt, cls, effect, invert);
-		}
-	} else if (tgt == NULL) {
-		hashtab_for_each(pdb->p_types.table, node) {
-			sepolicy_add_rule_raw(pdb, src,
-					      (struct type_datum *)node->datum,
-					      cls, effect, invert);
-		}
-	} else if (cls == NULL) {
-		hashtab_for_each(pdb->p_classes.table, node) {
-			sepolicy_add_rule_raw(pdb, src, tgt,
-					      (struct class_datum *)node->datum,
-					      effect, invert);
-		}
-	} else {
-		struct avtab_key key;
-		struct avtab_node *av_node;
-		struct avtab_datum datum;
-
-		key.source_type = src->value;
-		key.target_type = tgt->value;
-		key.target_class = cls->value;
-		key.specified = effect;
-
-		av_node = avtab_search_node(&pdb->te_avtab, &key);
-		if (!av_node) {
-			memset(&datum, 0, sizeof(datum));
-			datum.u.data = 0U;
-			av_node =
-			    avtab_insert_nonunique(&pdb->te_avtab, &key,
-						   &datum);
-		}
-
-		if (av_node) {
-			if (invert) {
-				av_node->datum.u.data = 0U;
-			} else {
-				av_node->datum.u.data = ~0U;
-			}
-		}
-	}
-}
-
-int sepolicy_allow_all_types(const char *sname, const char *cname)
-{
-	struct policydb *pdb;
-	struct type_datum *src = NULL;
-	struct class_datum *cls = NULL;
-	int ret = 0;
-
-	mutex_lock(&selinux_state.policy_mutex);
-
-	pdb = fmac_get_pdb();
-	if (!pdb) {
-		ret = -ENOENT;
-		goto out;
-	}
-
-	if (sname) {
-		src = symtab_search(&pdb->symtab[SYM_TYPES], sname);
-		if (!src) {
-			pr_warn("[selinux]: source type '%s' not found\n",
-				sname);
-			ret = -ENOENT;
-			goto out;
-		}
-	}
-
-	if (cname) {
-		cls = symtab_search(&pdb->symtab[SYM_CLASSES], cname);
-		if (!cls) {
-			pr_warn("[selinux]: class '%s' not found\n", cname);
-			ret = -ENOENT;
-			goto out;
-		}
-	}
-
-	sepolicy_add_rule_raw(pdb, src, NULL, cls, AVTAB_ALLOWED, false);
-
-	sepolicy_add_rule_raw(pdb, src, NULL, cls, AVTAB_AUDITDENY, true);
-
-	pr_info
-	    ("[selinux]: granted '%s' all perms to all types over class '%s'\n",
-	     sname, cname);
-
-out:
-	mutex_unlock(&selinux_state.policy_mutex);
-
-	if (ret == 0) {
-		avc_reset();
-	}
-	return ret;
-}
-
-int sepolicy_allow_any_any(const char *sname)
-{
-	struct policydb *pdb;
-	struct type_datum *src = NULL;
-	int ret = 0;
-
-	mutex_lock(&selinux_state.policy_mutex);
-
-	pdb = fmac_get_pdb();
-	if (!pdb) {
-		ret = -ENOENT;
-		goto out;
-	}
-
-	if (sname) {
-		src = symtab_search(&pdb->symtab[SYM_TYPES], sname);
-		if (!src) {
-			pr_warn("[selinux]: source type '%s' not found\n",
-				sname);
-			ret = -ENOENT;
-			goto out;
-		}
-	}
-
-	sepolicy_add_rule_raw(pdb, src, NULL, NULL, AVTAB_ALLOWED, false);
-
-	sepolicy_add_rule_raw(pdb, src, NULL, NULL, AVTAB_AUDITDENY, true);
-
-	pr_info("[selinux]: '%s' has been elevated to any-any allow.\n",
-		sname ? sname : "ALL DOMAINS");
-
-out:
-	mutex_unlock(&selinux_state.policy_mutex);
-
-	if (ret == 0) {
-		avc_reset();
-	}
 	return ret;
 }
