@@ -89,9 +89,9 @@ int init_selinux_hook(void)
 		return rc;
 	}
 	// do_allow(db,DOMAIN);
-    rc = sepolicy_allow_any_any(DOMAIN);
+    rc = sepolicy_init();
 	if (rc) {
-		pr_err("Failed to allow all 'nksu': %d\n", rc);
+		pr_err("Failed to apply rules 'nksu': %d\n", rc);
 		return rc;
 	}
 	return 0;
