@@ -71,7 +71,7 @@ bool do_allow(struct policydb *db, const char *type_name)
       return true;
 }
 
-int init_selinux_hook(void)
+int __init init_selinux_hook(void)
 {
 	struct policydb *db;
 	int rc;
