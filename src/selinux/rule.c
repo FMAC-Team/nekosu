@@ -183,7 +183,7 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 	}
 
 	if (is_redundant(node))
-		avtab_remove_nohash(&pdb->te_avtab, node);
+		avtab_remove_nohash(&pdb->te_avtab, node->key);
 
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
