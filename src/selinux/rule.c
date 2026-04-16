@@ -290,13 +290,11 @@ static void sepolicy_add_typeattribute_raw(struct policydb *pdb,
 
 	struct ebitmap *sattr = &pdb->type_attr_map_array[type_dat->value - 1];
 	ebitmap_set_bit(sattr, attr_dat->value - 1, 1);
-	ebitmap_set_bit(&attr_dat->types, type_dat->value - 1, 1);
-
 	hashtab_for_each(pdb->p_classes.table, node) {
 		struct class_datum *cls = (struct class_datum *)(node->datum);
 		for (n = cls->constraints; n; n = n->next) {
 			for (e = n->expr; e; e = e->next) {
-				if (e->expr_type == CEXPR_NAMES && 
+				if (e->expr_type == CEXPR_NAMES && e->type_names &&
 				    ebitmap_get_bit(&e->type_names->types, attr_dat->value - 1)) {
 					ebitmap_set_bit(&e->names, type_dat->value - 1, 1);
 				}
