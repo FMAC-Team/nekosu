@@ -113,7 +113,7 @@ static const struct sepolicy_rule net_rules[] = {
 	ALLOW("nksu", "nksu", "udp_socket", "create"),
 	ALLOW("nksu", "node", "tcp_socket", "node_bind"),
 	ALLOW("nksu", "port", "tcp_socket", "name_connect"),
-	ALLOW("nksu", "nks", "unix_dgram_socket", "create"), 
+	ALLOW("nksu", "nksu", "unix_dgram_socket", "create"), 
 };
 
 static const struct sepolicy_rule cap_ext_rules[] = {
