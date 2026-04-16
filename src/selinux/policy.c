@@ -203,7 +203,8 @@ static const struct sepolicy_rule su_fix_rules[] = {
     ALLOW("nksu", "untrusted_app_all_devpts", "chr_file", "ioctl"),
     ALLOW("nksu", "nksu", "process", "getsched"),
 ALLOW("nksu", "nksu", "dir", "search"),
-
+ALLOW("nksu", "nksu", "lnk_file", "read"),
+    ALLOW("nksu", "nksu", "lnk_file", "getattr"),
 };
 
 #define GROUP(_name, _rules, _required) \
