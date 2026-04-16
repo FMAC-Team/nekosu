@@ -101,7 +101,7 @@ static int add_type_to_policy(struct policydb *p, const char *name)
 	rc = symtab_insert(&p->p_types, name_copy, type);
 	if (rc) {
 		ebitmap_destroy(&p->type_attr_map_array[new_value - 1]);
-		p->type_attr_map_array[new_value - 1] = (struct ebitmap){ };
+		p->type_attr_map_array[new_value - 1] = (struct ebitmap) { };
 		p->sym_val_to_name[SYM_TYPES][new_value - 1] = NULL;
 		p->type_val_to_struct[new_value - 1] = NULL;
 		goto err_free;
@@ -109,7 +109,8 @@ static int add_type_to_policy(struct policydb *p, const char *name)
 
 	p->p_types.nprim++;
 
-	ebitmap_set_bit(&p->type_attr_map_array[new_value - 1], new_value - 1, 1);
+	ebitmap_set_bit(&p->type_attr_map_array[new_value - 1], new_value - 1,
+			1);
 
 	for (i = 0; i < p->p_roles.nprim; ++i) {
 		if (!p->role_val_to_struct[i])
@@ -117,7 +118,9 @@ static int add_type_to_policy(struct policydb *p, const char *name)
 		rc = ebitmap_set_bit(&p->role_val_to_struct[i]->types,
 				     new_value - 1, 1);
 		if (rc) {
-			pr_err("[selinux]: failed to set role types bit for role %d\n", i);
+			pr_err
+			    ("[selinux]: failed to set role types bit for role %d\n",
+			     i);
 		}
 	}
 
@@ -138,7 +141,8 @@ int sepolicy_add_domain(const char *name)
 	mutex_lock(&selinux_state.policy_mutex);
 
 	policy = rcu_dereference_protected(selinux_state.policy,
-					   lockdep_is_held(&selinux_state.policy_mutex));
+					   lockdep_is_held(&selinux_state.
+							   policy_mutex));
 	if (!policy) {
 		rc = -EINVAL;
 		goto out;

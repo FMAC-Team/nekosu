@@ -33,39 +33,35 @@ struct sepolicy_group {
 };
 
 static const struct sepolicy_rule pkg_rules[] = {
-	ALLOW("nksu", "package_native_service",  "service_manager", "find"),
-	ALLOW("nksu", "activity_service",        "service_manager", "find"),
-	ALLOW("nksu",          "system_server", "binder", "call"),
-	ALLOW("nksu",          "system_server", "binder", "transfer"),
-	ALLOW("system_server", "nksu",          "binder", "call"),
-	ALLOW("system_server", "nksu",          "binder", "transfer"),
+	ALLOW("nksu", "package_native_service", "service_manager", "find"),
+	ALLOW("nksu", "activity_service", "service_manager", "find"),
 };
 
 static const struct sepolicy_rule transition_rules[] = {
-    ALLOW("shell", "nksu",      "process", "transition"),
-    ALLOW("nksu", "nksu", "process", "dyntransition"),
+	ALLOW("shell", "nksu", "process", "transition"),
+	ALLOW("nksu", "nksu", "process", "dyntransition"),
 };
 
 static const struct sepolicy_rule debug_rules[] = {
-    ALLOW("nksu", "domain", "process", "ptrace"),
-    ALLOW("nksu", "domain", "process", "signull"), 
-    ALLOW("nksu", "domain", "process", "signal"),
-    ALLOW("nksu", "domain", "process", "sigkill"),
-    ALLOW("nksu", "domain", "process", "getpgid"),
-    ALLOW("nksu", "domain", "process", "setsched"),
+	ALLOW("nksu", "domain", "process", "ptrace"),
+	ALLOW("nksu", "domain", "process", "signull"),
+	ALLOW("nksu", "domain", "process", "signal"),
+	ALLOW("nksu", "domain", "process", "sigkill"),
+	ALLOW("nksu", "domain", "process", "getpgid"),
+	ALLOW("nksu", "domain", "process", "setsched"),
 };
 
 static const struct sepolicy_rule fs_rules[] = {
-    ALLOW("nksu", "proc", "file", "read"),
-    ALLOW("nksu", "proc", "file", "open"),
-    ALLOW("nksu", "sysfs", "file", "read"),
-    ALLOW("nksu", "sysfs", "file", "open"),
-    
-    ALLOW("nksu", "device", "dir", "write"),
-    ALLOW("nksu", "null_device", "chr_file", "read"),
-    ALLOW("nksu", "null_device", "chr_file", "write"),
-    ALLOW("nksu", "zero_device", "chr_file", "read"),
-    ALLOW("nksu", "kmsg_device", "chr_file", "write"),
+	ALLOW("nksu", "proc", "file", "read"),
+	ALLOW("nksu", "proc", "file", "open"),
+	ALLOW("nksu", "sysfs", "file", "read"),
+	ALLOW("nksu", "sysfs", "file", "open"),
+
+	ALLOW("nksu", "device", "dir", "write"),
+	ALLOW("nksu", "null_device", "chr_file", "read"),
+	ALLOW("nksu", "null_device", "chr_file", "write"),
+	ALLOW("nksu", "zero_device", "chr_file", "read"),
+	ALLOW("nksu", "kmsg_device", "chr_file", "write"),
 };
 
 static const struct sepolicy_rule svc_rules[] = {
@@ -86,31 +82,31 @@ static const struct sepolicy_rule binder_rules[] = {
 };
 
 static const struct sepolicy_rule prop_ext_rules[] = {
-    ALLOW("nksu", "property_socket", "sock_file", "write"),
-    ALLOW("nksu", "init", "unix_stream_socket", "connectto"),
-    ALLOW("nksu", "default_prop", "property_service", "set"),
-    ALLOW("nksu", "system_prop",  "property_service", "set"),
-    ALLOW("nksu", "exported_config_prop", "property_service", "set"),
+	ALLOW("nksu", "property_socket", "sock_file", "write"),
+	ALLOW("nksu", "init", "unix_stream_socket", "connectto"),
+	ALLOW("nksu", "default_prop", "property_service", "set"),
+	ALLOW("nksu", "system_prop", "property_service", "set"),
+	ALLOW("nksu", "exported_config_prop", "property_service", "set"),
 };
 
 static const struct sepolicy_rule net_rules[] = {
-    ALLOW("nksu", "nksu", "tcp_socket", "create"),
-    ALLOW("nksu", "nksu", "tcp_socket", "read"),
-    ALLOW("nksu", "nksu", "tcp_socket", "write"),
-    ALLOW("nksu", "nksu", "tcp_socket", "connect"),
-    ALLOW("nksu", "nksu", "udp_socket", "create"),
-    ALLOW("nksu", "node", "tcp_socket", "node_bind"),
-    ALLOW("nksu", "port", "tcp_socket", "name_connect"),
+	ALLOW("nksu", "nksu", "tcp_socket", "create"),
+	ALLOW("nksu", "nksu", "tcp_socket", "read"),
+	ALLOW("nksu", "nksu", "tcp_socket", "write"),
+	ALLOW("nksu", "nksu", "tcp_socket", "connect"),
+	ALLOW("nksu", "nksu", "udp_socket", "create"),
+	ALLOW("nksu", "node", "tcp_socket", "node_bind"),
+	ALLOW("nksu", "port", "tcp_socket", "name_connect"),
 };
 
 static const struct sepolicy_rule cap_ext_rules[] = {
-    ALLOW("nksu", "nksu", "capability", "sys_admin"), 
-    ALLOW("nksu", "nksu", "capability", "sys_ptrace"), 
-    ALLOW("nksu", "nksu", "capability", "sys_resource"), 
-    ALLOW("nksu", "nksu", "capability", "chown"),  
-    ALLOW("nksu", "nksu", "capability", "fowner"), 
-    ALLOW("nksu", "nksu", "capability", "net_admin"), 
-    ALLOW("nksu", "nksu", "capability", "net_raw"), 
+	ALLOW("nksu", "nksu", "capability", "sys_admin"),
+	ALLOW("nksu", "nksu", "capability", "sys_ptrace"),
+	ALLOW("nksu", "nksu", "capability", "sys_resource"),
+	ALLOW("nksu", "nksu", "capability", "chown"),
+	ALLOW("nksu", "nksu", "capability", "fowner"),
+	ALLOW("nksu", "nksu", "capability", "net_admin"),
+	ALLOW("nksu", "nksu", "capability", "net_raw"),
 };
 
 static const struct sepolicy_rule prop_rules[] = {
@@ -132,7 +128,7 @@ static const struct sepolicy_rule exec_rules[] = {
 	ALLOW("nksu", "zygote_exec", "file", "map"),
 
 	ALLOW("nksu", "toolbox_exec", "file", "execute"),
-	ALLOW("nksu", "shell_exec",   "file", "execute"),
+	ALLOW("nksu", "shell_exec", "file", "execute"),
 };
 
 static const struct sepolicy_rule cap_rules[] = {
@@ -150,11 +146,11 @@ static const struct sepolicy_rule su_rules[] = {
 	ALLOW("nksu", "nksu", "process", "fork"),
 	ALLOW("nksu", "nksu", "process", "sigchld"),
 	ALLOW("nksu", "nksu", "process", "transition"),
-	ALLOW("nksu", "nksu",           "fd",        "use"),
-	ALLOW("nksu", "nksu",           "fifo_file", "read"),
-	ALLOW("nksu", "nksu",           "fifo_file", "write"),
-	ALLOW("nksu", "nksu",           "fifo_file", "open"),
-	ALLOW("nksu", "nksu",           "fifo_file", "getattr"),
+	ALLOW("nksu", "nksu", "fd", "use"),
+	ALLOW("nksu", "nksu", "fifo_file", "read"),
+	ALLOW("nksu", "nksu", "fifo_file", "write"),
+	ALLOW("nksu", "nksu", "fifo_file", "open"),
+	ALLOW("nksu", "nksu", "fifo_file", "getattr"),
 	ALLOW("nksu", "system_file", "file", "read"),
 	ALLOW("nksu", "system_file", "file", "open"),
 	ALLOW("nksu", "system_file", "file", "execute"),
@@ -169,22 +165,21 @@ static const struct sepolicy_rule su_rules[] = {
       .required = (_required) }
 
 static const struct sepolicy_group policy_groups[] = {
-    GROUP("package_manager", pkg_rules, true),
-    GROUP("su_basic",        su_rules,  true),
-    GROUP("service",         svc_rules, true),
-    GROUP("binder",          binder_rules, true),
-    GROUP("prop",            prop_rules, true),
-    GROUP("prop_ext",        prop_ext_rules, false),
-    GROUP("exec",            exec_rules, true),
-    GROUP("cap",             cap_rules, true),
-    GROUP("cap_ext",         cap_ext_rules, false), 
-    GROUP("fs_access",       fs_rules, false),
-    GROUP("debug",           debug_rules, false),
-    GROUP("net",             net_rules, false),
-    GROUP("fd",              fd_rules, false),
-    GROUP("transition",      transition_rules, true),
+	GROUP("package_manager", pkg_rules, true),
+	GROUP("su_basic", su_rules, true),
+	GROUP("service", svc_rules, true),
+	GROUP("binder", binder_rules, true),
+	GROUP("prop", prop_rules, true),
+	GROUP("prop_ext", prop_ext_rules, false),
+	GROUP("exec", exec_rules, true),
+	GROUP("cap", cap_rules, true),
+	GROUP("cap_ext", cap_ext_rules, false),
+	GROUP("fs_access", fs_rules, false),
+	GROUP("debug", debug_rules, false),
+	GROUP("net", net_rules, false),
+	GROUP("fd", fd_rules, false),
+	GROUP("transition", transition_rules, true),
 };
-
 
 static int apply_group(const struct sepolicy_group *grp)
 {
@@ -198,8 +193,9 @@ static int apply_group(const struct sepolicy_group *grp)
 		ret = sepolicy_add_rule(r->src, r->tgt, r->cls, r->perm,
 					r->effect, r->invert);
 		if (ret) {
-			pr_warn("[selinux:%s]: %s %s:%s %s -> err %d (skipped)\n",
-				grp->name, r->src, r->tgt, r->cls, r->perm, ret);
+			pr_warn
+			    ("[selinux:%s]: %s %s:%s %s -> err %d (skipped)\n",
+			     grp->name, r->src, r->tgt, r->cls, r->perm, ret);
 			failed++;
 		}
 	}
@@ -248,7 +244,9 @@ int __init sepolicy_init(void)
 
 	ret = load_policy();
 	if (ret) {
-		pr_err("[selinux]: load_policy failed: %d, continuing with partial policy\n", ret);
+		pr_err
+		    ("[selinux]: load_policy failed: %d, continuing with partial policy\n",
+		     ret);
 	}
 
 	return 0;

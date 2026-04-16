@@ -14,43 +14,46 @@
 #include "avc_ss.h"
 #include "xfrm.h"
 
-static inline int avtab_hash(const struct avtab_key *keyp, u32 mask)
+static int avtab_remove_nohash(struct avtab *h, const struct avtab_key *key)
 {
-	static const u32 c1 = 0xcc9e2d51;
-	static const u32 c2 = 0x1b873593;
-	static const u32 r1 = 15;
-	static const u32 r2 = 13;
-	static const u32 m = 5;
-	static const u32 n = 0xe6546b64;
+	u32 i;
+	int removed = 0;
 
-	u32 hash = 0;
+	if (!h || !h->htable)
+		return -EINVAL;
 
-#define mix(input) { \
-	u32 v = input; \
-	v *= c1; \
-	v = (v << r1) | (v >> (32 - r1)); \
-	v *= c2; \
-	hash ^= v; \
-	hash = (hash << r2) | (hash >> (32 - r2)); \
-	hash = hash * m + n; \
+	for (i = 0; i < h->nslot; i++) {
+		struct avtab_node *cur = h->htable[i];
+		struct avtab_node *prev = NULL;
+
+		while (cur) {
+			struct avtab_node *next = cur->next;
+
+			if (cur->key.source_type == key->source_type &&
+			    cur->key.target_type == key->target_type &&
+			    cur->key.target_class == key->target_class &&
+			    cur->key.specified == key->specified) {
+
+				if (prev)
+					prev->next = next;
+				else
+					h->htable[i] = next;
+
+				h->nel--;
+
+				if (cur->key.specified & AVTAB_XPERMS)
+					kfree(cur->datum.u.xperms);
+
+				kfree(cur);
+				removed++;
+			} else {
+				prev = cur;
+			}
+			cur = next;
+		}
+	}
+	return removed;
 }
-
-	mix(keyp->target_class);
-	mix(keyp->target_type);
-	mix(keyp->source_type);
-
-#undef mix
-
-	hash ^= hash >> 16;
-	hash *= 0x85ebca6b;
-	hash ^= hash >> 13;
-	hash *= 0xc2b2ae35;
-	hash ^= hash >> 16;
-
-	return hash & mask;
-}
-
-extern struct selinux_state selinux_state;
 
 static struct policydb *fmac_get_pdb(void)
 {
@@ -62,11 +65,6 @@ static struct policydb *fmac_get_pdb(void)
 	    )->policydb;
 }
 
-static void *pdb_symtab_search(struct symtab *s, const char *name)
-{
-	return symtab_search(s, name);
-}
-
 static bool is_redundant(struct avtab_node *node)
 {
 	switch (node->key.specified) {
@@ -75,35 +73,6 @@ static bool is_redundant(struct avtab_node *node)
 	default:
 		return node->datum.u.data == 0U;
 	}
-}
-
-static void avtab_remove_node_safe(struct avtab *h, struct avtab_node *node)
-{
-	int hvalue;
-	struct avtab_node *prev = NULL, *cur;
-
-	if (!h || !h->htable)
-		return;
-
-	hvalue = avtab_hash(&node->key, h->mask);
-	cur = h->htable[hvalue];
-	while (cur) {
-		if (cur == node)
-			break;
-		prev = cur;
-		cur = cur->next;
-	}
-	if (!cur)
-		return;
-
-	if (prev)
-		prev->next = node->next;
-	else
-		h->htable[hvalue] = node->next;
-	h->nel--;
-
-	kfree(node->datum.u.xperms);
-	kfree(node);
 }
 
 int sepolicy_add_rule(const char *sname, const char *tname,
@@ -128,7 +97,7 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 	}
 
 	if (sname && *sname) {
-		src = pdb_symtab_search(&pdb->symtab[SYM_TYPES], sname);
+		src = symtab_search(&pdb->symtab[SYM_TYPES], sname);
 		if (!src) {
 			pr_warn("[selinux]: source type '%s' not found\n",
 				sname);
@@ -138,7 +107,7 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 	}
 
 	if (tname && *tname) {
-		tgt = pdb_symtab_search(&pdb->symtab[SYM_TYPES], tname);
+		tgt = symtab_search(&pdb->symtab[SYM_TYPES], tname);
 		if (!tgt) {
 			pr_warn("[selinux]: target type '%s' not found\n",
 				tname);
@@ -148,7 +117,7 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 	}
 
 	if (cname && *cname) {
-		cls = pdb_symtab_search(&pdb->symtab[SYM_CLASSES], cname);
+		cls = symtab_search(&pdb->symtab[SYM_CLASSES], cname);
 		if (!cls) {
 			pr_warn("[selinux]: class '%s' not found\n", cname);
 			ret = -ENOENT;
@@ -162,10 +131,10 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 			ret = -EINVAL;
 			goto out;
 		}
-		perm = pdb_symtab_search(&cls->permissions, pname);
+		perm = symtab_search(&cls->permissions, pname);
 		if (!perm && cls->comdatum)
 			perm =
-			    pdb_symtab_search(&cls->comdatum->permissions,
+			    symtab_search(&cls->comdatum->permissions,
 					      pname);
 		if (!perm) {
 			pr_warn
@@ -214,7 +183,7 @@ int sepolicy_add_rule(const char *sname, const char *tname,
 	}
 
 	if (is_redundant(node))
-		avtab_remove_node_safe(&pdb->te_avtab, node);
+		avtab_remove_nohash(&pdb->te_avtab, node);
 
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
