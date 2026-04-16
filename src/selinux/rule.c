@@ -19,8 +19,8 @@
 
 #ifndef hashtab_for_each
 #define hashtab_for_each(h, node) \
-	for (int i = 0; i < (h)->size; i++) \
-		for (node = (h)->htable[i]; node; node = node->next)
+    for (int i = 0; i < (h).size; i++) \
+        for (node = (h).htable[i]; node; node = node->next)
 #endif
 
 static struct policydb *fmac_get_pdb(void)
