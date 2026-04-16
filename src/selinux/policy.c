@@ -145,6 +145,8 @@ static const struct sepolicy_rule exec_rules[] = {
 
 	ALLOW("nksu", "toolbox_exec", "file", "execute"),
 	ALLOW("nksu", "shell_exec", "file", "execute"),
+	ALLOW("nksu", "shell_exec", "file", "read"),
+    ALLOW("nksu", "shell_exec", "file", "open"),
 };
 
 static const struct sepolicy_rule cap_rules[] = {
