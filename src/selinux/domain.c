@@ -141,8 +141,8 @@ int sepolicy_add_domain(const char *name)
 	mutex_lock(&selinux_state.policy_mutex);
 
 	policy = rcu_dereference_protected(selinux_state.policy,
-					   lockdep_is_held(&selinux_state.
-							   policy_mutex));
+					   lockdep_is_held
+					   (&selinux_state.policy_mutex));
 	if (!policy) {
 		rc = -EINVAL;
 		goto out;
