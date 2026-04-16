@@ -51,6 +51,21 @@ int set_domain(const char *domain, struct cred *new_cred)
 
 }
 
+bool do_allow(struct policydb *db, const char *type_name)
+{
+       struct type_datum *type;
+      type = (struct type_datum *)symtab_search(&db->p_types, type_name);
+       if (type == NULL) {
+               pr_err("type null,do_allow false\n");
+               return false;
+       }
+       if (ebitmap_set_bit(&db->permissive_map, type->value, true)) {
+               pr_err("can't set bitmap\n");
+               return false;
+      }
+      return true;
+}
+
 int init_selinux_hook(void)
 {
 	struct policydb *db;
@@ -68,6 +83,7 @@ int init_selinux_hook(void)
 		pr_err("Failed to add domain 'nksu': %d\n", rc);
 		return rc;
 	}
+	do_allow(db,DOMAIN);
     rc = sepolicy_allow_any_any(DOMAIN);
 	if (rc) {
 		pr_err("Failed to allow all 'nksu': %d\n", rc);
