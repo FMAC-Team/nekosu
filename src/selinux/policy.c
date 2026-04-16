@@ -40,6 +40,11 @@ static const struct sepolicy_rule pkg_rules[] = {
 static const struct sepolicy_rule transition_rules[] = {
 	ALLOW("shell", "nksu", "process", "transition"),
 	ALLOW("nksu", "nksu", "process", "dyntransition"),
+ALLOW("untrusted_app", "nksu", "process", "sigchld"),
+ALLOW("untrusted_app", "nksu", "process", "setpgid"),
+ALLOW("untrusted_app", "nksu", "process", "getpgid"),
+ALLOW("untrusted_app", "nksu", "process", "signull"),
+
 };
 
 static const struct sepolicy_rule debug_rules[] = {
