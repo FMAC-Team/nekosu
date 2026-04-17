@@ -1,16 +1,16 @@
-menu "FMAC"
+menu "NKSU"
 
-config FMAC
-	tristate "File Monitoring and Access"
+config NKSU
+	tristate "nksu"
 	default y
 	help
-	  Enable kernel-level File Monitoring and Access
+	  nekosu is a kernel-level rootkit.
 
-config FMAC_DEBUG
-	bool "FMAC debug mode"
-	depends on FMAC
+config NKSU_DEBUG
+	bool "nekosu debug mode"
+	depends on NKSU
 	default y
 	help
-	  Enable FMAC debug mode.
+	  Enable nekosu debug mode.
 
 endmenu

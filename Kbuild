@@ -1,12 +1,12 @@
-fmac-y += src/anonfd.o src/nksu.o src/privilege.o src/tracepoint.o src/ioctl.o src/uid_cap.o src/manager.o
+nksu-y += src/anonfd.o src/nksu.o src/privilege.o src/tracepoint.o src/ioctl.o src/uid_cap.o src/manager.o
 
-fmac-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/selinux/domain.o
+nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/selinux/domain.o
 
 
-obj-$(CONFIG_FMAC) += fmac.o
+obj-$(CONFIG_NKSU) += nksu.o
 
-ifeq($(CONFIG_FMAC_DEBUG),y)
-	ccflags-y += -DCONFIG_FMAC_DEBUG=1
+ifeq ($(CONFIG_NKSU_DEBUG),y)
+	ccflags-y += -DCONFIG_NKSU_DEBUG=1
 endif
 
 ccflags-y += -I$(srctree)/security/selinux
