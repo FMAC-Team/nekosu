@@ -5,7 +5,7 @@ nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/seli
 
 obj-$(CONFIG_NKSU) += nksu.o
 
-ifeq($(CONFIG_NKSU_DEBUG),y)
+ifeq ($(CONFIG_NKSU_DEBUG),y)
 	ccflags-y += -DCONFIG_NKSU_DEBUG=1
 endif
 
