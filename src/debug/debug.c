@@ -1,5 +1,6 @@
 #include <trace/events/selinux.h>
 #include <linux/lsm_audit.h>
+#include <fmac.h>
 
 static u32 nksu_sid;
 
