@@ -1,4 +1,6 @@
 #include <linux/kprobes.h>
+#include <linux/version.h>
+#include <fmac.h>
 
 #include "ss/policydb.h"
 #include "ss/services.h"
