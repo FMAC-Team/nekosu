@@ -86,7 +86,7 @@ int __init init_selinux_hook(void)
 		pr_err("Failed to add domain 'nksu': %d\n", rc);
 		return rc;
 	}
-	// do_allow(db,DOMAIN);
+	 do_allow(db,DOMAIN);
 	rc = sepolicy_init();
 	if (rc) {
 		pr_err("Failed to apply rules 'nksu': %d\n", rc);
