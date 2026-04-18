@@ -40,23 +40,18 @@ static int avc_noaudit_ret(struct kretprobe_instance *ri,
                            struct pt_regs *regs)
 {
     struct noaudit_data *d = (struct noaudit_data *)ri->data;
-
-    if (d->ssid != nksu_sid && d->tsid != nksu_sid)
-        return 0;
-
     struct av_decision *avd = (struct av_decision *)d->avd;
     if (!avd)
         return 0;
 
-    u32 denied      = d->requested & ~avd->allowed;
-    u32 dontaudited = denied & ~avd->auditdeny;
-
+    u32 denied = d->requested & ~avd->allowed;
     if (!denied)
         return 0;
 
     pr_warn("[nksu/avc] ssid=%u tsid=%u tclass=%u "
-            "denied=0x%x silenced_by_dontaudit=0x%x\n",
-            d->ssid, d->tsid, d->tclass, denied, dontaudited);
+            "denied=0x%x silenced=0x%x\n",
+            d->ssid, d->tsid, d->tclass, denied,
+            denied & ~avd->auditdeny);
     return 0;
 }
 
