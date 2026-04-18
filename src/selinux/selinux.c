@@ -76,24 +76,32 @@ int __init init_selinux_hook(void)
 	if (!selinux_state.policy)
 		return -1;
 
-	db = &selinux_state.policy->policydb;
 	if (!getenforce()) {
 		pr_info("[selinux]: enforcing is false,set 1\n");
 		setenforce(true);
 	}
+
 	rc = sepolicy_add_domain(DOMAIN);
 	if (rc) {
 		pr_err("Failed to add domain 'nksu': %d\n", rc);
 		return rc;
 	}
-	#ifdef CONFIG_NKSU_DEBUG
-	pr_info("[selinux]: debug mod，do allowed.");
-	do_allow(db,DOMAIN);
-	#endif
+
 	rc = sepolicy_init();
 	if (rc) {
 		pr_err("Failed to apply rules 'nksu': %d\n", rc);
 		return rc;
 	}
+
+#ifdef CONFIG_NKSU_DEBUG
+	pr_info("[selinux]: debug mode, setting permissive\n");
+	mutex_lock(&selinux_state.policy_mutex);
+	db = &rcu_dereference_protected(selinux_state.policy,
+		lockdep_is_held(&selinux_state.policy_mutex))->policydb;
+	do_allow(db, DOMAIN);
+	mutex_unlock(&selinux_state.policy_mutex);
+	avc_reset();
+#endif
+
 	return 0;
 }

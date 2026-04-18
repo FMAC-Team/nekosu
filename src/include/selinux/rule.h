@@ -7,4 +7,5 @@ int sepolicy_allow_all_types(const char *sname, const char *cname);
 int sepolicy_add_typeattribute(const char *type_name, const char *attr_name);
 int sepolicy_add_xperm(const char *s, const char *t, const char *c,
 		       const char *range, int effect, bool invert);
+void avc_reset(void);
 #endif

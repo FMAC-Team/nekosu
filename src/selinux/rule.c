@@ -33,7 +33,7 @@ static struct policydb *fmac_get_pdb(void)
 	    )->policydb;
 }
 
-static void avc_reset(void)
+void avc_reset(void)
 {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
 	avc_ss_reset(0);
