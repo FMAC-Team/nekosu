@@ -18,7 +18,7 @@ ccflags-y += -I$(IDIR)
 ccflags-y += -I$(objtree)/security/selinux
 ccflags-y += -include $(srctree)/include/uapi/asm-generic/errno.h
 
-ccflags-y += -std=gnu11
+ccflags-y += -std=gnu99
 ccflags-y += -Wno-unused-variable
 ccflags-y += -Werror=implicit-function-declaration
 ccflags-y += -Werror=return-type
