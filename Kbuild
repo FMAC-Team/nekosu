@@ -7,6 +7,8 @@ obj-$(CONFIG_NKSU) += nksu.o
 
 ifeq ($(CONFIG_NKSU_DEBUG),y)
 	ccflags-y += -DCONFIG_NKSU_DEBUG=1
+else
+	ccflags-y += -O3
 endif
 
 ccflags-y += -I$(srctree)/security/selinux
