@@ -375,79 +375,77 @@ static void xperms_set_range(u32 *perms, u16 low, u16 high, bool invert)
 }
 
 static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
-				   struct type_datum *tgt,
-				   struct class_datum *cls, u16 low, u16 high,
-				   int effect, bool invert)
+                                   struct type_datum *tgt, struct class_datum *cls,
+                                   u16 low, u16 high, int effect, bool invert)
 {
-	struct hashtab_node *node;
-	struct avtab_key key;
-	struct avtab_node *av_node;
-	u8 d_low,d_high ;
-	struct avtab_extended_perms *x;
-	
-	if (!src) {
-		hashtab_for_each(db->p_types.table, node) {
-			sepolicy_add_xperm_raw(db,
-					       (struct type_datum *)node->datum,
-					       tgt, cls, low, high, effect,
-					       invert);
-		}
-		return;
-	}
-	if (!tgt) {
-		hashtab_for_each(db->p_types.table, node) {
-			sepolicy_add_xperm_raw(db, src,
-					       (struct type_datum *)node->datum,
-					       cls, low, high, effect, invert);
-		}
-		return;
-	}
-	if (!cls) {
-		hashtab_for_each(db->p_classes.table, node) {
-			sepolicy_add_xperm_raw(db, src, tgt,
-					       (struct class_datum *)node->
-					       datum, low, high, effect,
-					       invert);
-		}
-		return;
-	}
-	d_low = (u8) (low >> 8);
-    d_high = (u8) (high >> 8);
+    struct hashtab_node *node;
 
-	key.source_type = src->value;
-	key.target_type = tgt->value;
-	key.target_class = cls->value;
-	key.specified = effect;
+    if (!src) {
+        hashtab_for_each(db->p_types.table, node)
+            sepolicy_add_xperm_raw(db, (struct type_datum *)node->datum,
+                                   tgt, cls, low, high, effect, invert);
+        return;
+    }
+    if (!tgt) {
+        hashtab_for_each(db->p_types.table, node)
+            sepolicy_add_xperm_raw(db, src, (struct type_datum *)node->datum,
+                                   cls, low, high, effect, invert);
+        return;
+    }
+    if (!cls) {
+        hashtab_for_each(db->p_classes.table, node)
+            sepolicy_add_xperm_raw(db, src, tgt,
+                                   (struct class_datum *)node->datum,
+                                   low, high, effect, invert);
+        return;
+    }
 
-	av_node = avtab_search_node(&db->te_avtab, &key);
-	if (!av_node) {
-		struct avtab_datum datum;
-		memset(&datum, 0, sizeof(datum));
-		datum.u.xperms =
-		    kzalloc(sizeof(struct avtab_extended_perms), GFP_KERNEL);
-		if (!datum.u.xperms)
-			return;
-		if (d_low != d_high) {
-			datum.u.xperms->specified = AVTAB_XPERMS_IOCTLDRIVER;
-		} else {
-			datum.u.xperms->specified = AVTAB_XPERMS_IOCTLFUNCTION;
-			datum.u.xperms->driver = d_low;
-		}
+    u8 d_low  = (u8)(low  >> 8);
+    u8 d_high = (u8)(high >> 8);
 
-		av_node = avtab_insert_nonunique(&db->te_avtab, &key, &datum);
-		if (!av_node) {
-			kfree(datum.u.xperms);
-			return;
-		}
-	}
+    struct avtab_key key = {
+        .source_type  = src->value,
+        .target_type  = tgt->value,
+        .target_class = cls->value,
+        .specified    = effect,
+    };
 
-	x = av_node->datum.u.xperms;
-	if (x->specified == AVTAB_XPERMS_IOCTLDRIVER) {
-		xperms_set_range(x->perms.p, d_low, d_high, invert);
-	} else if (x->driver == d_low) {
-		xperms_set_range(x->perms.p, (u8) (low & 0xFF),
-				 (u8) (high & 0xFF), invert);
-	}
+    struct avtab_node *av_node = avtab_search_node(&db->te_avtab, &key);
+    if (!av_node) {
+        struct avtab_extended_perms *xp =
+            kzalloc(sizeof(struct avtab_extended_perms), GFP_KERNEL);
+        if (!xp)
+            return;
+
+        if (d_low != d_high) {
+            xp->specified = AVTAB_XPERMS_IOCTLDRIVER;
+            xp->driver    = 0;
+        } else {
+            xp->specified = AVTAB_XPERMS_IOCTLFUNCTION;
+            xp->driver    = d_low;
+        }
+
+        struct avtab_datum datum = {};
+        datum.u.xperms = xp;
+
+        av_node = avtab_insert_nonunique(&db->te_avtab, &key, &datum);
+        if (!av_node) {
+            kfree(xp);
+            return;
+        }
+    }
+
+    struct avtab_extended_perms *x = av_node->datum.u.xperms;
+    if (!x)
+        return;
+
+    if (x->specified == AVTAB_XPERMS_IOCTLDRIVER) {
+        xperms_set_range(x->perms.p, d_low, d_high, invert);
+    } else if (x->driver == d_low) {
+        xperms_set_range(x->perms.p,
+                         (u8)(low  & 0xFF),
+                         (u8)(high & 0xFF), invert);
+    }
 }
 
 int sepolicy_add_xperm(const char *s, const char *t, const char *c,
