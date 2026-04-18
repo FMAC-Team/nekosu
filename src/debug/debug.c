@@ -1,4 +1,5 @@
-#include <trace/events/selinux.h>
+#include <linux/tracepoint.h>
+#include <linux/trace_events.h>
 #include <linux/lsm_audit.h>
 #include <fmac.h>
 
