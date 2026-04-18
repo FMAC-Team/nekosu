@@ -209,8 +209,6 @@ int load_policy(void)
 
 	sepolicy_add_typeattribute(DOMAIN, "mlstrustedsubject");
 
-	if (&selinux_state.policy->policydb->policyvers >=
-	    POLICYDB_VERSION_XPERMS_IOCTL) {
 		sepolicy_add_xperm(DOMAIN, NULL, "blk_file", NULL,
 				   AVTAB_XPERMS_ALLOWED, false);
 		sepolicy_add_xperm(DOMAIN, NULL, "fifo_file", NULL,
@@ -219,7 +217,6 @@ int load_policy(void)
 				   AVTAB_XPERMS_ALLOWED, false);
 		sepolicy_add_xperm(DOMAIN, NULL, "file", NULL,
 				   AVTAB_XPERMS_ALLOWED, false);
-	}
 
 	for (i = 0; i < ARRAY_SIZE(policy_groups); i++) {
 		ret = apply_group(&policy_groups[i]);
