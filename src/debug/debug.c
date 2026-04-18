@@ -1,42 +1,109 @@
-#include <linux/tracepoint.h>
-#include <linux/trace_events.h>
-#include <linux/lsm_audit.h>
-#include <fmac.h>
+#include <linux/kprobes.h>
+
+#include "ss/policydb.h"
+#include "ss/services.h"
+#include "ss/avtab.h"
+#include "avc.h"
+#include "ss/symtab.h"
+#include "ss/policydb.h"
+#include "security.h"
+#include "avc_ss.h"
+#include "xfrm.h"
+#include "ss/hashtab.h"
+#include "ss/constraint.h"
 
 static u32 nksu_sid;
 
-static void on_selinux_audited(void *data,
-                               u32 requested, u32 audited, u32 denied,
-                               int result,
-                               struct lsm_audit_data *ad,
-                               u32 ssid, u32 tsid, u16 tclass)
+static int avc_noaudit_ret(struct kretprobe_instance *ri,
+                           struct pt_regs *regs)
 {
-    char *sctx = NULL, *tctx = NULL;
-    u32 slen, tlen;
+    u32 *saved = (u32 *)ri->data;
+    u32 ssid    = saved[0];
+    u32 tsid    = saved[1];
+    u16 tclass  = (u16)saved[2];
+    u32 requested = saved[3];
 
     if (ssid != nksu_sid && tsid != nksu_sid)
-        return;
+        return 0;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
-    security_sid_to_context(ssid, &sctx, &slen);
-    security_sid_to_context(tsid, &tctx, &tlen);
-#else
-    security_sid_to_context(&selinux_state, ssid, &sctx, &slen);
-    security_sid_to_context(&selinux_state, tsid, &tctx, &tlen);
-#endif
+    struct av_decision *avd = (struct av_decision *)saved[4];
+    if (!avd)
+        return 0;
 
-    pr_warn("[nksu/avc] %s sctx=%s tsid=%s tclass=%u "
-            "req=0x%x audited=0x%x denied=0x%x result=%d\n",
-            denied ? "DENIED" : "AUDIT",
-            sctx  ? sctx  : "(unknown)",
-            tctx  ? tctx  : "(unknown)",
-            tclass, requested, audited, denied, result);
+    u32 denied = requested & ~avd->allowed;
+    if (!denied)
+        return 0;
 
-    kfree(sctx);
-    kfree(tctx);
+    u32 dontaudited = denied & ~avd->auditdeny;
+
+    pr_warn("[nksu/avc] ssid=%u tsid=%u tclass=%u "
+            "denied=0x%x dontaudit_silenced=0x%x\n",
+            ssid, tsid, tclass, denied, dontaudited);
+    return 0;
 }
 
- int debug_tracing(void)
+static int avc_noaudit_entry(struct kretprobe_instance *ri,
+                             struct pt_regs *regs)
+{
+    u32 *saved = (u32 *)ri->data;
+    saved[0] = (u32)regs->regs[1]; /* ssid */
+    saved[1] = (u32)regs->regs[2]; /* tsid */
+    saved[2] = (u32)regs->regs[3]; /* tclass */
+    saved[3] = (u32)regs->regs[4]; /* requested */
+    saved[4] = (u32)(uintptr_t)regs->regs[6];
+    return 0;
+}
+
+struct noaudit_data {
+    u32 ssid, tsid, tclass, requested;
+    uintptr_t avd;
+};
+
+static int avc_noaudit_entry2(struct kretprobe_instance *ri,
+                              struct pt_regs *regs)
+{
+    struct noaudit_data *d = (struct noaudit_data *)ri->data;
+    d->ssid      = (u32)regs->regs[1];
+    d->tsid      = (u32)regs->regs[2];
+    d->tclass    = (u16)regs->regs[3];
+    d->requested = (u32)regs->regs[4];
+    d->avd       = (uintptr_t)regs->regs[6];
+    return 0;
+}
+
+static int avc_noaudit_ret2(struct kretprobe_instance *ri,
+                            struct pt_regs *regs)
+{
+    struct noaudit_data *d = (struct noaudit_data *)ri->data;
+
+    if (d->ssid != nksu_sid && d->tsid != nksu_sid)
+        return 0;
+
+    struct av_decision *avd = (struct av_decision *)d->avd;
+    if (!avd)
+        return 0;
+
+    u32 denied       = d->requested & ~avd->allowed;
+    u32 dontaudited  = denied & ~avd->auditdeny;
+
+    if (!denied)
+        return 0;
+
+    pr_warn("[nksu/avc] ssid=%u tsid=%u tclass=%u "
+            "denied=0x%x silenced_by_dontaudit=0x%x\n",
+            d->ssid, d->tsid, d->tclass, denied, dontaudited);
+    return 0;
+}
+
+static struct kretprobe avc_rp = {
+    .symbol_name  = "avc_has_perm_noaudit",
+    .entry_handler = avc_noaudit_entry2,
+    .handler      = avc_noaudit_ret2,
+    .data_size    = sizeof(struct noaudit_data),
+    .maxactive    = 20,
+};
+
+static int debug_tracing(void)
 {
     int rc;
 
@@ -53,15 +120,19 @@ static void on_selinux_audited(void *data,
         return rc;
     }
 
+    rc = register_kretprobe(&avc_rp);
+    if (rc) {
+        pr_err("[nksu/debug] register_kretprobe failed: %d\n", rc);
+        return rc;
+    }
+
     pr_info("[nksu/debug] tracing enabled, domain='%s' sid=%u\n",
             DOMAIN, nksu_sid);
-
-    return register_trace_selinux_audited(on_selinux_audited, NULL);
+    return 0;
 }
 
- void debug_exit(void)
+static void debug_exit(void)
 {
-    unregister_trace_selinux_audited(on_selinux_audited, NULL);
-    tracepoint_synchronize_unregister();
+    unregister_kretprobe(&avc_rp);
     pr_info("[nksu/debug] tracing disabled\n");
 }
