@@ -55,7 +55,7 @@ static const struct sepolicy_rule pkg_rules[] = {
 	ALLOW(DOMAIN, "servicemanager", "fd", "use"),
 	ALLOW(DOMAIN, "domain", "fd", "use"),
 	ALLOW("domain",DOMAIN, "fd", "use"),
-	ALLOW(DOMAIN, "package_service", "service_manager", "find");
+	ALLOW(DOMAIN, "package_service", "service_manager", "find"),
 };
 
 static const struct sepolicy_rule transition_rules[] = {
