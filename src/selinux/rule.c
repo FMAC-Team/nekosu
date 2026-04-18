@@ -361,11 +361,11 @@ out:
 
 static void xperms_set_range(u32 *perms, u16 low, u16 high, bool invert)
 {
+	u16 i;
 	if (low == 0 && high == 255 && !invert) {
 		memset(perms, 0xff, 8 * sizeof(u32));	// 256 bits
 		return;
 	}
-	u16 i;
 	for (i = low; i <= high; i++) {
 		if (invert)
 			perms[i / 32] &= ~(1U << (i % 32));
@@ -380,6 +380,9 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
 				   int effect, bool invert)
 {
 	struct hashtab_node *node;
+	struct avtab_key key;
+	struct avtab_node *av_node;
+	
 	if (!src) {
 		hashtab_for_each(db->p_types.table, node) {
 			sepolicy_add_xperm_raw(db,
@@ -406,9 +409,6 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
 		}
 		return;
 	}
-
-	struct avtab_key key;
-	struct avtab_node *av_node;
 	u8 d_low = (u8) (low >> 8);
 	u8 d_high = (u8) (high >> 8);
 
@@ -441,9 +441,9 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
 
 	struct avtab_extended_perms *x = av_node->datum.u.xperms;
 	if (x->specified == AVTAB_XPERMS_IOCTLDRIVER) {
-		xperms_set_range(x->perms, d_low, d_high, invert);
+		xperms_set_range(x->perms.p, d_low, d_high, invert);
 	} else if (x->driver == d_low) {
-		xperms_set_range(x->perms, (u8) (low & 0xFF),
+		xperms_set_range(x->perms.p, (u8) (low & 0xFF),
 				 (u8) (high & 0xFF), invert);
 	}
 }
