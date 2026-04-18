@@ -32,7 +32,7 @@
 #include "manager.h"
 
 #ifdef CONFIG_NKSU_DEBUG
-#include "debug/debug.h"
+#include "../debug/debug.h"
 #endif
 
 extern struct proc_dir_entry *fmac_proc_dir;
