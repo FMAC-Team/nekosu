@@ -65,10 +65,9 @@ static void sepolicy_add_rule_raw(struct policydb *pdb,
 	} else if (tgt == NULL) {
 		hashtab_for_each(pdb->p_types.table, node) {
 			struct type_datum *type = (struct type_datum *)node->datum;
-			if (type->attribute) {
 				sepolicy_add_rule_raw(pdb, src, type, cls,
 						      perm_value, effect, invert);
-			}
+			
 		}
 	} else if (cls == NULL) {
 		hashtab_for_each(pdb->p_classes.table, node) {

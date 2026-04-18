@@ -55,6 +55,7 @@ static const struct sepolicy_rule pkg_rules[] = {
 	ALLOW(DOMAIN, "servicemanager", "fd", "use"),
 	ALLOW(DOMAIN, "domain", "fd", "use"),
 	ALLOW("domain",DOMAIN, "fd", "use"),
+	ALLOW(DOMAIN, "package_service", "service_manager", "find");
 };
 
 static const struct sepolicy_rule transition_rules[] = {
@@ -209,6 +210,8 @@ int load_policy(void)
 		ARRAY_SIZE(policy_groups));
 
 	sepolicy_add_typeattribute(DOMAIN, "mlstrustedsubject");
+	sepolicy_add_typeattribute(DOMAIN, "netdomain");
+	sepolicy_add_typeattribute(DOMAIN, "bluetoothdomain");
 
 		sepolicy_add_xperm(DOMAIN, NULL, "blk_file", NULL,
 				   AVTAB_XPERMS_ALLOWED, false);
