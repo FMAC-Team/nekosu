@@ -5,6 +5,7 @@
 #include <fmac.h>
 
 #include "ss/avtab.h"
+#include "security.h"
 
 struct sepolicy_rule {
 	const char *src;
