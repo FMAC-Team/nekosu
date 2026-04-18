@@ -379,6 +379,12 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
                                    u16 low, u16 high, int effect, bool invert)
 {
     struct hashtab_node *node;
+    struct avtab_key key;
+    struct avtab_node *av_node;
+    struct avtab_extended_perms *x;
+    struct avtab_extended_perms *xp;
+    struct avtab_datum datum;
+    u8 d_low, d_high;
 
     if (!src) {
         hashtab_for_each(db->p_types.table, node)
@@ -400,20 +406,17 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
         return;
     }
 
-    u8 d_low  = (u8)(low  >> 8);
-    u8 d_high = (u8)(high >> 8);
+    d_low  = (u8)(low  >> 8);
+    d_high = (u8)(high >> 8);
 
-    struct avtab_key key = {
-        .source_type  = src->value,
-        .target_type  = tgt->value,
-        .target_class = cls->value,
-        .specified    = effect,
-    };
+    key.source_type  = src->value;
+    key.target_type  = tgt->value;
+    key.target_class = cls->value;
+    key.specified    = effect;
 
-    struct avtab_node *av_node = avtab_search_node(&db->te_avtab, &key);
+    av_node = avtab_search_node(&db->te_avtab, &key);
     if (!av_node) {
-        struct avtab_extended_perms *xp =
-            kzalloc(sizeof(struct avtab_extended_perms), GFP_KERNEL);
+        xp = kzalloc(sizeof(struct avtab_extended_perms), GFP_KERNEL);
         if (!xp)
             return;
 
@@ -425,7 +428,7 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
             xp->driver    = d_low;
         }
 
-        struct avtab_datum datum = {};
+        memset(&datum, 0, sizeof(datum));
         datum.u.xperms = xp;
 
         av_node = avtab_insert_nonunique(&db->te_avtab, &key, &datum);
@@ -435,7 +438,7 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
         }
     }
 
-    struct avtab_extended_perms *x = av_node->datum.u.xperms;
+    x = av_node->datum.u.xperms;
     if (!x)
         return;
 
