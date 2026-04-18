@@ -128,7 +128,7 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 		set_domain(target_domain, new_cred);
 		needs_commit = true;
 	}
-	
+
 	if (flags & PRIV_SECCOMP) {
 		disable_seccomp();
 	}

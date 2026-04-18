@@ -153,35 +153,36 @@ static unsigned long push_str(unsigned long sp, const char *str, size_t len)
 static struct tracepoint *tp_sys_enter;
 static struct tracepoint *tp_sys_exit;
 
-void mark_threads_by_uid(uid_t uid) {
-    struct task_struct *g, *p;
-    rcu_read_lock();
-    for_each_process_thread(g, p) {
-        if (__kuid_val(task_uid(p)) == uid) {
-            set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-        }
-    }
-    rcu_read_unlock();
+void mark_threads_by_uid(uid_t uid)
+{
+	struct task_struct *g, *p;
+	rcu_read_lock();
+	for_each_process_thread(g, p) {
+		if (__kuid_val(task_uid(p)) == uid) {
+			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+		}
+	}
+	rcu_read_unlock();
 }
 
 void mark_threads_by_pid(pid_t pid)
 {
-    struct task_struct *task, *t;
+	struct task_struct *task, *t;
 
-    rcu_read_lock();
+	rcu_read_lock();
 
-    task = find_task_by_vpid(pid);
-    if (!task)
-        goto out;
+	task = find_task_by_vpid(pid);
+	if (!task)
+		goto out;
 
-    for_each_thread(task, t) {
-        set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
-    }
+	for_each_thread(task, t) {
+		set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+	}
 
-    set_tsk_thread_flag(task, TIF_SYSCALL_TRACEPOINT);
+	set_tsk_thread_flag(task, TIF_SYSCALL_TRACEPOINT);
 
 out:
-    rcu_read_unlock();
+	rcu_read_unlock();
 }
 
 static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
@@ -217,7 +218,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 		target_uid = (uid_t) regs->di;
 #endif
 		if (scope_lookup(target_uid)) {
-            mark_threads_by_uid(target_uid);
+			mark_threads_by_uid(target_uid);
 			pr_info("[tracepoint] Marked UID %u\n", target_uid);
 		}
 		return;
@@ -359,7 +360,7 @@ static void probe_sched_fork(void *data,
 	if (!scope_lookup(__kuid_val(task_uid(child))))
 		return;
 
-mark_threads_by_uid(__kuid_val(task_uid(child)));
+	mark_threads_by_uid(__kuid_val(task_uid(child)));
 }
 
 int load_tracepoint_hook(void)

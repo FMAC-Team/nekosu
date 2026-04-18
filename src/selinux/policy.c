@@ -51,8 +51,8 @@ static const struct sepolicy_rule pkg_rules[] = {
 	ALLOW(DOMAIN, "package_native_service", "service_manager", "find"),
 	ALLOW(DOMAIN, "activity_service", "service_manager", "find"),
 	ALLOW(DOMAIN, "system_server", "fd", "use"),
-    ALLOW(DOMAIN, "servicemanager", "fd", "use"),
-    ALLOW("system_server", DOMAIN, "fd", "use"), 
+	ALLOW(DOMAIN, "servicemanager", "fd", "use"),
+	ALLOW("system_server", DOMAIN, "fd", "use"),
 };
 
 static const struct sepolicy_rule transition_rules[] = {
@@ -92,9 +92,8 @@ static const struct sepolicy_rule binder_rules[] = {
 	ALLOW(DOMAIN, "binder_device", "chr_file", NULL),
 	ALLOW(DOMAIN, NULL, "binder", NULL),
 	ALLOW("servicemanager", DOMAIN, "binder", NULL),
-	ALLOW("system_server", DOMAIN, "binder", "call"),
-	ALLOW("system_server", DOMAIN, "binder", "transfer"),
-    ALLOW("installd", DOMAIN, "binder", "call"),
+	ALLOW("system_server", DOMAIN, NULL, NULL),
+	ALLOW("installd", DOMAIN, "binder", "call"),
 };
 
 static const struct sepolicy_rule prop_ext_rules[] = {
