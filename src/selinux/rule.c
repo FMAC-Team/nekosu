@@ -382,6 +382,8 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
 	struct hashtab_node *node;
 	struct avtab_key key;
 	struct avtab_node *av_node;
+	u8 d_low,d_high ;
+	struct avtab_extended_perms *x;
 	
 	if (!src) {
 		hashtab_for_each(db->p_types.table, node) {
@@ -409,8 +411,8 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
 		}
 		return;
 	}
-	u8 d_low = (u8) (low >> 8);
-	u8 d_high = (u8) (high >> 8);
+	d_low = (u8) (low >> 8);
+    d_high = (u8) (high >> 8);
 
 	key.source_type = src->value;
 	key.target_type = tgt->value;
@@ -439,7 +441,7 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
 		}
 	}
 
-	struct avtab_extended_perms *x = av_node->datum.u.xperms;
+	x = av_node->datum.u.xperms;
 	if (x->specified == AVTAB_XPERMS_IOCTLDRIVER) {
 		xperms_set_range(x->perms.p, d_low, d_high, invert);
 	} else if (x->driver == d_low) {
