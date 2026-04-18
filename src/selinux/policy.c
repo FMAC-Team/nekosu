@@ -51,9 +51,8 @@ static const struct sepolicy_rule global_file_access_rules[] = {
 static const struct sepolicy_rule pkg_rules[] = {
 	ALLOW(DOMAIN, "package_native_service", "service_manager", "find"),
 	ALLOW(DOMAIN, "activity_service", "service_manager", "find"),
-	ALLOW(DOMAIN, "system_server", "fd", "use"),
+	ALLOW(DOMAIN, "system_server", NULL, NULL),
 	ALLOW(DOMAIN, "servicemanager", "fd", "use"),
-	ALLOW("system_server", DOMAIN, "fd", "use"),
 };
 
 static const struct sepolicy_rule transition_rules[] = {
