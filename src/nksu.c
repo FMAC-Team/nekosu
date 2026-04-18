@@ -112,7 +112,10 @@ static int __init nekosu_init(void)
 	int ret;
 
 	pr_info("Loading nekosu module...\n");
-
+	
+#ifdef CONFIG_NKSU_DEBUG
+	pr_alert("The current build is in debug mode, and security may be compromised.\n");
+#endif
 	ret = nekosu_init_all_components();
 	if (ret) {
 		pr_err("Failed to initialize nekosu: %d\n", ret);
