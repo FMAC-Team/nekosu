@@ -64,9 +64,11 @@ static void sepolicy_add_rule_raw(struct policydb *pdb,
 		}
 	} else if (tgt == NULL) {
 		hashtab_for_each(pdb->p_types.table, node) {
-			sepolicy_add_rule_raw(pdb, src,
-					      (struct type_datum *)node->datum,
-					      cls, perm_value, effect, invert);
+			struct type_datum *type = (struct type_datum *)node->datum;
+			if (type->attribute) {
+				sepolicy_add_rule_raw(pdb, src, type, cls,
+						      perm_value, effect, invert);
+			}
 		}
 	} else if (cls == NULL) {
 		hashtab_for_each(pdb->p_classes.table, node) {
@@ -90,6 +92,9 @@ static void sepolicy_add_rule_raw(struct policydb *pdb,
 			datum.u.data = (effect == AVTAB_AUDITDENY) ? ~0U : 0U;
 			av_node = avtab_insert_nonunique(&pdb->te_avtab, &key,
 							 &datum);
+			if (av_node)
+				pdb->len += sizeof(struct avtab_key)
+					  + sizeof(struct avtab_datum);
 		}
 
 		if (av_node) {
@@ -436,6 +441,9 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
             kfree(xp);
             return;
         }
+        db->len += sizeof(struct avtab_key) + sizeof(struct avtab_datum)
+          + sizeof(u8) + sizeof(u8)
+          + sizeof(u32) * 8;  /* ARRAY_SIZE(xperms->perms.p) */
     }
 
     x = av_node->datum.u.xperms;
