@@ -31,6 +31,10 @@
 #include "uid_caps.h"
 #include "manager.h"
 
+#ifdef CONFIG_NKSU_DEBUG
+#include "debug/debug.h"
+#endif
+
 extern struct proc_dir_entry *fmac_proc_dir;
 
 #define MAX_PATH_LEN 1024
