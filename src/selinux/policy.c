@@ -25,6 +25,8 @@ struct sepolicy_rule {
 
 #define DENY(_src, _tgt, _cls, _perm) \
     RULE(_src, _tgt, _cls, _perm, AVTAB_AUDITDENY, true)
+    
+#define ALL NULL
 
 struct sepolicy_group {
 	const char *name;
@@ -38,38 +40,38 @@ static const struct sepolicy_rule su_rules[] = {
 };
 
 static const struct sepolicy_rule ksu_rules[] = {
-   ALLOW("servicemanager", KERNEL_SU_DOMAIN, "dir", "search");
-    ALLOW("servicemanager", KERNEL_SU_DOMAIN, "dir", "read");
-    ALLOW("servicemanager", KERNEL_SU_DOMAIN, "file", "open");
-    ALLOW("servicemanager", KERNEL_SU_DOMAIN, "file", "read");
-    ALLOW("servicemanager", KERNEL_SU_DOMAIN, "process", "getattr");
-    ALLOW("domain", KERNEL_SU_DOMAIN, "process", "sigchld");
+   ALLOW("servicemanager", KERNEL_SU_DOMAIN, "dir", "search"),
+    ALLOW("servicemanager", KERNEL_SU_DOMAIN, "dir", "read"),
+    ALLOW("servicemanager", KERNEL_SU_DOMAIN, "file", "open"),
+    ALLOW("servicemanager", KERNEL_SU_DOMAIN, "file", "read"),
+    ALLOW("servicemanager", KERNEL_SU_DOMAIN, "process", "getattr"),
+    ALLOW("domain", KERNEL_SU_DOMAIN, "process", "sigchld"),
 
     // allowLog
-    ALLOW("logd", KERNEL_SU_DOMAIN, "dir", "search");
-    ALLOW("logd", KERNEL_SU_DOMAIN, "file", "read");
-    ALLOW("logd", KERNEL_SU_DOMAIN, "file", "open");
-    ALLOW("logd", KERNEL_SU_DOMAIN, "file", "getattr");
+    ALLOW("logd", KERNEL_SU_DOMAIN, "dir", "search"),
+    ALLOW("logd", KERNEL_SU_DOMAIN, "file", "read"),
+    ALLOW("logd", KERNEL_SU_DOMAIN, "file", "open"),
+    ALLOW("logd", KERNEL_SU_DOMAIN, "file", "getattr"),
 
     // dumpsys, send fd
-    ALLOW("domain", KERNEL_SU_DOMAIN, "fd", "use");
-    ALLOW("domain", KERNEL_SU_DOMAIN, "fifo_file", "write");
-    ALLOW("domain", KERNEL_SU_DOMAIN, "fifo_file", "read");
-    ALLOW("domain", KERNEL_SU_DOMAIN, "fifo_file", "open");
-    ALLOW("domain", KERNEL_SU_DOMAIN, "fifo_file", "getattr");
+    ALLOW("domain", KERNEL_SU_DOMAIN, "fd", "use"),
+    ALLOW("domain", KERNEL_SU_DOMAIN, "fifo_file", "write"),
+    ALLOW("domain", KERNEL_SU_DOMAIN, "fifo_file", "read"),
+    ALLOW("domain", KERNEL_SU_DOMAIN, "fifo_file", "open"),
+    ALLOW("domain", KERNEL_SU_DOMAIN, "fifo_file", "getattr"),
 
     // bootctl
-    ALLOW("hwservicemanager", KERNEL_SU_DOMAIN, "dir", "search");
-    ALLOW("hwservicemanager", KERNEL_SU_DOMAIN, "file", "read");
-    ALLOW("hwservicemanager", KERNEL_SU_DOMAIN, "file", "open");
-    ALLOW("hwservicemanager", KERNEL_SU_DOMAIN, "process", "getattr");
+    ALLOW("hwservicemanager", KERNEL_SU_DOMAIN, "dir", "search"),
+    ALLOW("hwservicemanager", KERNEL_SU_DOMAIN, "file", "read"),
+    ALLOW("hwservicemanager", KERNEL_SU_DOMAIN, "file", "open"),
+    ALLOW("hwservicemanager", KERNEL_SU_DOMAIN, "process", "getattr"),
 
     // Allow all binder transactions
-    ALLOW("domain", KERNEL_SU_DOMAIN, "binder", ALL);
+    ALLOW("domain", KERNEL_SU_DOMAIN, "binder", ALL),
 
     // Allow system server kill su process
-    ALLOW("system_server", KERNEL_SU_DOMAIN, "process", "getpgid");
-    ALLOW("system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
+    ALLOW("system_server", KERNEL_SU_DOMAIN, "process", "getpgid"),
+    ALLOW("system_server", KERNEL_SU_DOMAIN, "process", "sigkill"),
 };
 
 #define GROUP(_name, _rules, _required) \
