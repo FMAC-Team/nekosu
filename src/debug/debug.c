@@ -61,7 +61,7 @@ static int avc_noaudit_ret(struct kretprobe_instance *ri,
 }
 
 static struct kretprobe avc_rp = {
-    .kp.symbol_name = "avc_has_perm_noaudit",  /* 5.10/5.15 正确字段 */
+    .kp.symbol_name = "avc_has_perm_noaudit",
     .entry_handler  = avc_noaudit_entry,
     .handler        = avc_noaudit_ret,
     .data_size      = sizeof(struct noaudit_data),
@@ -73,15 +73,15 @@ int debug_tracing(void)
     int rc;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
-    rc = security_context_to_sid(DOMAIN, strlen(DOMAIN),
+    rc = security_context_to_sid(DOMAIN_CTX, strlen(DOMAIN_CTX),
                                  &nksu_sid, GFP_KERNEL);
 #else
-    rc = security_context_to_sid(&selinux_state, DOMAIN, strlen(DOMAIN),
+    rc = security_context_to_sid(&selinux_state, DOMAIN_CTX, strlen(DOMAIN_CTX),
                                  &nksu_sid, GFP_KERNEL);
 #endif
     if (rc) {
         pr_err("[nksu/debug] failed to resolve SID for '%s': %d\n",
-               DOMAIN, rc);
+               DOMAIN_CTX, rc);
         return rc;
     }
 
@@ -92,7 +92,7 @@ int debug_tracing(void)
     }
 
     pr_info("[nksu/debug] tracing enabled, domain='%s' sid=%u\n",
-            DOMAIN, nksu_sid);
+            DOMAIN_CTX, nksu_sid);
     return 0;
 }
 
