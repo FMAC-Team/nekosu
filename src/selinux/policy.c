@@ -37,6 +37,7 @@ struct sepolicy_group {
 };
 
 static const struct sepolicy_rule ksu_rules[] = {
+    ALLOW("init", DOMAIN, NULL, NULL),
 	ALLOW("servicemanager", DOMAIN, "dir",     "search"),
 	ALLOW("servicemanager", DOMAIN, "dir",     "read"),
 	ALLOW("servicemanager", DOMAIN, "file",    "open"),
