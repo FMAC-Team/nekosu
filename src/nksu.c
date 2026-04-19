@@ -53,13 +53,6 @@ static const module_component_t core_components[] = {
 	 .init = appscan_init,
 	 .exit = NULL,
 	  },
-#ifdef CONFIG_NKSU_DEBUG
-	    {
-	    .name = "debug tracing",
-	    .init = debug_tracing,
-	    .exit = debug_exit,
-	    },
-#endif
 };
 
 #define CORE_COMPONENTS_COUNT ARRAY_SIZE(core_components)

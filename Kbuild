@@ -14,7 +14,6 @@ obj-$(CONFIG_NKSU) += nksu.o
 
 ifeq ($(CONFIG_NKSU_DEBUG),y)
 	ccflags-y += -DCONFIG_NKSU_DEBUG=1
-	nksu-y += src/debug/debug.o
 else
 	ccflags-y += -O3
 endif
