@@ -23,8 +23,6 @@
 		for (node = (h).htable[i]; node; node = node->next)
 #endif
 
-#define strip_av(effect, invert) (((effect) == AVTAB_AUDITDENY) == !(invert))
-
 static struct policydb *fmac_get_pdb(void)
 {
 	if (!selinux_state.policy)
@@ -57,34 +55,18 @@ static void sepolicy_add_rule_raw(struct policydb *pdb,
 	struct hashtab_node *node;
 
 	if (src == NULL) {
-		if (strip_av(effect, invert)) {
-			hashtab_for_each(pdb->p_types.table, node) {
-				sepolicy_add_rule_raw(pdb,
-						      (struct type_datum *)node->datum,
-						      tgt, cls, perm_value, effect, invert);
-			}
-		} else {
-			hashtab_for_each(pdb->p_types.table, node) {
-				struct type_datum *t = (struct type_datum *)node->datum;
-				if (t->attribute)
-					sepolicy_add_rule_raw(pdb, t, tgt, cls,
-							      perm_value, effect, invert);
-			}
+		hashtab_for_each(pdb->p_types.table, node) {
+			struct type_datum *t = (struct type_datum *)node->datum;
+			if (!t->attribute)
+				sepolicy_add_rule_raw(pdb, t, tgt, cls,
+						      perm_value, effect, invert);
 		}
 	} else if (tgt == NULL) {
-		if (strip_av(effect, invert)) {
-			hashtab_for_each(pdb->p_types.table, node) {
-				sepolicy_add_rule_raw(pdb, src,
-						      (struct type_datum *)node->datum,
-						      cls, perm_value, effect, invert);
-			}
-		} else {
-			hashtab_for_each(pdb->p_types.table, node) {
-				struct type_datum *t = (struct type_datum *)node->datum;
-				if (t->attribute)
-					sepolicy_add_rule_raw(pdb, src, t, cls,
-							      perm_value, effect, invert);
-			}
+		hashtab_for_each(pdb->p_types.table, node) {
+			struct type_datum *t = (struct type_datum *)node->datum;
+			if (!t->attribute)
+				sepolicy_add_rule_raw(pdb, src, t, cls,
+						      perm_value, effect, invert);
 		}
 	} else if (cls == NULL) {
 		hashtab_for_each(pdb->p_classes.table, node) {
@@ -229,8 +211,8 @@ int sepolicy_allow_all_types(const char *sname, const char *cname)
 		}
 	}
 
-	sepolicy_add_rule_raw(pdb, src, NULL, cls, 0, AVTAB_ALLOWED,    false);
-	sepolicy_add_rule_raw(pdb, src, NULL, cls, 0, AVTAB_AUDITDENY,  true);
+	sepolicy_add_rule_raw(pdb, src, NULL, cls, 0, AVTAB_ALLOWED,   false);
+	sepolicy_add_rule_raw(pdb, src, NULL, cls, 0, AVTAB_AUDITDENY, true);
 
 	pr_info("[selinux]: granted '%s' all perms to all types over class '%s'\n",
 		sname ? sname : "*", cname ? cname : "*");
@@ -566,10 +548,10 @@ int sepolicy_make_audit(void)
 
 out:
 	mutex_unlock(&selinux_state.policy_mutex);
-	
+
 	if (ret == 0)
 		avc_reset();
-		
+
 	return ret;
 }
 #endif
