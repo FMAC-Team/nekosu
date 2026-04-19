@@ -38,6 +38,11 @@ static const module_component_t core_components[] = {
 	 .init = uid_caps_init,
 	 .exit = uid_caps_exit,
 	  },
+	  {
+	  .name = "task mark",
+	  .init = nksu_task_mark_init,
+	  .exit = nksu_task_mark_exit,
+	  },
 	{
 	 .name = "tracepoint hook",
 	 .init = load_tracepoint_hook,
