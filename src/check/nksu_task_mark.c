@@ -8,17 +8,17 @@
 #define NKSU_NONZERO_THRESH  4
 
 #include <linux/android_kabi.h>
+#include <linux/version.h>
 
-#define _NKSU_KABI_FIELD_NAME(n) \
-    ({ struct task_struct _t; (void)_t.ANDROID_KABI_RESERVE(n); })
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#  define NKSU_KABI_FIELD __kabi_reserved1
+#else
+#  define NKSU_KABI_FIELD android_kabi_reserved1
+#endif
 
 static __always_inline u32 *nksu_mark_ptr(struct task_struct *task)
 {
-#if defined(CONFIG_ANDROID_KABI_RESERVE)
-    return (u32 *)&task->android_kabi_reserved1;
-#else
-    return (u32 *)&task->__kabi_reserved1;
-#endif
+    return (u32 *)&task->NKSU_KABI_FIELD;
 }
 
 static int nksu_kabi_sample_nonzero(void)
