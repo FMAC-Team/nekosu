@@ -489,3 +489,65 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
         }
     }
 }
+
+int sepolicy_add_xperm(const char *s, const char *t, const char *c,
+                       const char *range, int effect, bool invert)
+{
+    struct policydb *pdb;
+    struct type_datum *src = NULL, *tgt = NULL;
+    struct class_datum *cls = NULL;
+    u16 low = 0, high = 0;
+    int ret = 0;
+
+    if (!range || !*range) {
+        low  = 0;
+        high = 0xFFFF;
+    } else if (strchr(range, '-')) {
+        if (sscanf(range, "0x%hx-0x%hx", &low, &high) != 2 &&
+            sscanf(range, "%hx-%hx",     &low, &high) != 2)
+            return -EINVAL;
+    } else {
+        if (sscanf(range, "0x%hx", &low) != 1 &&
+            sscanf(range, "%hx",   &low) != 1)
+            return -EINVAL;
+        high = low;
+    }
+
+    if (low > high)
+        return -EINVAL;
+
+    mutex_lock(&selinux_state.policy_mutex);
+
+    pdb = fmac_get_pdb();
+    if (!pdb) { ret = -ENOENT; goto out; }
+
+    if (s && *s) {
+        src = symtab_search(&pdb->symtab[SYM_TYPES], s);
+        if (!src) {
+            pr_warn("[selinux]: source type '%s' not found\n", s);
+            ret = -ENOENT; goto out;
+        }
+    }
+    if (t && *t) {
+        tgt = symtab_search(&pdb->symtab[SYM_TYPES], t);
+        if (!tgt) {
+            pr_warn("[selinux]: target type '%s' not found\n", t);
+            ret = -ENOENT; goto out;
+        }
+    }
+    if (c && *c) {
+        cls = symtab_search(&pdb->symtab[SYM_CLASSES], c);
+        if (!cls) {
+            pr_warn("[selinux]: class '%s' not found\n", c);
+            ret = -ENOENT; goto out;
+        }
+    }
+
+    sepolicy_add_xperm_raw(pdb, src, tgt, cls, low, high, effect, invert);
+
+out:
+    mutex_unlock(&selinux_state.policy_mutex);
+    if (ret == 0)
+        avc_reset();
+    return ret;
+}
