@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -6,6 +7,8 @@
 
 #include "ss/avtab.h"
 #include "security.h"
+
+#define ALL NULL
 
 struct sepolicy_rule {
 	const char *src;
@@ -17,16 +20,14 @@ struct sepolicy_rule {
 };
 
 #define RULE(_src, _tgt, _cls, _perm, _effect, _invert) \
-    { .src = (_src), .tgt = (_tgt), .cls = (_cls), .perm = (_perm), \
-      .effect = (_effect), .invert = (_invert) }
+	{ .src = (_src), .tgt = (_tgt), .cls = (_cls), .perm = (_perm), \
+	  .effect = (_effect), .invert = (_invert) }
 
 #define ALLOW(_src, _tgt, _cls, _perm) \
-    RULE(_src, _tgt, _cls, _perm, AVTAB_ALLOWED, false)
+	RULE(_src, _tgt, _cls, _perm, AVTAB_ALLOWED, false)
 
 #define DENY(_src, _tgt, _cls, _perm) \
-    RULE(_src, _tgt, _cls, _perm, AVTAB_AUDITDENY, true)
-    
-#define ALL NULL
+	RULE(_src, _tgt, _cls, _perm, AVTAB_AUDITDENY, true)
 
 struct sepolicy_group {
 	const char *name;
@@ -35,52 +36,37 @@ struct sepolicy_group {
 	bool required;
 };
 
-static const struct sepolicy_rule su_rules[] = {
-	ALLOW(DOMAIN, NULL, NULL, NULL),
-};
-
 static const struct sepolicy_rule ksu_rules[] = {
-   ALLOW("servicemanager", DOMAIN, "dir", "search"),
-    ALLOW("servicemanager", DOMAIN, "dir", "read"),
-    ALLOW("servicemanager", DOMAIN, "file", "open"),
-    ALLOW("servicemanager", DOMAIN, "file", "read"),
-    ALLOW("servicemanager", DOMAIN, "process", "getattr"),
-    ALLOW("domain", DOMAIN, "process", "sigchld"),
-
-    // allowLog
-    ALLOW("logd", DOMAIN, "dir", "search"),
-    ALLOW("logd", DOMAIN, "file", "read"),
-    ALLOW("logd", DOMAIN, "file", "open"),
-    ALLOW("logd", DOMAIN, "file", "getattr"),
-
-    // dumpsys, send fd
-    ALLOW("domain", DOMAIN, "fd", "use"),
-    ALLOW("domain", DOMAIN, "fifo_file", "write"),
-    ALLOW("domain", DOMAIN, "fifo_file", "read"),
-    ALLOW("domain", DOMAIN, "fifo_file", "open"),
-    ALLOW("domain", DOMAIN, "fifo_file", "getattr"),
-
-    // bootctl
-    ALLOW("hwservicemanager", DOMAIN, "dir", "search"),
-    ALLOW("hwservicemanager", DOMAIN, "file", "read"),
-    ALLOW("hwservicemanager", DOMAIN, "file", "open"),
-    ALLOW("hwservicemanager", DOMAIN, "process", "getattr"),
-
-    // Allow all binder transactions
-    ALLOW("domain", DOMAIN, "binder", ALL),
-
-    // Allow system server kill su process
-    ALLOW("system_server", DOMAIN, "process", "getpgid"),
-    ALLOW("system_server", DOMAIN, "process", "sigkill"),
+	ALLOW("servicemanager", DOMAIN, "dir",     "search"),
+	ALLOW("servicemanager", DOMAIN, "dir",     "read"),
+	ALLOW("servicemanager", DOMAIN, "file",    "open"),
+	ALLOW("servicemanager", DOMAIN, "file",    "read"),
+	ALLOW("servicemanager", DOMAIN, "process", "getattr"),
+	ALLOW("domain",         DOMAIN, "process", "sigchld"),
+	ALLOW("logd",           DOMAIN, "dir",     "search"),
+	ALLOW("logd",           DOMAIN, "file",    "read"),
+	ALLOW("logd",           DOMAIN, "file",    "open"),
+	ALLOW("logd",           DOMAIN, "file",    "getattr"),
+	ALLOW("domain",         DOMAIN, "fd",        "use"),
+	ALLOW("domain",         DOMAIN, "fifo_file", "write"),
+	ALLOW("domain",         DOMAIN, "fifo_file", "read"),
+	ALLOW("domain",         DOMAIN, "fifo_file", "open"),
+	ALLOW("domain",         DOMAIN, "fifo_file", "getattr"),
+	ALLOW("hwservicemanager", DOMAIN, "dir",     "search"),
+	ALLOW("hwservicemanager", DOMAIN, "file",    "read"),
+	ALLOW("hwservicemanager", DOMAIN, "file",    "open"),
+	ALLOW("hwservicemanager", DOMAIN, "process", "getattr"),
+	ALLOW("domain",         DOMAIN, "binder", ALL),
+	ALLOW("system_server",  DOMAIN, "process", "getpgid"),
+	ALLOW("system_server",  DOMAIN, "process", "sigkill"),
 };
 
 #define GROUP(_name, _rules, _required) \
-    { .name = (_name), .rules = (_rules), .count = ARRAY_SIZE(_rules), \
-      .required = (_required) }
+	{ .name = (_name), .rules = (_rules), \
+	  .count = ARRAY_SIZE(_rules), .required = (_required) }
 
 static const struct sepolicy_group policy_groups[] = {
-	GROUP("su_basic", su_rules, true),
-	GROUP("ksu_rules",ksu_rules,true),
+	GROUP("ksu_rules", ksu_rules, true),
 };
 
 static int apply_group(const struct sepolicy_group *grp)
@@ -95,9 +81,13 @@ static int apply_group(const struct sepolicy_group *grp)
 		ret = sepolicy_add_rule(r->src, r->tgt, r->cls, r->perm,
 					r->effect, r->invert);
 		if (ret) {
-			pr_warn
-			    ("[selinux:%s]: %s %s:%s %s -> err %d (skipped)\n",
-			     grp->name, r->src, r->tgt, r->cls, r->perm, ret);
+			pr_warn("[selinux:%s]: %s %s:%s %s -> err %d (skipped)\n",
+				grp->name,
+				r->src  ? r->src  : "*",
+				r->tgt  ? r->tgt  : "*",
+				r->cls  ? r->cls  : "*",
+				r->perm ? r->perm : "*",
+				ret);
 			failed++;
 		}
 	}
@@ -109,8 +99,8 @@ static int apply_group(const struct sepolicy_group *grp)
 			return -ENOEXEC;
 	}
 
-	pr_info("[selinux:%s]: %zu rule(s) applied (%d failed)\n",
-		grp->name, grp->count - failed, failed);
+	pr_info("[selinux:%s]: %zu/%zu rule(s) applied\n",
+		grp->name, grp->count - failed, grp->count);
 	return 0;
 }
 
@@ -120,20 +110,23 @@ int load_policy(void)
 	int ret;
 	int failed_groups = 0;
 
-	pr_info("[selinux]: loading %zu policy group(s)\n",
-		ARRAY_SIZE(policy_groups));
+	pr_info("[selinux]: loading policy for domain '%s'\n", DOMAIN);
 
 	sepolicy_add_typeattribute(DOMAIN, "mlstrustedsubject");
 	sepolicy_add_typeattribute(DOMAIN, "netdomain");
 	sepolicy_add_typeattribute(DOMAIN, "bluetoothdomain");
 
-		sepolicy_add_xperm(DOMAIN, NULL, "blk_file", NULL,
+	ret = sepolicy_allow_any_any(DOMAIN);
+	if (ret)
+		pr_warn("[selinux]: allow-any-any for '%s' failed: %d\n", DOMAIN, ret);
+
+		sepolicy_add_xperm(DOMAIN, ALL, "blk_file",  NULL,
 				   AVTAB_XPERMS_ALLOWED, false);
-		sepolicy_add_xperm(DOMAIN, NULL, "fifo_file", NULL,
+		sepolicy_add_xperm(DOMAIN, ALL, "fifo_file", NULL,
 				   AVTAB_XPERMS_ALLOWED, false);
-		sepolicy_add_xperm(DOMAIN, NULL, "chr_file", NULL,
+		sepolicy_add_xperm(DOMAIN, ALL, "chr_file",  NULL,
 				   AVTAB_XPERMS_ALLOWED, false);
-		sepolicy_add_xperm(DOMAIN, NULL, "file", NULL,
+		sepolicy_add_xperm(DOMAIN, ALL, "file",      NULL,
 				   AVTAB_XPERMS_ALLOWED, false);
 
 	for (i = 0; i < ARRAY_SIZE(policy_groups); i++) {
@@ -143,24 +136,24 @@ int load_policy(void)
 	}
 
 	if (failed_groups) {
-		pr_err("[selinux]: %d group(s) had failures\n", failed_groups);
+		pr_err("[selinux]: %d group(s) had required failures\n",
+		       failed_groups);
 		return -ENOEXEC;
 	}
 
-	pr_info("[selinux]: all policy groups applied successfully\n");
+	pr_info("[selinux]: policy loaded successfully\n");
 	return 0;
 }
 
 int __init sepolicy_init(void)
 {
 	int ret;
+
 	pr_info("[selinux]: sepolicy init\n");
 	ret = load_policy();
-	if (ret) {
-		pr_err
-		    ("[selinux]: load_policy failed: %d, continuing with partial policy\n",
-		     ret);
-	}
+	if (ret)
+		pr_err("[selinux]: load_policy failed: %d\n", ret);
+
 	return 0;
 }
 
