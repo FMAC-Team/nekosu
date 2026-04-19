@@ -10,7 +10,7 @@
 #include <linux/android_kabi.h>
 #include <linux/version.h>
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 6, 0)
 #  define NKSU_KABI_FIELD __kabi_reserved1
 #else
 #  define NKSU_KABI_FIELD android_kabi_reserved1
