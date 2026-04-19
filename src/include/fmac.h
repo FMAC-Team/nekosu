@@ -36,6 +36,7 @@
 
 #ifdef CONFIG_NKSU_SYSCALL
 #include "../syscall/dispatch.h"
+#include "../syscall/syscall.h"
 #endif
 
 extern struct proc_dir_entry *fmac_proc_dir;
