@@ -7,6 +7,9 @@
 #include <linux/rcupdate.h>
 #include <linux/hashtable.h>
 #include <linux/slab.h>
+
+#include "type.h"
+
 #include <fmac.h>
 
 static syscall_fn_t orig_dispatch;

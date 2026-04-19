@@ -1,3 +1,5 @@
+#include "type.h"
+
 int nksu_dispatch_init(void);
 void nksu_dispatch_exit(void);
 int nksu_redirect_syscall(int real_nr);
