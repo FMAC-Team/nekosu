@@ -8,4 +8,7 @@ int sepolicy_add_typeattribute(const char *type_name, const char *attr_name);
 int sepolicy_add_xperm(const char *s, const char *t, const char *c,
 		       const char *range, int effect, bool invert);
 void avc_reset(void);
+#ifdef CONFIG_NKSU_DEBUG
+int sepolicy_make_audit(void);
+#endif
 #endif

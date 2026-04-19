@@ -79,6 +79,14 @@ int __init init_selinux_hook(void)
 		pr_err("[selinux]: failed to dup policy (%d), aborting\n", ret);
 		return ret;
 	}
+	
+#ifdef CONFIG_NKSU_DEBUG
+    rc = sepolicy_make_audit();
+    	if (rc) {
+		pr_err("[selinux]: failed to make audit: %d\n", rc);
+		return rc;
+	}
+#endif
 
 	rc = sepolicy_add_domain(DOMAIN);
 	if (rc) {

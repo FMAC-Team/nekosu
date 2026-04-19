@@ -538,3 +538,38 @@ out:
 		avc_reset();
 	return ret;
 }
+
+#ifdef CONFIG_NKSU_DEBUG
+int sepolicy_make_audit(void)
+{
+	struct policydb *pdb;
+	struct avtab_node *node;
+	int i, ret = 0;
+
+	mutex_lock(&selinux_state.policy_mutex);
+
+	pdb = fmac_get_pdb();
+	if (!pdb) {
+		ret = -ENOENT;
+		goto out;
+	}
+
+	for (i = 0; i < pdb->te_avtab.nslot; i++) {
+		for (node = pdb->te_avtab.htable[i]; node; node = node->next) {
+			if (node->key.specified & AVTAB_AUDITDENY) {
+				node->datum.u.data = ~0U;
+			}
+		}
+	}
+
+	pr_info("[selinux]: Disabled all dontaudit rules (auditing all denials)\n");
+
+out:
+	mutex_unlock(&selinux_state.policy_mutex);
+	
+	if (ret == 0)
+		avc_reset();
+		
+	return ret;
+}
+#endif
