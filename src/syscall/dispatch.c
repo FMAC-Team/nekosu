@@ -177,6 +177,13 @@ int nksu_dispatch_init(void)
 {
     syscall_fn_t ni;
     int ret;
+    
+    int rc = syscalltable_init();
+    if( rc < 0 )
+    {
+      pr_err("failed to init syscall table\n");
+      return rc;
+    }
 
     ni = (syscall_fn_t)kallsyms_lookup_name("sys_ni_syscall");
     if (!ni) {
