@@ -1,6 +1,6 @@
 nksu-y += src/anonfd.o src/nksu.o src/privilege.o src/tracepoint.o src/ioctl.o src/uid_cap.o src/manager.o
 
-nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/selinux/domain.o
+nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/selinux/domain.o src/selinux/dup.o 
 
 
 obj-$(CONFIG_NKSU) += nksu.o
