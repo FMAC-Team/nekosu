@@ -363,19 +363,19 @@ out:
 	return ret;
 }
 
-static void xperms_set_range(u32 *perms, u16 low, u16 high, bool invert)
+static void xperms_set_range(u32 *perms, u32 low, u32 high, bool invert)
 {
-	u16 i;
-	if (low == 0 && high == 255 && !invert) {
-		memset(perms, 0xff, 8 * sizeof(u32));	// 256 bits
-		return;
-	}
-	for (i = low; i <= high; i++) {
-		if (invert)
-			perms[i / 32] &= ~(1U << (i % 32));
-		else
-			perms[i / 32] |= (1U << (i % 32));
-	}
+    u32 i;
+    if (low == 0 && high == 255 && !invert) {
+        memset(perms, 0xff, 8 * sizeof(u32));
+        return;
+    }
+    for (i = low; i <= high; i++) {
+        if (invert)
+            perms[i / 32] &= ~(1U << (i % 32));
+        else
+            perms[i / 32] |= (1U << (i % 32));
+    }
 }
 
 static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
@@ -391,15 +391,21 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
     u8 d_low, d_high;
 
     if (!src) {
-        hashtab_for_each(db->p_types.table, node)
-            sepolicy_add_xperm_raw(db, (struct type_datum *)node->datum,
-                                   tgt, cls, low, high, effect, invert);
+        hashtab_for_each(db->p_types.table, node) {
+            struct type_datum *type = (struct type_datum *)node->datum;
+            if (!type->attribute)
+                sepolicy_add_xperm_raw(db, type, tgt, cls,
+                                       low, high, effect, invert);
+        }
         return;
     }
     if (!tgt) {
-        hashtab_for_each(db->p_types.table, node)
-            sepolicy_add_xperm_raw(db, src, (struct type_datum *)node->datum,
-                                   cls, low, high, effect, invert);
+        hashtab_for_each(db->p_types.table, node) {
+            struct type_datum *type = (struct type_datum *)node->datum;
+            if (!type->attribute)
+                sepolicy_add_xperm_raw(db, src, type, cls,
+                                       low, high, effect, invert);
+        }
         return;
     }
     if (!cls) {
@@ -432,6 +438,13 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
             xp->driver    = d_low;
         }
 
+        if (xp->specified == AVTAB_XPERMS_IOCTLDRIVER)
+            xperms_set_range(xp->perms.p, d_low, d_high, invert);
+        else
+            xperms_set_range(xp->perms.p,
+                             (u8)(low  & 0xFF),
+                             (u8)(high & 0xFF), invert);
+
         memset(&datum, 0, sizeof(datum));
         datum.u.xperms = xp;
 
@@ -441,8 +454,9 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
             return;
         }
         db->len += sizeof(struct avtab_key) + sizeof(struct avtab_datum)
-          + sizeof(u8) + sizeof(u8)
-          + sizeof(u32) * 8;  /* ARRAY_SIZE(xperms->perms.p) */
+                 + sizeof(u8) + sizeof(u8)
+                 + sizeof(u32) * 8;
+        return;
     }
 
     x = av_node->datum.u.xperms;
@@ -451,67 +465,27 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
 
     if (x->specified == AVTAB_XPERMS_IOCTLDRIVER) {
         xperms_set_range(x->perms.p, d_low, d_high, invert);
-    } else if (x->driver == d_low) {
-        xperms_set_range(x->perms.p,
-                         (u8)(low  & 0xFF),
-                         (u8)(high & 0xFF), invert);
+    } else if (x->specified == AVTAB_XPERMS_IOCTLFUNCTION) {
+        if (x->driver == d_low) {
+            xperms_set_range(x->perms.p,
+                             (u8)(low  & 0xFF),
+                             (u8)(high & 0xFF), invert);
+        } else {
+            struct avtab_extended_perms *xnew;
+
+            xnew = kzalloc(sizeof(*xnew), GFP_KERNEL);
+            if (!xnew)
+                return;
+
+            xnew->specified = AVTAB_XPERMS_IOCTLDRIVER;
+            xnew->driver    = 0;
+
+            xperm_set(x->driver, xnew->perms.p);
+
+            xperms_set_range(xnew->perms.p, d_low, d_high, invert);
+
+            kfree(x);
+            av_node->datum.u.xperms = xnew;
+        }
     }
-}
-
-int sepolicy_add_xperm(const char *s, const char *t, const char *c,
-		       const char *range, int effect, bool invert)
-{
-	struct policydb *pdb;
-	struct type_datum *src = NULL, *tgt = NULL;
-	struct class_datum *cls = NULL;
-	u16 low = 0, high = 0;
-	int ret = 0;
-
-	if (!range || !*range) {
-		low = 0;
-		high = 0xFFFF;
-	} else if (strchr(range, '-')) {
-		if (sscanf(range, "0x%hx-0x%hx", &low, &high) != 2 &&
-		    sscanf(range, "%hx-%hx", &low, &high) != 2)
-			return -EINVAL;
-	} else {
-		sscanf(range, "%hx", &low);
-		high = low;
-	}
-
-	mutex_lock(&selinux_state.policy_mutex);
-
-	pdb = fmac_get_pdb();
-	if (!pdb) {
-		ret = -ENOENT;
-		goto out;
-	}
-	if (s && *s) {
-		src = symtab_search(&pdb->symtab[SYM_TYPES], s);
-		if (!src) {
-			ret = -ENOENT;
-			goto out;
-		}
-	}
-	if (t && *t) {
-		tgt = symtab_search(&pdb->symtab[SYM_TYPES], t);
-		if (!tgt) {
-			ret = -ENOENT;
-			goto out;
-		}
-	}
-	if (c && *c) {
-		cls = symtab_search(&pdb->symtab[SYM_CLASSES], c);
-		if (!cls) {
-			ret = -ENOENT;
-			goto out;
-		}
-	}
-	sepolicy_add_xperm_raw(pdb, src, tgt, cls, low, high, effect, invert);
-
-out:
-	mutex_unlock(&selinux_state.policy_mutex);
-	if (ret == 0)
-		avc_reset();
-	return ret;
 }
