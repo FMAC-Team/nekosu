@@ -480,7 +480,7 @@ static void sepolicy_add_xperm_raw(struct policydb *db, struct type_datum *src,
             xnew->specified = AVTAB_XPERMS_IOCTLDRIVER;
             xnew->driver    = 0;
 
-            xperm_set(x->driver, xnew->perms.p);
+            xnew->perms.p[x->driver / 32] |= (1U << (x->driver % 32));
 
             xperms_set_range(xnew->perms.p, d_low, d_high, invert);
 
