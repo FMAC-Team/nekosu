@@ -1,8 +1,6 @@
 #ifndef SELINUX_H
 #define SELINUX_H
 
-#include <stdbool.h>
-
 #define DOMAIN "nksu"
 #define DOMAIN_CTX "u:r:" DOMAIN ":s0"
 
