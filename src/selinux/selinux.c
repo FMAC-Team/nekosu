@@ -80,6 +80,12 @@ int __init init_selinux_hook(void)
 		pr_info("[selinux]: enforcing is false,set 1\n");
 		setenforce(true);
 	}
+	
+	int ret = sepolicy_dup_and_apply();
+	if (ret) {
+		pr_err("[selinux]: failed to dup policy (%d), aborting\n", ret);
+		return ret;
+	}
 
 	rc = sepolicy_add_domain(DOMAIN);
 	if (rc) {
@@ -104,4 +110,10 @@ int __init init_selinux_hook(void)
 #endif
 
 	return 0;
+}
+
+void __exit selinux_exit(void)
+{
+	pr_info("[selinux]: sepolicy exit – restoring original policy\n");
+	sepolicy_restore();
 }

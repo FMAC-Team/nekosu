@@ -25,6 +25,7 @@
 #include "selinux/rule.h"
 #include "selinux/policy.h"
 #include "selinux/domain.h"
+#include "selinux/dup.h"
 #include "privilege.h"
 #include "tracepoint.h"
 #include "ioctl.h"

@@ -26,7 +26,7 @@ static const module_component_t core_components[] = {
 	{
 	 .name = "SELinux Hook",
 	 .init = init_selinux_hook,
-	 .exit = NULL,
+	 .exit = selinux_exit,
 	  },
 	{
 	 .name = "Anonymous FD",
