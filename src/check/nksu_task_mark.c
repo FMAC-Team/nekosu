@@ -1,5 +1,6 @@
 #include <linux/sched.h>
 #include <linux/rcupdate.h>
+#include <trace/events/sched.h>
 #include <fmac.h>
 
 #define NKSU_KABI_MAGIC      0xFAC0FAC0ULL
