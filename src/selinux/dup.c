@@ -9,6 +9,7 @@
 #include <linux/errno.h>
 #include <linux/string.h>
 #include <linux/lockdep.h>
+#include <fmac.h>
 
 #include "ss/policydb.h"
 #include "ss/services.h"
@@ -400,7 +401,7 @@ int sepolicy_dup_and_apply(void)
 	struct selinux_policy *orig, *work;
 
 	if (nksu_orig_policy) {
-		pr_warn("[nksu] sepolicy_dup_and_apply: already active\n");
+		pr_warn("[selinux] sepolicy_dup_and_apply: already active\n");
 		return -EBUSY;
 	}
 
@@ -412,14 +413,14 @@ int sepolicy_dup_and_apply(void)
 
 	if (!orig) {
 		mutex_unlock(&selinux_state.policy_mutex);
-		pr_err("[nksu] sepolicy_dup_and_apply: no live policy\n");
+		pr_err("[selinux] sepolicy_dup_and_apply: no live policy\n");
 		return -ENOENT;
 	}
 
 	work = nksu_dup_policy(orig);
 	if (!work) {
 		mutex_unlock(&selinux_state.policy_mutex);
-		pr_err("[nksu] sepolicy_dup_and_apply: dup failed\n");
+		pr_err("[selinux] sepolicy_dup_and_apply: dup failed\n");
 		return -ENOMEM;
 	}
 
@@ -431,7 +432,7 @@ int sepolicy_dup_and_apply(void)
 	mutex_unlock(&selinux_state.policy_mutex);
 	synchronize_rcu();
 
-	pr_info("[nksu] policy duplicated, working copy installed\n");
+	pr_info("[selinux] policy duplicated, working copy installed\n");
 	return 0;
 }
 
@@ -440,7 +441,7 @@ void sepolicy_restore(void)
 	struct selinux_policy *work;
 
 	if (!nksu_orig_policy) {
-		pr_warn("[nksu] sepolicy_restore: nothing to restore\n");
+		pr_warn("[selinux] sepolicy_restore: nothing to restore\n");
 		return;
 	}
 
@@ -462,5 +463,5 @@ void sepolicy_restore(void)
 
 	nksu_avc_reset();
 
-	pr_info("[nksu] original policy restored\n");
+	pr_info("[selinux] original policy restored\n");
 }
