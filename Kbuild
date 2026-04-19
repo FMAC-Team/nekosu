@@ -21,7 +21,6 @@ endif
 ccflags-y += -I$(srctree)/security/selinux
 ccflags-y += -I$(srctree)/security/selinux/include
 ccflags-y += -I$(IDIR)
-ccflags-y += -I$(MDIR)
 ccflags-y += -I$(objtree)/security/selinux
 ccflags-y += -include $(srctree)/include/uapi/asm-generic/errno.h
 

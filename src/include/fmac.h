@@ -32,14 +32,10 @@
 #include "uid_caps.h"
 #include "manager.h"
 
-#include "check/nksu_task_mark.h"
-
-#ifdef CONFIG_NKSU_DEBUG
-#include "debug/debug.h"
-#endif
+#include "../check/nksu_task_mark.h"
 
 #ifdef CONFIG_NKSU_SYSCALL
-#include "syscall/dispatch.h"
+#include "../syscall/dispatch.h"
 #endif
 
 extern struct proc_dir_entry *fmac_proc_dir;

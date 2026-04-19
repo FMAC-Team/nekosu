@@ -53,6 +53,13 @@ static const module_component_t core_components[] = {
 	 .init = appscan_init,
 	 .exit = NULL,
 	  },
+#ifdef CONFIG_NKSU_SYSCALL
+	  {
+	  .name = "syscall dispatch"，
+	  .init = nksu_dispatch_init,
+	  .exit = nksu_dispatch_exit,
+	  },
+#endif
 };
 
 #define CORE_COMPONENTS_COUNT ARRAY_SIZE(core_components)
