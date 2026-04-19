@@ -21,6 +21,7 @@ ccflags-y += -include $(srctree)/include/uapi/asm-generic/errno.h
 ccflags-y += -std=gnu99
 ccflags-y += -Wno-unused-variable
 ccflags-y += -Wno-declaration-after-statement
+ccflags-y += -Wno-unused-function
 ccflags-y += -Werror=implicit-function-declaration
 ccflags-y += -Werror=return-type
 
