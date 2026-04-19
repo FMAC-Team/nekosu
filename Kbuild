@@ -2,6 +2,11 @@ nksu-y += src/anonfd.o src/nksu.o src/privilege.o src/tracepoint.o src/ioctl.o s
 
 nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/selinux/domain.o src/selinux/dup.o 
 
+ifeq ($(CONFIG_NKSU_SYSCALL),y)
+	ccflags-y += -DCONFIG_NKSU_SYSCALL=1
+	nksu-y += src/syscall/syscall.o
+	nksu-y += src/syscall/dispatch.o
+endif
 
 obj-$(CONFIG_NKSU) += nksu.o
 

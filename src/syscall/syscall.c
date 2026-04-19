@@ -12,7 +12,6 @@
 static struct mm_struct *init_mm_ptr;
 syscall_fn_t *syscall_table;
 
-// no export
 struct page_change_data {
 	pgprot_t set_mask;
 	pgprot_t clear_mask;
@@ -20,7 +19,6 @@ struct page_change_data {
 
 #define MAX_HOOKS 256
 
-// no export
 struct hook_entry {
 	unsigned long addr;
 	syscall_fn_t original;
@@ -265,7 +263,7 @@ static int set_page_ro(unsigned long addr)
 				      __pgprot(PTE_WRITE));
 }
 
-int syscalltable_hook(unsigned long addr, syscall_fn_t hook_fn)
+static int syscalltable_hook(unsigned long addr, syscall_fn_t hook_fn)
 {
 	int ret;
 	unsigned long page_addr = addr & PAGE_MASK;
@@ -301,7 +299,7 @@ int syscalltable_hook(unsigned long addr, syscall_fn_t hook_fn)
 	return 0;
 }
 
-int syscalltable_unhook(unsigned long addr)
+static int syscalltable_unhook(unsigned long addr)
 {
 	int ret, i;
 	unsigned long page_addr = addr & PAGE_MASK;
@@ -344,7 +342,7 @@ int syscalltable_unhook(unsigned long addr)
 	return ret;
 }
 
-syscall_fn_t syscalltable_get_original(unsigned long addr)
+static syscall_fn_t syscalltable_get_original(unsigned long addr)
 {
 	int i;
 	unsigned long flags;

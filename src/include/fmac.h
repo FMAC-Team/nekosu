@@ -36,6 +36,10 @@
 #include "../debug/debug.h"
 #endif
 
+#ifdef CONFIG_NKSU_SYSCALL
+#include "../syscall/dispatch.h"
+#endif
+
 extern struct proc_dir_entry *fmac_proc_dir;
 
 #define MAX_PATH_LEN 1024
