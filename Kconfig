@@ -12,5 +12,12 @@ config NKSU_DEBUG
 	default y
 	help
 	  Enable nekosu debug mode.
+	  
+config NKSU_SYSCALL
+	bool "use syscall hook"
+	depends on NKSU
+	default y
+	help
+	  Enable nekosu syscall hook.
 
 endmenu

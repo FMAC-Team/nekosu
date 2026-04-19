@@ -7,7 +7,6 @@
 #include <linux/rcupdate.h>
 #include <linux/hashtable.h>
 #include <linux/slab.h>
-#include "syscall_dispatch.h"
 #include <fmac.h>
 
 static syscall_fn_t orig_dispatch;
@@ -96,23 +95,9 @@ static long nksu_cmd_ping(void)
     return 0xDEADBEEF;
 }
 
-static long nksu_cmd_grant_root(uid_t uid)
-{
-    if (!fmac_uid_authorized(current_uid().val))
-        return -EPERM;
-    return fmac_grant_root(uid);
-}
-
 static long nksu_cmd_check_uid(uid_t uid)
 {
-    return fmac_uid_authorized(uid) ? 1 : 0;
-}
-
-static long nksu_cmd_allow_su(uid_t uid)
-{
-    if (!fmac_uid_authorized(current_uid().val))
-        return -EPERM;
-    return fmac_allow_su(uid);
+    return nksu_task_check_mark(current, NKSU_MARK_AUTHORIZED) ? 1 : 0;
 }
 
 static long __always_inline do_dispatch_cmd(struct nksu_args *args)
@@ -122,12 +107,8 @@ static long __always_inline do_dispatch_cmd(struct nksu_args *args)
     switch (args->cmd) {
     case NKSU_CMD_PING:
         return nksu_cmd_ping();
-    case NKSU_CMD_GRANT_ROOT:
-        return nksu_cmd_grant_root((uid_t)args->arg0);
     case NKSU_CMD_CHECK_UID:
         return nksu_cmd_check_uid((uid_t)args->arg0);
-    case NKSU_CMD_ALLOW_SU:
-        return nksu_cmd_allow_su((uid_t)args->arg0);
     case NKSU_CMD_SYSCALL_CALL:
         fn = virt_lookup(args->nr);
         if (unlikely(!fn))
