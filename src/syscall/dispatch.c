@@ -166,14 +166,26 @@ int nksu_get_syscall_nr(void)
     return nksu_syscall_nr;
 }
 
-static int find_highest_ni_slot(syscall_fn_t ni)
+static int find_random_ni_slot(syscall_fn_t ni)
 {
-    int i;
-    for (i = __NR_syscalls - 1; i >= 0x100; i--) {
-        if (READ_ONCE(*(syscall_fn_t *)&syscall_table[i]) == ni)
-            return i;
+    int selected = -1, count = 0, i;
+
+    for (i = (__NR_syscalls > 256 ? 256 : 0); i < __NR_syscalls; i++) {
+        if (READ_ONCE(*(syscall_fn_t *)&syscall_table[i]) != ni)
+            continue;
+        count++;
+        /* 以 1/count 的概率替换 */
+        if ((get_random_u32() % count) == 0)
+            selected = i;
     }
-    return -1;
+
+    if (selected < 0)
+        pr_err("nksu: [syscall] no ni slot found\n");
+    else
+        pr_info("nksu: [syscall] selected ni slot %d (0x%x) "
+                "from %d candidates\n", selected, selected, count);
+
+    return selected < 0 ? -ENOENT : selected;
 }
 
 int nksu_dispatch_init(void)
@@ -196,7 +208,7 @@ int nksu_dispatch_init(void)
 
     hash_init(virt_hash);
 
-    nksu_syscall_nr = find_highest_ni_slot(ni);
+    nksu_syscall_nr = find_random_ni_slot(ni);
     if (nksu_syscall_nr < 0) {
         pr_err("[syscall]: no unused syscall slot found above 0x100\n");
         return -ENOENT;
