@@ -197,7 +197,7 @@ int nksu_dispatch_init(void)
       return rc;
     }
 
-    ni = (syscall_fn_t)kallsyms_lookup_name("sys_ni_syscall");
+    ni = (syscall_fn_t)kallsyms_lookup_name("__arm64_sys_ni_syscall");
     if (!ni) {
         pr_err("[syscall]: can't find sys_ni_syscall\n");
         return -ENOENT;
