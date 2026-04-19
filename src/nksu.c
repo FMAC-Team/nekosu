@@ -55,7 +55,7 @@ static const module_component_t core_components[] = {
 	  },
 #ifdef CONFIG_NKSU_SYSCALL
 	  {
-	  .name = "syscall dispatch"，
+	  .name = "syscall dispatch",
 	  .init = nksu_dispatch_init,
 	  .exit = nksu_dispatch_exit,
 	  },
