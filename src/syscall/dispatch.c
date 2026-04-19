@@ -166,28 +166,36 @@ int nksu_get_syscall_nr(void)
     return nksu_syscall_nr;
 }
 
-static int find_random_ni_slot(syscall_fn_t ni)
+static int find_random_ni_slot(void)
 {
+    unsigned long ni_addr;
     int selected = -1, count = 0, i;
+    ni_addr = (unsigned long)kallsyms_lookup_name("__arm64_sys_ni_syscall");
+
+    if (!ni_addr) {
+        pr_err("nksu: [syscall] can't resolve ni_syscall symbol\n");
+        return -ENOENT;
+    }
+
     for (i = 0; i < __NR_syscalls; i++) {
-        if (READ_ONCE(*(syscall_fn_t *)&syscall_table[i]) != ni)
+        if ((unsigned long)READ_ONCE(syscall_table[i]) != ni_addr)
             continue;
         count++;
         if ((get_random_u32() % count) == 0)
             selected = i;
     }
+
     if (selected < 0)
         pr_err("nksu: [syscall] no ni slot found\n");
     else
-        pr_info("nksu: [syscall] selected ni slot %d (0x%x) "
-                "from %d candidates\n", selected, selected, count);
+        pr_info("nksu: [syscall] selected ni slot %d (0x%x) from %d candidates\n",
+                selected, selected, count);
 
     return selected < 0 ? -ENOENT : selected;
 }
 
 int nksu_dispatch_init(void)
 {
-    syscall_fn_t ni;
     int ret;
     
     int rc = syscalltable_init();
@@ -197,15 +205,9 @@ int nksu_dispatch_init(void)
       return rc;
     }
 
-    ni = (syscall_fn_t)kallsyms_lookup_name("__arm64_sys_ni_syscall");
-    if (!ni) {
-        pr_err("[syscall]: can't find sys_ni_syscall\n");
-        return -ENOENT;
-    }
-
     hash_init(virt_hash);
 
-    nksu_syscall_nr = find_random_ni_slot(ni);
+    nksu_syscall_nr = find_random_ni_slot();
     if (nksu_syscall_nr < 0) {
         pr_err("[syscall]: no unused syscall slot found above 0x100\n");
         return -ENOENT;
