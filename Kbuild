@@ -2,7 +2,7 @@ nksu-y += src/anonfd.o src/nksu.o src/privilege.o src/tracepoint.o src/ioctl.o s
 
 nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/selinux/domain.o src/selinux/dup.o 
 
-nksu-y += nksu_task_mark.o
+nksu-y += check/nksu_task_mark.o
 
 ifeq ($(CONFIG_NKSU_SYSCALL),y)
 	ccflags-y += -DCONFIG_NKSU_SYSCALL=1
