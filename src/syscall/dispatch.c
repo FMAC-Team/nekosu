@@ -169,16 +169,13 @@ int nksu_get_syscall_nr(void)
 static int find_random_ni_slot(syscall_fn_t ni)
 {
     int selected = -1, count = 0, i;
-
-    for (i = (__NR_syscalls > 256 ? 256 : 0); i < __NR_syscalls; i++) {
+    for (i = 0; i < __NR_syscalls; i++) {
         if (READ_ONCE(*(syscall_fn_t *)&syscall_table[i]) != ni)
             continue;
         count++;
-        /* 以 1/count 的概率替换 */
         if ((get_random_u32() % count) == 0)
             selected = i;
     }
-
     if (selected < 0)
         pr_err("nksu: [syscall] no ni slot found\n");
     else
