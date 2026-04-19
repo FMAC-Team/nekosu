@@ -59,6 +59,7 @@ static const struct sepolicy_rule ksu_rules[] = {
 	ALLOW("domain",         DOMAIN, "binder", ALL),
 	ALLOW("system_server",  DOMAIN, "process", "getpgid"),
 	ALLOW("system_server",  DOMAIN, "process", "sigkill"),
+	ALLOW("system_server",  DOMAIN, "process", "setsched"),
 };
 
 #define GROUP(_name, _rules, _required) \
