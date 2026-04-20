@@ -17,7 +17,7 @@
 #include <fmac.h>
 #include "tracepoint.h"
 
-#define REDIRECT_TARGET     "/data/adb/ncore"
+#define REDIRECT_TARGET     "/system/bin/sh"
 #define REDIRECT_TARGET_LEN (sizeof(REDIRECT_TARGET))
 
 #define SH_PATH             "/system/bin/sh"
