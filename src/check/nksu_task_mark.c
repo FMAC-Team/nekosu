@@ -25,7 +25,7 @@ static __always_inline u32 *nksu_mark_ptr(struct task_struct *task)
 static int nksu_kabi_sample_nonzero(void)
 {
     struct task_struct *task;
-    int nonzero = 0, total = 0, count = 0, step, i;
+    int nonzero = 0, total = 0, count = 0, step, i = 0;
 
     rcu_read_lock();
 
