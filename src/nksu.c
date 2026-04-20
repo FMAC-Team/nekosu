@@ -73,16 +73,31 @@ static int nekosu_init_component(const module_component_t *comp, int index)
 		return 0;
 	}
 
+#ifdef CONFIG_NKSU_DEBUG
+	ktime_t t0 = ktime_get();
+#endif
+
 	pr_info("Initializing %s...\n", comp->name);
 	ret = comp->init();
-	if (ret) {
-		pr_err("Failed to initialize %s: %d\n", comp->name, ret);
-		return ret;
-	}
 
-	pr_debug("%s initialized successfully (index: %d)\n", comp->name,
-		 index);
-	return 0;
+#ifdef CONFIG_NKSU_DEBUG
+	{
+		s64 us = ktime_to_us(ktime_sub(ktime_get(), t0));
+		if (ret)
+			pr_err("Failed to initialize %s: %d (took %lld us)\n",
+			       comp->name, ret, us);
+		else
+			pr_info("%s initialized in %lld us\n", comp->name, us);
+	}
+#else
+	if (ret)
+		pr_err("Failed to initialize %s: %d\n", comp->name, ret);
+	else
+		pr_debug("%s initialized successfully (index: %d)\n",
+			 comp->name, index);
+#endif
+
+	return ret;
 }
 
 static void nekosu_cleanup_components(const module_component_t *comps,
@@ -100,6 +115,10 @@ static void nekosu_cleanup_components(const module_component_t *comps,
 static int nekosu_init_all_components(void)
 {
 	int ret, i;
+#ifdef CONFIG_NKSU_DEBUG
+	ktime_t t_total = ktime_get();
+#endif
+
 	for (i = 0; i < CORE_COMPONENTS_COUNT; i++) {
 		ret = nekosu_init_component(&core_components[i], i);
 		if (ret) {
@@ -108,7 +127,12 @@ static int nekosu_init_all_components(void)
 		}
 	}
 
+#ifdef CONFIG_NKSU_DEBUG
+	pr_info("All components initialized in %lld us total\n",
+		ktime_to_us(ktime_sub(ktime_get(), t_total)));
+#else
 	pr_info("All components initialized successfully\n");
+#endif
 	return 0;
 }
 
