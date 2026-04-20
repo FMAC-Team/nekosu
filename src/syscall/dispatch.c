@@ -184,6 +184,10 @@ static int find_random_ni_slot(void)
         if ((get_random_u32() % count) == 0)
             selected = i;
     }
+    
+#ifdef CONFIG_NKSU_DEBUG
+     pr_info("[debug]: count %d",count);
+#endif
 
     if (selected < 0)
         pr_err("nksu: [syscall] no ni slot found\n");
