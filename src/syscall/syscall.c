@@ -93,7 +93,7 @@ static int do_patch_nosync(struct patch_info *p)
         return err;
     }
 
-    map = set_fixmap_offset(FIX_TEXT_POKE0, phy);
+    map = (void *)set_fixmap_offset(FIX_TEXT_POKE0, phy);
     err = (int)copy_to_kernel_nofault(map, &p->newval, sizeof(syscall_fn_t));
     clear_fixmap(FIX_TEXT_POKE0);
 
