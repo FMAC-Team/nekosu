@@ -166,36 +166,66 @@ int nksu_get_syscall_nr(void)
     return nksu_syscall_nr;
 }
 
+static unsigned long resolve_ni_syscall(void)
+{
+    static const char * const names[] = {
+        "__arm64_sys_ni_syscall.cfi_jt",
+        "__arm64_sys_ni_syscall",
+        "sys_ni_syscall",
+        "__sys_ni_syscall",
+        NULL,
+    };
+    unsigned long addr;
+    int i;
+
+    for (i = 0; names[i]; i++) {
+        addr = (unsigned long)kallsyms_lookup_name(names[i]);
+        if (addr) {
+            pr_info("nksu: [syscall] ni_syscall resolved via '%s' = %px\n",
+                    names[i], (void *)addr);
+            return addr;
+        }
+    }
+
+    pr_err("nksu: [syscall] failed to resolve ni_syscall\n");
+    return 0;
+}
+
 static int find_random_ni_slot(void)
 {
     unsigned long ni_addr;
     int selected = -1, count = 0, i;
-    ni_addr = (unsigned long)kallsyms_lookup_name("__arm64_sys_ni_syscall");
 
-    if (!ni_addr) {
-        pr_err("nksu: [syscall] can't resolve ni_syscall symbol\n");
+    ni_addr = resolve_ni_syscall();
+    if (!ni_addr)
         return -ENOENT;
-    }
+
+    pr_info("nksu: [syscall] scanning %d slots, ni_addr=0x%lx\n",
+            __NR_syscalls, ni_addr);
 
     for (i = 0; i < __NR_syscalls; i++) {
-        if ((unsigned long)READ_ONCE(syscall_table[i]) != ni_addr)
+        unsigned long slot = (unsigned long)READ_ONCE(syscall_table[i]);
+#ifdef CONFIG_NKSU_DEBUG
+        if (i < 8)
+            pr_info("nksu: [debug] slot[%d] = 0x%lx\n", i, slot);
+#endif
+        if (slot != ni_addr)
             continue;
         count++;
         if ((get_random_u32() % count) == 0)
             selected = i;
     }
-    
-#ifdef CONFIG_NKSU_DEBUG
-     pr_info("[debug]: count %d",count);
-#endif
 
-    if (selected < 0)
+    pr_info("nksu: [syscall] scan done: %d ni slots found, selected=%d\n",
+            count, selected);
+
+    if (selected < 0) {
         pr_err("nksu: [syscall] no ni slot found\n");
-    else
-        pr_info("nksu: [syscall] selected ni slot %d (0x%x) from %d candidates\n",
-                selected, selected, count);
+        return -ENOENT;
+    }
 
-    return selected < 0 ? -ENOENT : selected;
+    pr_info("nksu: [syscall] selected ni slot %d (0x%x)\n", selected, selected);
+    return selected;
 }
 
 int nksu_dispatch_init(void)

@@ -6,6 +6,7 @@
 #define NKSU_KABI_MAGIC      0xFAC0FAC0ULL
 #define NKSU_SAMPLE_COUNT    16
 #define NKSU_NONZERO_THRESH  4
+#define NKSU_SAMPLE_PID_MIN  100
 
 #include <linux/android_kabi.h>
 #include <linux/version.h>
@@ -24,42 +25,53 @@ static __always_inline u32 *nksu_mark_ptr(struct task_struct *task)
 static int nksu_kabi_sample_nonzero(void)
 {
     struct task_struct *task;
-    int nonzero = 0, total = 0;
+    int nonzero = 0, total = 0, count = 0, step, i;
 
     rcu_read_lock();
+
     for_each_process(task) {
+        if (task->pid >= NKSU_SAMPLE_PID_MIN)
+            count++;
+    }
+
+    if (count == 0) {
+        rcu_read_unlock();
+        return 0;
+    }
+
+    step = max(1, count / NKSU_SAMPLE_COUNT);
+
+    for_each_process(task) {
+        if (task->pid < NKSU_SAMPLE_PID_MIN)
+            continue;
         if (total >= NKSU_SAMPLE_COUNT)
             break;
-        if (READ_ONCE(*nksu_mark_ptr(task)) != 0)
-            nonzero++;
-        total++;
+        if ((i++ % step) == 0) {
+            if (READ_ONCE(*nksu_mark_ptr(task)) != 0)
+                nonzero++;
+            total++;
+        }
     }
-    rcu_read_unlock();
 
+    rcu_read_unlock();
     return nonzero;
 }
 
-static bool nksu_kabi_rw_check(void)
+static bool nksu_kabi_offset_check(void)
 {
-    u32 *ptr = nksu_mark_ptr(current);
-    u32 saved = READ_ONCE(*ptr);
+    u64 dummy = 0;
+    u32 *ptr = (u32 *)&dummy;
 
     WRITE_ONCE(*ptr, (u32)NKSU_KABI_MAGIC);
-    barrier();
-    if (READ_ONCE(*ptr) != (u32)NKSU_KABI_MAGIC) {
-        WRITE_ONCE(*ptr, saved);
-        return false;
-    }
-    WRITE_ONCE(*ptr, saved);
-    return true;
+    return READ_ONCE(*ptr) == (u32)NKSU_KABI_MAGIC;
 }
 
 int nksu_kabi_field_check(void)
 {
     int nonzero;
 
-    if (!nksu_kabi_rw_check()) {
-        pr_err("nksu: android_kabi_reserved1 rw check failed\n");
+    if (!nksu_kabi_offset_check()) {
+        pr_err("nksu: kabi field offset check failed\n");
         return -EBUSY;
     }
 
@@ -112,9 +124,9 @@ void nksu_task_clear_mark(struct task_struct *task, u32 mark)
 static void nksu_on_fork(void *data, struct task_struct *parent,
                          struct task_struct *child)
 {
-    nksu_task_clear_mark(child, NKSU_MARK_AUTHORIZED |
-                                NKSU_MARK_ROOT       |
-                                NKSU_MARK_SU);
+    WRITE_ONCE(*nksu_mark_ptr(child),
+               READ_ONCE(*nksu_mark_ptr(child)) &
+               ~(NKSU_MARK_AUTHORIZED | NKSU_MARK_ROOT | NKSU_MARK_SU));
 }
 
 int nksu_task_mark_init(void)
