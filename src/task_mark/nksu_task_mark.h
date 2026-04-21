@@ -1,3 +1,5 @@
+#include <linux/types.h>
+
 #define NKSU_MARK_AUTHORIZED  BIT(0)
 #define NKSU_MARK_ROOT        BIT(1)
 #define NKSU_MARK_SU          BIT(2)
