@@ -16,3 +16,28 @@ void nksu_task_mark_exit(void);
     nksu_task_set_mark(current, mark)
 #define nksu_current_clear_mark(mark) \
     nksu_task_clear_mark(current, mark)
+
+static __always_inline u32 *nksu_mark_ptr(struct task_struct *task)
+{
+	return (u32 *)&task->NKSU_KABI_FIELD;
+}
+
+static __always_inline u32 nksu_task_get_mark_inline(struct task_struct *task)
+{
+    return READ_ONCE(*nksu_mark_ptr(task));
+}
+
+static __always_inline bool nksu_task_check_mark_inline(struct task_struct *task, u32 mark)
+{
+    return (READ_ONCE(*nksu_mark_ptr(task)) & mark) == mark;
+}
+
+static __always_inline u32 nksu_current_get_mark(void)
+{
+    return READ_ONCE(*nksu_mark_ptr(current));
+}
+
+static __always_inline bool nksu_current_check_mark(u32 mark)
+{
+    return (READ_ONCE(*nksu_mark_ptr(current)) & mark) == mark;
+}

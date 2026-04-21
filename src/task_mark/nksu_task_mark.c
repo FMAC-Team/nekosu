@@ -22,11 +22,6 @@
 #define NKSU_FORK_CLEAR_MASK \
 	(NKSU_MARK_AUTHORIZED | NKSU_MARK_ROOT | NKSU_MARK_SU)
 
-static __always_inline u32 *nksu_mark_ptr(struct task_struct *task)
-{
-	return (u32 *)&task->NKSU_KABI_FIELD;
-}
-
 static bool nksu_kabi_offset_check(void)
 {
 	u64 dummy = 0;
