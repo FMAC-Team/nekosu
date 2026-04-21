@@ -1,109 +1,210 @@
 // SPDX-License-Identifier: GPL-3.0
-#include <linux/hashtable.h>
 #include <linux/slab.h>
-#include <linux/spinlock.h>
+#include <linux/rcupdate.h>
+#include <linux/percpu.h>
+#include <linux/types.h>
+#include <linux/string.h>
+#include <linux/compiler.h>
+
 #include <fmac.h>
 
-#define SCOPE_HASH_BITS 6
+#define MAX_SCOPE 32
 
 struct scope_entry {
 	uid_t uid;
 	u32 flags;
-	struct hlist_node node;
 };
 
-static DEFINE_HASHTABLE(scope_table, SCOPE_HASH_BITS);
-static DEFINE_SPINLOCK(scope_lock);
+struct scope_table {
+	u32 count;
+	struct scope_entry entries[MAX_SCOPE];
+	struct rcu_head rcu;
+};
+
+struct scope_cache_entry {
+	uid_t uid;
+	u32 flags;
+	struct rcu_head rcu;
+};
+
+struct scope_cache_cpu {
+	uid_t uid;
+	u32 flags;
+	bool valid;
+};
+
+static struct scope_table __rcu *g_scope;
+static struct scope_cache_entry __rcu *g_scope_l0;
+static DEFINE_PER_CPU(struct scope_cache_cpu, scope_cpu_l0);
+
+static void scope_table_free_rcu(struct rcu_head *rcu)
+{
+	kfree(container_of(rcu, struct scope_table, rcu));
+}
+
+static void scope_cache_free_rcu(struct rcu_head *rcu)
+{
+	kfree(container_of(rcu, struct scope_cache_entry, rcu));
+}
 
 u32 scope_lookup(uid_t uid)
 {
-	struct scope_entry *e;
+	struct scope_cache_cpu *pc;
+	struct scope_cache_entry *c;
+	struct scope_table *t;
 	u32 flags = 0;
 
+	pc = this_cpu_ptr(&scope_cpu_l0);
+	if (likely(pc->valid && pc->uid == uid))
+		return pc->flags;
+
 	rcu_read_lock();
-	hash_for_each_possible_rcu(scope_table, e, node, uid) {
-		if (e->uid == uid) {
-			flags = READ_ONCE(e->flags);
-			break;
+
+	c = rcu_dereference(g_scope_l0);
+	if (likely(c && c->uid == uid)) {
+		flags = READ_ONCE(c->flags);
+		goto fill_cpu;
+	}
+
+	t = rcu_dereference(g_scope);
+	if (likely(t)) {
+#pragma unroll
+		for (u32 i = 0; i < t->count; i++) {
+			if (likely(t->entries[i].uid == uid)) {
+				flags = READ_ONCE(t->entries[i].flags);
+				goto fill_cpu;
+			}
 		}
 	}
+
 	rcu_read_unlock();
+	return 0;
+
+fill_cpu:
+	rcu_read_unlock();
+
+	pc->uid = uid;
+	pc->flags = flags;
+	pc->valid = true;
 
 	return flags;
 }
 
+static void scope_update_l0(uid_t uid, u32 flags)
+{
+	struct scope_cache_entry *old, *new;
+
+	new = kmalloc(sizeof(*new), GFP_KERNEL);
+	if (!new)
+		return;
+
+	new->uid = uid;
+	new->flags = flags;
+
+	old = rcu_dereference_protected(g_scope_l0, 1);
+	rcu_assign_pointer(g_scope_l0, new);
+
+	if (old)
+		call_rcu(&old->rcu, scope_cache_free_rcu);
+}
+
 int fmac_scope_set(uid_t uid, u32 flags)
 {
-	struct scope_entry *e, *found = NULL;
-	unsigned long irqf;
+	struct scope_table *old, *new;
+	int i, found = -1;
+	u32 new_count;
+
+	rcu_read_lock();
+	old = rcu_dereference(g_scope);
+	rcu_read_unlock();
+
+	if (old) {
+		for (i = 0; i < old->count; i++) {
+			if (old->entries[i].uid == uid) {
+				found = i;
+				break;
+			}
+		}
+	}
 
 	if (!flags) {
-		fmac_scope_clear(uid);
-		return 0;
+		new_count = old ? (found >= 0 ? old->count - 1 : old->count) : 0;
+	} else {
+		new_count = (old && found >= 0) ?
+			old->count : (old ? old->count : 0) + 1;
 	}
 
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_possible(scope_table, e, node, uid) {
-		if (e->uid == uid) {
-			found = e;
-			break;
-		}
-	}
-	if (found) {
-		found->flags = flags;
-		spin_unlock_irqrestore(&scope_lock, irqf);
-		return 0;
-	}
-	spin_unlock_irqrestore(&scope_lock, irqf);
+	if (new_count > MAX_SCOPE)
+		return -ENOSPC;
 
-	e = kmalloc(sizeof(*e), GFP_KERNEL);
-	if (!e)
+	new = kmalloc(sizeof(*new), GFP_KERNEL);
+	if (!new)
 		return -ENOMEM;
-	e->uid = uid;
-	e->flags = flags;
 
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_possible(scope_table, found, node, uid) {
-		if (found->uid == uid) {
-			found->flags = flags;
-			spin_unlock_irqrestore(&scope_lock, irqf);
-			kfree(e);
-			return 0;
+	if (old)
+		memcpy(new, old, sizeof(*new));
+	else
+		new->count = 0;
+
+	if (!flags) {
+		if (old && found >= 0) {
+			new->entries[found] =
+				new->entries[new->count - 1];
+			new->count--;
+		}
+	} else {
+		if (old && found >= 0) {
+			new->entries[found].flags = flags;
+		} else {
+			new->entries[new->count].uid = uid;
+			new->entries[new->count].flags = flags;
+			new->count++;
 		}
 	}
-	hash_add(scope_table, &e->node, uid);
-	spin_unlock_irqrestore(&scope_lock, irqf);
+
+	rcu_assign_pointer(g_scope, new);
+
+	if (old)
+		call_rcu(&old->rcu, scope_table_free_rcu);
+
+	scope_update_l0(uid, flags);
+
+	for_each_possible_cpu(i) {
+		struct scope_cache_cpu *pc =
+			per_cpu_ptr(&scope_cpu_l0, i);
+		pc->valid = false;
+	}
+
 	return 0;
 }
 
 void fmac_scope_clear(uid_t uid)
 {
-	struct scope_entry *e;
-	struct hlist_node *tmp;
-	unsigned long irqf;
-
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_possible_safe(scope_table, e, tmp, node, uid) {
-		if (e->uid == uid) {
-			hash_del(&e->node);
-			kfree(e);
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&scope_lock, irqf);
+	fmac_scope_set(uid, 0);
 }
 
 void fmac_scope_clear_all(void)
 {
-	struct scope_entry *e;
-	struct hlist_node *tmp;
-	unsigned long irqf;
-	unsigned int bkt;
+	struct scope_table *old_t;
+	struct scope_cache_entry *old_c;
+	int cpu;
 
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_safe(scope_table, bkt, tmp, e, node) {
-		hash_del(&e->node);
-		kfree(e);
+	rcu_read_lock();
+	old_t = rcu_dereference(g_scope);
+	old_c = rcu_dereference(g_scope_l0);
+	rcu_read_unlock();
+
+	RCU_INIT_POINTER(g_scope, NULL);
+	RCU_INIT_POINTER(g_scope_l0, NULL);
+
+	if (old_t)
+		call_rcu(&old_t->rcu, scope_table_free_rcu);
+	if (old_c)
+		call_rcu(&old_c->rcu, scope_cache_free_rcu);
+
+	for_each_possible_cpu(cpu) {
+		struct scope_cache_cpu *pc =
+			per_cpu_ptr(&scope_cpu_l0, cpu);
+		pc->valid = false;
 	}
-	spin_unlock_irqrestore(&scope_lock, irqf);
 }
