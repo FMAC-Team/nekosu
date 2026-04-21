@@ -48,3 +48,15 @@ static __always_inline bool nksu_current_check_mark(u32 mark)
 {
     return (READ_ONCE(*nksu_mark_ptr(current)) & mark) == mark;
 }
+
+static __always_inline bool nksu_current_set_mark(u32 mark)
+{
+    u32 *ptr = nksu_mark_ptr(current);
+    if (unlikely(!ptr))
+        return false;
+
+    WRITE_ONCE(*ptr, mark);
+    smp_mb(); 
+
+    return true; 
+}
