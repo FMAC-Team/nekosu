@@ -1,4 +1,4 @@
-nksu-y += src/anonfd.o src/nksu.o src/privilege.o src/tracepoint.o src/ioctl.o src/uid_cap.o src/manager.o
+nksu-y += src/anonfd.o src/nksu.o src/privilege.o src/ioctl.o src/uid_cap.o src/manager.o
 
 nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/selinux/domain.o src/selinux/dup.o 
 
@@ -8,8 +8,12 @@ ifeq ($(CONFIG_NKSU_SYSCALL),y)
 	ccflags-y += -DCONFIG_NKSU_SYSCALL=1
 	nksu-y += src/syscall/syscall.o
 	nksu-y += src/syscall/dispatch.o
+	nksu-y += src/hook.o
 	CFLAGS_src/syscall/syscall.o := -O3
 	CFLAGS_src/syscall/dispatch.o := -O3
+	CFLAGS_src/hook.o := -O3
+else
+	nksu-y += src/tracepoint.o
 endif
 
 obj-$(CONFIG_NKSU) += nksu.o

@@ -17,15 +17,6 @@
 #include <fmac.h>
 #include "tracepoint.h"
 
-#define REDIRECT_TARGET     "/system/bin/sh"
-#define REDIRECT_TARGET_LEN (sizeof(REDIRECT_TARGET))
-
-#define SH_PATH             "/system/bin/sh"
-#define SH_PATH_LEN         (sizeof(SH_PATH))
-
-#define SU_PATH             "/system/bin/su"
-#define SU_PATH_LEN         (sizeof(SU_PATH))
-
 #define SCOPE_HASH_BITS 6
 
 // no export
@@ -134,11 +125,6 @@ void fmac_scope_clear_all(void)
 static inline u32 current_scope(void)
 {
 	return scope_lookup(current_uid().val);
-}
-
-static inline bool path_is_su(const char *p)
-{
-	return memcmp(p, SU_PATH, SU_PATH_LEN) == 0;
 }
 
 static unsigned long push_str(unsigned long sp, const char *str, size_t len)

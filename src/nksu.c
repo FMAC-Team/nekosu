@@ -43,11 +43,13 @@ static const module_component_t core_components[] = {
 	  .init = nksu_task_mark_init,
 	  .exit = nksu_task_mark_exit,
 	  },
+#ifndef CONFIG_NKSU_SYSCALL
 	{
 	 .name = "tracepoint hook",
 	 .init = load_tracepoint_hook,
 	 .exit = unload_tracepoint_hook,
 	  },
+#endif
 	{
 	 .name = "manager scan",
 	 .init = appscan_init,
@@ -58,6 +60,11 @@ static const module_component_t core_components[] = {
 	  .name = "syscall dispatch",
 	  .init = nksu_dispatch_init,
 	  .exit = nksu_dispatch_exit,
+	  },
+	  {
+	  .name = "syscall hook",
+	  .init = init_syscall_hook,
+	  .exit = exit_syscall_hook,
 	  },
 #endif
 };

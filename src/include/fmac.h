@@ -31,6 +31,7 @@
 #include "ioctl.h"
 #include "uid_caps.h"
 #include "manager.h"
+#include "hook.h"
 
 #include "../task_mark/nksu_task_mark.h"
 

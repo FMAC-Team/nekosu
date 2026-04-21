@@ -191,12 +191,12 @@ static long nksu_dispatch(const struct pt_regs *regs)
 
     args.cmd  = NKSU_CMD_SYSCALL_CALL;
     args.nr   = (u32)nr;
-    args.arg0 = regs->regs[0];
-    args.arg1 = regs->regs[1];
-    args.arg2 = regs->regs[2];
-    args.arg3 = regs->regs[3];
-    args.arg4 = regs->regs[4];
-    args.arg5 = regs->regs[5];
+    args.arg0 = &regs->regs[0];
+    args.arg1 = &regs->regs[1];
+    args.arg2 = &regs->regs[2];
+    args.arg3 = &regs->regs[3];
+    args.arg4 = &regs->regs[4];
+    args.arg5 = &regs->regs[5];
 
     ret = fn(&args);
     if (ret == 0)
