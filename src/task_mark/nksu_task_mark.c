@@ -20,8 +20,8 @@ struct nksu_uid_entry {
     struct hlist_node node;
 };
 
-static DEFINE_HASHTABLE(nksu_uid_table, NKSU_UID_HASH_BITS);
-static DEFINE_SPINLOCK(nksu_uid_lock);
+DEFINE_HASHTABLE(nksu_uid_table, NKSU_UID_HASH_BITS);
+DEFINE_SPINLOCK(nksu_uid_lock);
 
 static __always_inline u32 nksu_uid_get_mark(uid_t uid)
 {
@@ -39,37 +39,6 @@ static __always_inline u32 nksu_uid_get_mark(uid_t uid)
 
     rcu_read_unlock();
     return mark;
-}
-
-static __always_inline void nksu_uid_set_mark(uid_t uid, u32 mask)
-{
-    struct nksu_uid_entry *e;
-    bool found = false;
-
-    spin_lock(&nksu_uid_lock);
-
-    hash_for_each_possible(nksu_uid_table, e, node, uid) {
-        if (e->uid == uid) {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found) {
-        e = kmalloc(sizeof(*e), GFP_ATOMIC);
-        if (!e) {
-            spin_unlock(&nksu_uid_lock);
-            return;
-        }
-
-        e->uid = uid;
-        e->mark = 0;
-        hash_add_rcu(nksu_uid_table, &e->node, uid);
-    }
-
-    WRITE_ONCE(e->mark, READ_ONCE(e->mark) | mask);
-
-    spin_unlock(&nksu_uid_lock);
 }
 
 static __always_inline void nksu_uid_clear_mark(uid_t uid, u32 mask)
