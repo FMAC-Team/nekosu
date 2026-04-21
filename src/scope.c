@@ -3,207 +3,161 @@
 #include <linux/rcupdate.h>
 #include <linux/percpu.h>
 #include <linux/types.h>
-#include <linux/string.h>
-#include <linux/compiler.h>
+#include <linux/hashtable.h>
+#include <linux/atomic.h>
+#include <linux/spinlock.h>
+#include <linux/preempt.h>
 
-#include <fmac.h>
+#define SCOPE_HASH_BITS 10
+#define SCOPE_BUCKETS   (1 << SCOPE_HASH_BITS)
 
-#define MAX_SCOPE 32
-
-struct scope_entry {
+struct scope_node {
 	uid_t uid;
 	u32 flags;
-};
-
-struct scope_table {
-	u32 count;
-	struct scope_entry entries[MAX_SCOPE];
+	struct hlist_node hnode;
 	struct rcu_head rcu;
 };
 
-struct scope_cache_entry {
-	uid_t uid;
-	u32 flags;
-	struct rcu_head rcu;
-};
+static DEFINE_HASHTABLE(g_scope_table, SCOPE_HASH_BITS);
+
+static spinlock_t g_bucket_locks[SCOPE_BUCKETS];
+
+static atomic64_t scope_version ____cacheline_aligned_in_smp = ATOMIC64_INIT(1);
 
 struct scope_cache_cpu {
+	u64 version;
 	uid_t uid;
 	u32 flags;
-	bool valid;
 };
 
-static struct scope_table __rcu *g_scope;
-static struct scope_cache_entry __rcu *g_scope_l0;
 static DEFINE_PER_CPU(struct scope_cache_cpu, scope_cpu_l0);
 
-static void scope_table_free_rcu(struct rcu_head *rcu)
+static void scope_node_free_rcu(struct rcu_head *rcu)
 {
-	kfree(container_of(rcu, struct scope_table, rcu));
-}
-
-static void scope_cache_free_rcu(struct rcu_head *rcu)
-{
-	kfree(container_of(rcu, struct scope_cache_entry, rcu));
+	struct scope_node *node = container_of(rcu, struct scope_node, rcu);
+	kfree(node);
 }
 
 u32 scope_lookup(uid_t uid)
 {
 	struct scope_cache_cpu *pc;
-	struct scope_cache_entry *c;
-	struct scope_table *t;
+	struct scope_node *node;
+	u64 current_version;
 	u32 flags = 0;
 
+	preempt_disable();
+	
 	pc = this_cpu_ptr(&scope_cpu_l0);
-	if (likely(pc->valid && pc->uid == uid))
-		return pc->flags;
+	current_version = atomic64_read(&scope_version);
+
+	if (likely(pc->version == current_version && pc->uid == uid)) {
+		flags = pc->flags;
+		preempt_enable();
+		return flags;
+	}
+	preempt_enable();
 
 	rcu_read_lock();
-
-	c = rcu_dereference(g_scope_l0);
-	if (likely(c && c->uid == uid)) {
-		flags = READ_ONCE(c->flags);
-		goto fill_cpu;
-	}
-
-	t = rcu_dereference(g_scope);
-	if (likely(t)) {
-		for (u32 i = 0; i < t->count; i++) {
-			if (likely(t->entries[i].uid == uid)) {
-				flags = READ_ONCE(t->entries[i].flags);
-				goto fill_cpu;
-			}
+	hash_for_each_possible_rcu(g_scope_table, node, hnode, uid) {
+		if (node->uid == uid) {
+			flags = READ_ONCE(node->flags);
+			break;
 		}
 	}
-
-	rcu_read_unlock();
-	return 0;
-
-fill_cpu:
 	rcu_read_unlock();
 
+	preempt_disable();
+	pc = this_cpu_ptr(&scope_cpu_l0);
 	pc->uid = uid;
 	pc->flags = flags;
-	pc->valid = true;
+	pc->version = current_version;
+	preempt_enable();
 
 	return flags;
 }
 
-static void scope_update_l0(uid_t uid, u32 flags)
+static int scope_update(uid_t uid, u32 flags)
 {
-	struct scope_cache_entry *old, *new;
+	struct scope_node *node, *new_node = NULL;
+	u32 bkt = hash_32(uid, SCOPE_HASH_BITS);
+	int found = 0;
 
-	new = kmalloc(sizeof(*new), GFP_KERNEL);
-	if (!new)
-		return;
+	if (flags != 0) {
+		new_node = kmalloc(sizeof(*new_node), GFP_KERNEL);
+		if (!new_node)
+			return -ENOMEM;
+		new_node->uid = uid;
+		new_node->flags = flags;
+	}
 
-	new->uid = uid;
-	new->flags = flags;
+	spin_lock(&g_bucket_locks[bkt]);
 
-	old = rcu_dereference_protected(g_scope_l0, 1);
-	rcu_assign_pointer(g_scope_l0, new);
+	hash_for_each_possible_rcu(g_scope_table, node, hnode, uid) {
+		if (node->uid == uid) {
+			if (new_node) {
+				hlist_replace_rcu(&node->hnode, &new_node->hnode);
+			} else {
+				hash_del_rcu(&node->hnode);
+			}
+			call_rcu(&node->rcu, scope_node_free_rcu);
+			found = 1;
+			break;
+		}
+	}
 
-	if (old)
-		call_rcu(&old->rcu, scope_cache_free_rcu);
+	if (!found && new_node) {
+		hash_add_rcu(g_scope_table, &new_node->hnode, uid);
+	} else if (!found && !new_node) {
+		/* nothing todo */
+	}
+
+	atomic64_inc(&scope_version);
+	
+	spin_unlock(&g_bucket_locks[bkt]);
+
+	if (!found && !new_node && new_node) {
+	    kfree(new_node); 
+	}
+
+	return 0;
 }
 
 int fmac_scope_set(uid_t uid, u32 flags)
 {
-	struct scope_table *old, *new;
-	int i, found = -1;
-	u32 new_count;
-
-	rcu_read_lock();
-	old = rcu_dereference(g_scope);
-	rcu_read_unlock();
-
-	if (old) {
-		for (i = 0; i < old->count; i++) {
-			if (old->entries[i].uid == uid) {
-				found = i;
-				break;
-			}
-		}
-	}
-
-	if (!flags) {
-		new_count = old ? (found >= 0 ? old->count - 1 : old->count) : 0;
-	} else {
-		new_count = (old && found >= 0) ?
-			old->count : (old ? old->count : 0) + 1;
-	}
-
-	if (new_count > MAX_SCOPE)
-		return -ENOSPC;
-
-	new = kmalloc(sizeof(*new), GFP_KERNEL);
-	if (!new)
-		return -ENOMEM;
-
-	if (old)
-		memcpy(new, old, sizeof(*new));
-	else
-		new->count = 0;
-
-	if (!flags) {
-		if (old && found >= 0) {
-			new->entries[found] =
-				new->entries[new->count - 1];
-			new->count--;
-		}
-	} else {
-		if (old && found >= 0) {
-			new->entries[found].flags = flags;
-		} else {
-			new->entries[new->count].uid = uid;
-			new->entries[new->count].flags = flags;
-			new->count++;
-		}
-	}
-
-	rcu_assign_pointer(g_scope, new);
-
-	if (old)
-		call_rcu(&old->rcu, scope_table_free_rcu);
-
-	scope_update_l0(uid, flags);
-
-	for_each_possible_cpu(i) {
-		struct scope_cache_cpu *pc =
-			per_cpu_ptr(&scope_cpu_l0, i);
-		pc->valid = false;
-	}
-	nksu_current_set_mark(NKSU_MARK_AUTHORIZED);
-	return 0;
+	if (unlikely(flags == 0))
+		return -EINVAL; 
+	return scope_update(uid, flags);
 }
 
 void fmac_scope_clear(uid_t uid)
 {
-	fmac_scope_set(uid, 0);
+	scope_update(uid, 0);
 }
 
 void fmac_scope_clear_all(void)
 {
-	struct scope_table *old_t;
-	struct scope_cache_entry *old_c;
-	int cpu;
+	struct scope_node *node;
+	struct hlist_node *tmp;
+	int bkt;
 
-	rcu_read_lock();
-	old_t = rcu_dereference(g_scope);
-	old_c = rcu_dereference(g_scope_l0);
-	rcu_read_unlock();
-
-	RCU_INIT_POINTER(g_scope, NULL);
-	RCU_INIT_POINTER(g_scope_l0, NULL);
-
-	if (old_t)
-		call_rcu(&old_t->rcu, scope_table_free_rcu);
-	if (old_c)
-		call_rcu(&old_c->rcu, scope_cache_free_rcu);
-
-	for_each_possible_cpu(cpu) {
-		struct scope_cache_cpu *pc =
-			per_cpu_ptr(&scope_cpu_l0, cpu);
-		pc->valid = false;
+	for (bkt = 0; bkt < SCOPE_BUCKETS; bkt++) {
+		spin_lock(&g_bucket_locks[bkt]);
+		hlist_for_each_entry_safe(node, tmp, &g_scope_table[bkt], hnode) {
+			hash_del_rcu(&node->hnode);
+			call_rcu(&node->rcu, scope_node_free_rcu);
+		}
+		
+		spin_unlock(&g_bucket_locks[bkt]);
 	}
+	atomic64_inc(&scope_version);
+}
+
+
+ int __init scope_init(void)
+{
+	int i;
+	for (i = 0; i < SCOPE_BUCKETS; i++) {
+		spin_lock_init(&g_bucket_locks[i]);
+	}
+	return 0;
 }

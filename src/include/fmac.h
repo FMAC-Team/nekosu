@@ -32,6 +32,7 @@
 #include "uid_caps.h"
 #include "manager.h"
 #include "hook.h"
+#include "scope.h"
 
 #include "../task_mark/nksu_task_mark.h"
 

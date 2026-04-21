@@ -278,7 +278,5 @@ void unload_tracepoint_hook(void)
 
 	tracepoint_synchronize_unregister();
 
-	fmac_scope_clear_all();
-
 	pr_info("tracepoint hooks unloaded\n");
 }
