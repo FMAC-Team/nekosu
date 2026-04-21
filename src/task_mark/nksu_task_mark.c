@@ -14,12 +14,6 @@
 
 #define NKSU_UID_HASH_BITS 6
 
-struct nksu_uid_entry {
-    uid_t uid;
-    u32 mark;
-    struct hlist_node node;
-};
-
 DEFINE_HASHTABLE(nksu_uid_table, NKSU_UID_HASH_BITS);
 DEFINE_SPINLOCK(nksu_uid_lock);
 
