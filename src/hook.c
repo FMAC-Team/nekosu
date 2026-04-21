@@ -33,6 +33,12 @@ int init_syscall_hook(void) {
         pr_err("[hook]: can't redirect faccessat ret %d\n", ret);
         return ret;
     }
+    
+    ret = nksu_redirect_syscall(__NR_newfstatat);
+    if (ret) {
+        pr_err("[hook]: can't redirect newfstatat ret %d\n", ret);
+        return ret;
+    }
 
     ret = nksu_register_handler(__NR_faccessat, hook_faccess);
     if (ret) {
