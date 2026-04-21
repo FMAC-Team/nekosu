@@ -13,7 +13,7 @@ struct nksu_args {
     __u64 arg5;
 };
 
-typedef long (*nksu_handler_t)(struct nksu_args *args);
+typedef long (*nksu_handler_t)(struct pt_regs *regs);
 
 #define NKSU_CMD_PING           0
 #define NKSU_CMD_CHECK_UID      1

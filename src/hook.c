@@ -1,8 +1,8 @@
 #include <fmac.h>
 
-static long handle_prctl_hooks(struct nksu_args *args)
+static long handle_prctl_hooks(struct pt_regs *regs)
 {
-	unsigned long option = args->regs->regs[0];
+	unsigned long option = regs->regs[0];
 
 	if (likely(!is_manager())) {
 		return 0;
@@ -26,7 +26,7 @@ static long handle_prctl_hooks(struct nksu_args *args)
 	}
 }
 
-static inline unsigned long try_redirect_path(struct nksu_args *args,
+static inline unsigned long try_redirect_path(struct pt_regs *regs,
 					      int arg_index)
 {
 	char buf[MAX_PATH_LEN];
@@ -36,7 +36,7 @@ static inline unsigned long try_redirect_path(struct nksu_args *args,
 	if (!current->mm)
 		return 0;
 
-	upath = (const char __user *)args->regs->regs[arg_index];
+	upath = (const char __user *)regs->regs[arg_index];
 	if (!upath)
 		return 0;
 
@@ -47,45 +47,45 @@ static inline unsigned long try_redirect_path(struct nksu_args *args,
 	if (!path_is_su(buf))
 		return 0;
 
-	sp = user_stack_pointer(args->regs);
+	sp = user_stack_pointer(regs);
 	if (!sp)
 		return 0;
 
 	return PUSH_STR(sp, SH_PATH, SH_PATH_LEN);
 }
 
-static long hook_path_at(struct nksu_args *args)
+static long hook_path_at(struct pt_regs *regs)
 {
 	if (!scope_lookup(current_uid().val))
 		return 0;
-	unsigned long new_uaddr = try_redirect_path(args, 1);
+	unsigned long new_uaddr = try_redirect_path(regs, 1);
 	if (new_uaddr > 0) {
-		args->regs->regs[1] = new_uaddr;
+		regs->regs[1] = new_uaddr;
 	}
 	return 0;
 }
 
-static long hook__NR_execve(struct nksu_args *args)
+static long hook__NR_execve(struct pt_regs *regs)
 {
 	if (!scope_lookup(current_uid().val))
 		return 0;
 
-	unsigned long new_uaddr = try_redirect_path(args, 0);
+	unsigned long new_uaddr = try_redirect_path(regs, 0);
 	if (new_uaddr > 0) {
-		args->regs->regs[0] = new_uaddr;
+		regs->regs[0] = new_uaddr;
 		elevate_to_root();
 	}
 	return 0;
 }
 
-static long hook__NR_execveat(struct nksu_args *args)
+static long hook__NR_execveat(struct pt_regs *regs)
 {
 	if (!scope_lookup(current_uid().val))
 		return 0;
 
-	unsigned long new_uaddr = try_redirect_path(args, 1);
+	unsigned long new_uaddr = try_redirect_path(regs, 1);
 	if (new_uaddr > 0) {
-		args->regs->regs[1] = new_uaddr;
+		regs->regs[1] = new_uaddr;
 		elevate_to_root();
 	}
 	return 0;
