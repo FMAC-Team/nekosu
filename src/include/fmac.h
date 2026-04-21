@@ -32,7 +32,7 @@
 #include "uid_caps.h"
 #include "manager.h"
 
-#include "../check/nksu_task_mark.h"
+#include "../task_mark/nksu_task_mark.h"
 
 #ifdef CONFIG_NKSU_SYSCALL
 #include "../syscall/dispatch.h"
