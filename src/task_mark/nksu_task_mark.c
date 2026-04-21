@@ -145,16 +145,20 @@ static void nksu_on_fork(void *data,
     WRITE_ONCE(*nksu_mark_ptr(child), mark);
 }
 
-static void nksu_on_exec(void *data,
-                         struct task_struct *p,
-                         pid_t pid,
-                         const char *filename)
+static void nksu_on_exec(void *data, 
+                         struct task_struct *p, 
+                         pid_t old_pid, 
+                         struct linux_binprm *bprm)
 {
     uid_t uid = task_uid(p).val;
     u32 mark = nksu_uid_get_mark(uid);
 
-    WRITE_ONCE(*nksu_mark_ptr(p), mark);
+    u32 *m_ptr = nksu_mark_ptr(p);
+    if (likely(m_ptr)) {
+        WRITE_ONCE(*m_ptr, mark);
+    }
 }
+
 
 int nksu_task_mark_init(void)
 {
