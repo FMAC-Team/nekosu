@@ -1,6 +1,6 @@
 #include <fmac.h>
 
-int hook_faccess(struct nksu_args *args)
+long hook_faccess(struct nksu_args *args)
 {
 	char buf[64];
 	if (!current->mm)
@@ -42,8 +42,4 @@ int init_syscall_hook(void) {
 
     pr_info("[hook]: loaded syscall hook\n");
     return 0;
-}
-
-void exit_syscall_hook(void) {
-    nksu_unregister_handler(__NR_faccessat);
 }

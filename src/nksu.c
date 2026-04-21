@@ -64,7 +64,7 @@ static const module_component_t core_components[] = {
 	  {
 	  .name = "syscall hook",
 	  .init = init_syscall_hook,
-	  .exit = exit_syscall_hook,
+	  .exit = NULL,
 	  },
 #endif
 };
