@@ -493,7 +493,9 @@ static int scan_and_apply(void)
 				"Granting privileges to UID %u\n", uid);
 			fmac_scope_set(uid, FMAC_SCOPE_ALL);
 			manager_kuid = make_kuid(current_user_ns(), uid);
+			#ifndef CONFIG_NKSU_SYSCALL
 			mark_zygote();
+			#endif
 			ret = 0;
 		} else {
 			pr_err("[manager] Signature mismatch!\n");
