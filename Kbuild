@@ -10,6 +10,7 @@ ifeq ($(CONFIG_NKSU_SYSCALL),y)
 	ccflags-y += -DCONFIG_NKSU_SYSCALL=1
 	nksu-y += src/syscall/syscall.o
 	nksu-y += src/syscall/dispatch.o
+	nksy-y += src/syscall/__dispatch.o
 	nksu-y += src/hook.o
 	CFLAGS_src/syscall/syscall.o := -O3
 	CFLAGS_src/syscall/dispatch.o := -O3

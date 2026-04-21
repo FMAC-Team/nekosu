@@ -32,14 +32,20 @@ static int hook_and_save(int nr, syscall_fn_t new_fn, const char *tag) {
   return 0;
 }
 
-int nksu_register_handler(u32 nr, nksu_handler_t fn) {
-  if (nr >= __NR_syscalls)
-    return -EINVAL;
+int nksu_register_handler(u32 nr, nksu_handler_t fn)
+{
+    if (nr >= __NR_syscalls)
+        return -EINVAL;
 
-  if (cmpxchg(&virt_table[nr], NULL, fn) != NULL)
-    return -EEXIST;
+    if (!fn)
+        return -EINVAL;
 
-  return 0;
+    if (READ_ONCE(virt_table[nr]) != NULL)
+        return -EEXIST;
+
+    smp_store_release(&virt_table[nr], fn);
+
+    return 0;
 }
 
 void nksu_unregister_handler(u32 nr) {
@@ -47,55 +53,7 @@ void nksu_unregister_handler(u32 nr) {
     WRITE_ONCE(virt_table[nr], NULL);
 }
 
-__attribute__((naked)) static long
-nksu_dispatch_fast(const struct pt_regs *regs) {
-  asm volatile(
-      /* load syscallno from regs */
-      "ldr    w1, [x0, %[off_nr]]             \n"
-      /* bounds check — unsigned, catches negative syscallno too */
-      "cmp    w1, %w[nr_max]                  \n"
-      "b.hs   .Lenosys_%=                     \n"
-      /* load virt_table[nr] with acquire semantics
-       * ldar only encodes [Xn], pre-compute element address */
-      "adrp   x2, virt_table                  \n"
-      "add    x2, x2, :lo12:virt_table        \n"
-      "add    x2, x2, x1, lsl #3              \n"
-      "ldar   x3, [x2]                        \n"
-      "cbnz   x3, .Lvirt_slow_%=              \n"
-      ".Lorig_%=:                             \n"
-      "adrp   x2, nksu_orig_table             \n"
-      "add    x2, x2, :lo12:nksu_orig_table   \n"
-      "add    x2, x2, x1, lsl #3              \n"
-      "ldar   x3, [x2]                        \n"
-      "cbz    x3, .Lenosys_%=                 \n"
-      "br     x3                              \n" /* tail-call */
-      ".Lvirt_slow_%=:                        \n"
-      "stp    x29, x30, [sp, #-32]!           \n"
-      "stp    x19, x20, [sp, #16]             \n"
-      "mov    x29, sp                         \n"
-      "mov    x19, x0                         \n" /* save regs */
-      "mov    w20, w1                         \n" /* save nr   */
-      "blr    x3                              \n" /* virt_fn(regs) */
-      "cbnz   x0, .Lvirt_done_%=             \n"  /* handled → return */
-      /* returned 0 → fall through to orig */
-      "mov    x0, x19                         \n"
-      "mov    w1, w20                         \n"
-      "ldp    x19, x20, [sp, #16]             \n"
-      "ldp    x29, x30, [sp], #32             \n"
-      "b      .Lorig_%=                       \n" /* tail via hot path */
-      ".Lvirt_done_%=:                        \n"
-      "ldp    x19, x20, [sp, #16]             \n"
-      "ldp    x29, x30, [sp], #32             \n"
-      "ret                                    \n"
-      ".Lenosys_%=:                           \n"
-      "mov    x0, %[enosys]                   \n"
-      "ret                                    \n"
-      : /* no outputs */
-      : [nr_max] "i"(__NR_syscalls),
-        [off_nr] "i"(offsetof(struct pt_regs, syscallno)), [enosys] "i"(-ENOSYS)
-      : /* naked: no clobber list */
-  );
-}
+extern long nksu_dispatch_fast(const struct pt_regs *regs);
 
 int nksu_redirect_syscall(int real_nr) {
   return hook_and_save(real_nr, nksu_dispatch_fast, "nksu_redirect");
