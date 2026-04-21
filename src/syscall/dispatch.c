@@ -53,7 +53,27 @@ void nksu_unregister_handler(u32 nr) {
     WRITE_ONCE(virt_table[nr], NULL);
 }
 
-extern long nksu_dispatch_fast(const struct pt_regs *regs);
+asmlinkage long nksu_dispatch_fast(const struct pt_regs *regs)
+{
+    unsigned int nr = regs->regs[8];
+
+    if (unlikely(nr >= __NR_syscalls))
+        return -ENOSYS;
+
+    nksu_handler_t handler = READ_ONCE(virt_table[nr]);
+
+    if (likely(handler)) {
+        long ret = handler(regs);
+        if (ret)
+            return ret;
+    }
+
+    syscall_fn_t orig = READ_ONCE(nksu_orig_table[nr]);
+    if (unlikely(!orig))
+        return -ENOSYS;
+
+    return orig(regs);
+}
 
 int nksu_redirect_syscall(int real_nr) {
   return hook_and_save(real_nr, nksu_dispatch_fast, "nksu_redirect");
