@@ -166,7 +166,7 @@ static long __always_inline do_dispatch_cmd(struct nksu_args *args)
     }
 }
 
-static long nksu_dispatch(const struct pt_regs *regs)
+static long nksu_dispatch(struct pt_regs *regs)
 {
     struct nksu_args args;
     nksu_handler_t fn;
