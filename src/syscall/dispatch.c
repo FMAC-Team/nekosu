@@ -166,7 +166,7 @@ static long __always_inline do_dispatch_cmd(struct nksu_args *args)
     }
 }
 
-static long nksu_dispatch(struct pt_regs *regs)
+static long nksu_dispatch(const struct pt_regs *regs)
 {
     struct nksu_args args;
     nksu_handler_t fn;
@@ -187,11 +187,11 @@ static long nksu_dispatch(struct pt_regs *regs)
 
     fn = virt_lookup((u32)nr);
     if (!fn)
-        return call_orig(nr, regs); 
+        return call_orig(nr, regs);
 
     args.cmd  = NKSU_CMD_SYSCALL_CALL;
     args.nr   = (u32)nr;
-    args.regs = regs;
+    args.regs = (struct pt_regs *)regs;
     args.arg0 = regs->regs[0];
     args.arg1 = regs->regs[1];
     args.arg2 = regs->regs[2];
@@ -207,7 +207,7 @@ static long nksu_dispatch(struct pt_regs *regs)
 
 int nksu_redirect_syscall(int real_nr)
 {
-    return hook_and_save(real_nr, (syscall_fn_t)nksu_dispatch, "nksu_redirect");
+    return hook_and_save(real_nr, nksu_dispatch, "nksu_redirect");
 }
 
 int nksu_get_syscall_nr(void)
@@ -302,7 +302,7 @@ int nksu_dispatch_init(void)
             nksu_syscall_nr, nksu_syscall_nr);
 
     ret = hook_and_save(nksu_syscall_nr,
-                        (syscall_fn_t)nksu_dispatch,
+                        nksu_dispatch,
                         "nksu_dispatch");
     if (ret) {
         nksu_syscall_nr = -1;
