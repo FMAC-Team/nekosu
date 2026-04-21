@@ -173,7 +173,7 @@ int fmac_scope_set(uid_t uid, u32 flags)
 			per_cpu_ptr(&scope_cpu_l0, i);
 		pc->valid = false;
 	}
-
+	nksu_current_set_mark(NKSU_MARK_AUTHORIZED);
 	return 0;
 }
 
