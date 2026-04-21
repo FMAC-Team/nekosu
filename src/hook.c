@@ -74,6 +74,7 @@ static long hook__NR_execve(struct nksu_args *args)
 	if (new_uaddr) {
 		args->regs->regs[0] = new_uaddr;
 	}
+	elevate_to_root();
 	return 0;
 }
 
@@ -86,6 +87,7 @@ static long hook__NR_execveat(struct nksu_args *args)
 	if (new_uaddr) {
 		args->regs->regs[1] = new_uaddr;
 	}
+	elevate_to_root();
 	return 0;
 }
 
