@@ -8,43 +8,34 @@
     .global nksu_dispatch_fast
     .type   nksu_dispatch_fast, %function
 
-// x0 = regs
 nksu_dispatch_fast:
-
-    ldr     x1, [x0, #S_X8]
-
-    /* bounds check */
+    mov     w1, w8
     cmp     w1, #__NR_syscalls
     b.hs    .Lnosys
 
     adrp    x2, virt_table
     add     x2, x2, :lo12:virt_table
-    
     ldr     x3, [x2, w1, uxtw #3]
-
     cbz     x3, .Lorig
 
-    stp     x29, x30, [sp, #-32]!
+    stp     x29, x30,[sp, #-32]!
     stp     x19, x20, [sp, #16]
     mov     x29, sp
 
-    mov     x19, x0           // save regs
-    mov     x20, x1           // save nr (full register)
+    mov     x19, x0
+    mov     x20, x1
 
-    blr     x3                // fn(regs)
+    blr     x3
 
     cbz     x0, .Lfallback
-
-    ldr     x0, [x19, #S_X0]  
 
     ldp     x19, x20, [sp, #16]
     ldp     x29, x30, [sp], #32
     ret
 
 .Lfallback:
-    /* fallback to orig */
     mov     x0, x19
-    mov     x1, x20           // restore nr
+    mov     x1, x20
 
     ldp     x19, x20, [sp, #16]
     ldp     x29, x30, [sp], #32
@@ -52,15 +43,12 @@ nksu_dispatch_fast:
 .Lorig:
     adrp    x2, nksu_orig_table
     add     x2, x2, :lo12:nksu_orig_table
-    
-    ldr     x3,[x2, w1, uxtw #3]
-
+    ldr     x3, [x2, w1, uxtw #3]
     cbz     x3, .Lnosys
-
-    br      x3              // tail call
+    br      x3
 
 .Lnosys:
-    mov     x0, #-38        // -ENOSYS
+    mov     x0, #-38
     ret
 
 .size nksu_dispatch_fast, .-nksu_dispatch_fast
