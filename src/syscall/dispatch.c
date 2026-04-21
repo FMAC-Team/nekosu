@@ -9,13 +9,6 @@
 #include "type.h"
 #include <fmac.h>
 
-#define PT_REGS_REG0   offsetof(struct pt_regs, regs[0])
-#define PT_REGS_REG1   offsetof(struct pt_regs, regs[1])
-#define PT_REGS_REG2   offsetof(struct pt_regs, regs[2])
-#define PT_REGS_REG3   offsetof(struct pt_regs, regs[3])
-#define PT_REGS_REG4   offsetof(struct pt_regs, regs[4])
-#define PT_REGS_REG5   offsetof(struct pt_regs, regs[5])
-
 #if defined(CONFIG_ARM64)
 #define PT_REGS_SYSCALLNO offsetof(struct pt_regs, syscallno)
 #else
@@ -68,16 +61,21 @@ static __always_inline long
 nksu_dispatch_fast(const struct pt_regs *regs)
 {
     register const struct pt_regs *r0 asm("x0") = regs;
-    register long ret asm("x0");
+    register long ret asm("x0") = 0;
 
     asm volatile(
         /* nr = regs->syscallno */
         "ldr w1, [%x0, %[off_nr]]\n"
-        "mov w8, w1\n"
 
-        /* bounds */
+        /* nr < 0 */
+        "cmp w1, #0\n"
+        "b.lt 1f\n"
+
+        /* nr >= __NR_syscalls */
         "cmp w1, %w[nr_max]\n"
         "b.hs 1f\n"
+
+        "mov w8, w1\n"
 
         /* fn = virt_table[nr] */
         "adrp x2, virt_table\n"
@@ -85,16 +83,11 @@ nksu_dispatch_fast(const struct pt_regs *regs)
         "ldr  x3, [x2, x1, lsl #3]\n"
         "cbz  x3, 1f\n"
 
-        /* load args */
-        "ldr x1, [%x0, %[off0]]\n"
-        "ldr x2, [%x0, %[off1]]\n"
-        "ldr x4, [%x0, %[off2]]\n"
-        "ldr x5, [%x0, %[off3]]\n"
-        "ldr x6, [%x0, %[off4]]\n"
-        "ldr x7, [%x0, %[off5]]\n"
-
-        /* call handler */
+        /* call handler(regs) */
+        "mov x0, %x[regs]\n"
         "blr x3\n"
+
+        /* if (ret != 0) return */
         "cbnz x0, 2f\n"
 
         /* fallback */
@@ -103,8 +96,9 @@ nksu_dispatch_fast(const struct pt_regs *regs)
         "add  x2, x2, :lo12:nksu_orig_table\n"
         "ldr  x3, [x2, x8, lsl #3]\n"
         "cbz  x3, 9f\n"
-        "mov  x0, %x[regs]\n"
-        "blr  x3\n"
+
+        "mov x0, %x[regs]\n"
+        "blr x3\n"
         "b 3f\n"
 
         /* no syscall */
@@ -118,14 +112,8 @@ nksu_dispatch_fast(const struct pt_regs *regs)
         : "r"(r0),
           [regs]"r"(r0),
           [nr_max]"i"(__NR_syscalls),
-          [off_nr]"i"(PT_REGS_SYSCALLNO),
-          [off0]"i"(PT_REGS_REG0),
-          [off1]"i"(PT_REGS_REG1),
-          [off2]"i"(PT_REGS_REG2),
-          [off3]"i"(PT_REGS_REG3),
-          [off4]"i"(PT_REGS_REG4),
-          [off5]"i"(PT_REGS_REG5)
-        : "x1","x2","x3","x4","x5","x6","x7","x8","memory","cc"
+          [off_nr]"i"(PT_REGS_SYSCALLNO)
+        : "x1","x2","x3","x8","memory","cc"
     );
 
     return ret;
