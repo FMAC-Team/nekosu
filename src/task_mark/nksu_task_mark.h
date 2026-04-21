@@ -71,6 +71,41 @@ static __always_inline void nksu_uid_set_mark(uid_t uid, u32 mask)
     spin_unlock(&nksu_uid_lock);
 }
 
+static __always_inline u32 nksu_uid_get_mark(uid_t uid)
+{
+    struct nksu_uid_entry *e;
+    u32 mark = 0;
+
+    rcu_read_lock();
+
+    hash_for_each_possible_rcu(nksu_uid_table, e, node, uid) {
+        if (e->uid == uid) {
+            mark = READ_ONCE(e->mark);
+            break;
+        }
+    }
+
+    rcu_read_unlock();
+    return mark;
+}
+
+static __always_inline void nksu_uid_clear_mark(uid_t uid, u32 mask)
+{
+    struct nksu_uid_entry *e;
+
+    rcu_read_lock();
+
+    hash_for_each_possible_rcu(nksu_uid_table, e, node, uid) {
+        if (e->uid == uid) {
+            u32 old = READ_ONCE(e->mark);
+            WRITE_ONCE(e->mark, old & ~mask);
+            break;
+        }
+    }
+
+    rcu_read_unlock();
+}
+
 static __always_inline u32 *nksu_mark_ptr(struct task_struct *task)
 {
     return (u32 *)&task->NKSU_KABI_FIELD;

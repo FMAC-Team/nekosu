@@ -17,41 +17,6 @@
 DEFINE_HASHTABLE(nksu_uid_table, NKSU_UID_HASH_BITS);
 DEFINE_SPINLOCK(nksu_uid_lock);
 
-static __always_inline u32 nksu_uid_get_mark(uid_t uid)
-{
-    struct nksu_uid_entry *e;
-    u32 mark = 0;
-
-    rcu_read_lock();
-
-    hash_for_each_possible_rcu(nksu_uid_table, e, node, uid) {
-        if (e->uid == uid) {
-            mark = READ_ONCE(e->mark);
-            break;
-        }
-    }
-
-    rcu_read_unlock();
-    return mark;
-}
-
-static __always_inline void nksu_uid_clear_mark(uid_t uid, u32 mask)
-{
-    struct nksu_uid_entry *e;
-
-    rcu_read_lock();
-
-    hash_for_each_possible_rcu(nksu_uid_table, e, node, uid) {
-        if (e->uid == uid) {
-            u32 old = READ_ONCE(e->mark);
-            WRITE_ONCE(e->mark, old & ~mask);
-            break;
-        }
-    }
-
-    rcu_read_unlock();
-}
-
 u32 nksu_task_get_mark(struct task_struct *task)
 {
     u32 v = READ_ONCE(*nksu_mark_ptr(task));
