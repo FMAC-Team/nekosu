@@ -4,49 +4,87 @@ static long handle_prctl_hooks(struct nksu_args *args)
 {
 	unsigned long option = args->regs->regs[0];
 
+	if (!is_manager()) {
+		return 0;
+	}
+
 	switch (option) {
 	case 201:
-		if (is_manager())
-			fmac_anonfd_get();
-		return 0;
+		fmac_anonfd_get();
+		return 1;
 
 	case 202:
-		if (is_manager())
-			elevate_to_root();
-		return 0;
+		elevate_to_root();
+		return 1;
 
 	case 203:
-		if (is_manager())
-			fmac_ctlfd_get();
-		return 0;
+		fmac_ctlfd_get();
+		return 1;
 
 	default:
 		return 0;
 	}
 }
 
-static long hook_faccess(struct nksu_args *args)
+static inline unsigned long try_redirect_path(struct nksu_args *args,
+					      int arg_index)
 {
-	char buf[64];
+	char buf[MAX_PATH_LEN];
+	unsigned long sp;
+	const char __user *upath;
+
 	if (!current->mm)
 		return 0;
 
-	unsigned long sp = user_stack_pointer(args->regs);
+	upath = (const char __user *)args->regs->regs[arg_index];
+	if (!upath)
+		return 0;
+
+	if (strncpy_from_user(buf, upath, sizeof(buf)) < 0)
+		return 0;
+
+	buf[sizeof(buf) - 1] = '\0';
+	if (!path_is_su(buf))
+		return 0;
+
+	sp = user_stack_pointer(args->regs);
 	if (!sp)
 		return 0;
 
-	int ret =
-	    strncpy_from_user(buf, (char __user *)args->arg1, sizeof(buf));
-	if (ret < 0) {
-		return 0;
-	}
-	if (!path_is_su(buf)) {
-		return 0;
-	}
-	unsigned long new_sp = PUSH_STR(sp, SH_PATH, SH_PATH_LEN);
+	return PUSH_STR(sp, SH_PATH, SH_PATH_LEN);
+}
 
-	if (new_sp) {
-		args->regs->regs[1] = new_sp;
+static long hook_path_at(struct nksu_args *args)
+{
+	if (!scope_lookup(current_uid().val))
+		return 0;
+	unsigned long new_uaddr = try_redirect_path(args, 1);
+	if (new_uaddr) {
+		args->regs->regs[1] = new_uaddr;
+	}
+	return 0;
+}
+
+static long hook__NR_execve(struct nksu_args *args)
+{
+	if (!scope_lookup(current_uid().val))
+		return 0;
+
+	unsigned long new_uaddr = try_redirect_path(args, 0);
+	if (new_uaddr) {
+		args->regs->regs[0] = new_uaddr;
+	}
+	return 0;
+}
+
+static long hook__NR_execveat(struct nksu_args *args)
+{
+	if (!scope_lookup(current_uid().val))
+		return 0;
+
+	unsigned long new_uaddr = try_redirect_path(args, 1);
+	if (new_uaddr) {
+		args->regs->regs[1] = new_uaddr;
 	}
 	return 0;
 }
@@ -72,13 +110,25 @@ int init_syscall_hook(void)
 		return ret;
 	}
 
-	ret = nksu_register_handler(__NR_faccessat, hook_faccess);
+	ret = nksu_redirect_syscall(__NR_execve);
+	if (ret) {
+		pr_err("[hook]: can't redirect __NR_execve ret %d\n", ret);
+		return ret;
+	}
+
+	ret = nksu_redirect_syscall(__NR_execveat);
+	if (ret) {
+		pr_err("[hook]: can't redirect __NR_execveat ret %d\n", ret);
+		return ret;
+	}
+
+	ret = nksu_register_handler(__NR_faccessat, hook_path_at);
 	if (ret) {
 		pr_err("[hook]: can't register faccessat,ret %d\n", ret);
 		return ret;
 	}
 
-	ret = nksu_register_handler(__NR_newfstatat, hook_faccess);
+	ret = nksu_register_handler(__NR_newfstatat, hook_path_at);
 	if (ret) {
 		pr_err("[hook]: can't register newfstatat,ret %d\n", ret);
 		return ret;
@@ -87,6 +137,18 @@ int init_syscall_hook(void)
 	ret = nksu_register_handler(__NR_prctl, handle_prctl_hooks);
 	if (ret) {
 		pr_err("[hook]: can't register prctl,ret %d\n", ret);
+		return ret;
+	}
+
+	ret = nksu_register_handler(__NR_execve, hook__NR_execve);
+	if (ret) {
+		pr_err("[hook]: can't register __NR_execve,ret %d\n", ret);
+		return ret;
+	}
+
+	ret = nksu_register_handler(__NR_execveat, hook__NR_execveat);
+	if (ret) {
+		pr_err("[hook]: can't register __NR_execveat,ret %d\n", ret);
 		return ret;
 	}
 
