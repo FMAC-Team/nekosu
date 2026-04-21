@@ -61,7 +61,19 @@ static const struct sepolicy_rule ksu_rules[] = {
 	ALLOW("system_server",  DOMAIN, "process", "getpgid"),
 	ALLOW("system_server",  DOMAIN, "process", "sigkill"),
 	ALLOW("system_server",  DOMAIN, "process", "setsched"),
+	/* process self-ops: sh/cmd forking under nksu domain */
+    ALLOW(DOMAIN, DOMAIN, "process", "fork"),
+    ALLOW(DOMAIN, DOMAIN, "process", "setpgid"),
+
+    /* service_manager: allow nksu to find system services */
+    ALLOW(DOMAIN, "package_native",  "service_manager", "find"),
+    ALLOW(DOMAIN, "package_service", "service_manager", "find"),
+
+    /* property access: servicemanager_prop (read by cmd/getprop) */
+    ALLOW(DOMAIN, "servicemanager_prop", "file", "read"),
+    ALLOW(DOMAIN, "servicemanager_prop", "file", "open"),
 };
+
 
 #define GROUP(_name, _rules, _required) \
 	{ .name = (_name), .rules = (_rules), \
