@@ -4,6 +4,8 @@ nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/seli
 
 nksu-y += src/task_mark/nksu_task_mark.o
 
+nksu-y += src/scope.o
+
 ifeq ($(CONFIG_NKSU_SYSCALL),y)
 	ccflags-y += -DCONFIG_NKSU_SYSCALL=1
 	nksu-y += src/syscall/syscall.o

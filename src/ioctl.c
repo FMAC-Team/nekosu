@@ -35,12 +35,30 @@ struct fmac_sepolicy_rule {
 #define IOC_DEL_CAP       _IOW(IOC_MAGIC,   8, struct fmac_uid_cap)
 #define IOC_SEL_ADD_RULE  _IOW(IOC_MAGIC,   9, struct fmac_sepolicy_rule)
 
+static long ioc_add_uid(unsigned long arg)
+{
+	unsigned int id;
+	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
+		return -EFAULT;
+	fmac_scope_set((uid_t)id, FMAC_SCOPE_ALL);
+	return 0;
+}
+
+static long ioc_del_uid(unsigned long arg)
+{
+	unsigned int id;
+	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
+		return -EFAULT;
+	fmac_scope_clear((uid_t)id);
+	return 0;
+}
+
 static long ioc_has_uid(unsigned long arg)
 {
 	unsigned int id;
 	if (copy_from_user(&id, (void __user *)arg, sizeof(id)))
 		return -EFAULT;
-	id = !!scope_lookup((uid_t) id);
+	id = !!scope_lookup((uid_t)id);
 	if (copy_to_user((void __user *)arg, &id, sizeof(id)))
 		return -EFAULT;
 	return 0;
@@ -65,7 +83,7 @@ static long ioc_get_cap(unsigned long arg)
 		return -ENOENT;
 	uc.caps = uid_caps_get(uc.uid);
 	return copy_to_user((struct fmac_uid_cap __user *)arg, &uc, sizeof(uc))
-	    ? -EFAULT : 0;
+		? -EFAULT : 0;
 }
 
 static long ioc_del_cap(unsigned long arg)
@@ -101,41 +119,25 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = fmac_anonfd_get();
 		break;
 
-	case IOC_BIND_EVT:{
-			int efd;
-			if (copy_from_user
-			    (&efd, (int __user *)arg, sizeof(efd)))
-				return -EFAULT;
-			ret = bind_eventfd(efd);
-			break;
-		}
+	case IOC_BIND_EVT: {
+		int efd;
+		if (copy_from_user(&efd, (int __user *)arg, sizeof(efd)))
+			return -EFAULT;
+		ret = bind_eventfd(efd);
+		break;
+	}
 
-	case IOC_CHK_WRITE:{
-			int changed = check_mmap_write()? 1 : 0;
-			if (copy_to_user
-			    ((int __user *)arg, &changed, sizeof(changed)))
-				return -EFAULT;
-			break;
-		}
+	case IOC_CHK_WRITE: {
+		int changed = check_mmap_write() ? 1 : 0;
+		if (copy_to_user((int __user *)arg, &changed, sizeof(changed)))
+			return -EFAULT;
+		break;
+	}
 
-	case IOC_ADD_UID:{
-			unsigned int id;
-			if (copy_from_user
-			    (&id, (unsigned int __user *)arg, sizeof(id)))
-				return -EFAULT;
-			fmac_scope_set((uid_t) id, FMAC_SCOPE_ALL);
-			return 0;
-		}
-
-	case IOC_DEL_UID:{
-			unsigned int id;
-			if (copy_from_user
-			    (&id, (unsigned int __user *)arg, sizeof(id)))
-				return -EFAULT;
-			fmac_scope_clear((uid_t) id);
-			return 0;
-		}
-
+	case IOC_ADD_UID:
+		return ioc_add_uid(arg);
+	case IOC_DEL_UID:
+		return ioc_del_uid(arg);
 	case IOC_HAS_UID:
 		return ioc_has_uid(arg);
 	case IOC_SET_CAP:

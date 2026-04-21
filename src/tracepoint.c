@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-3.0
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/uaccess.h>
 #include <linux/string.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
-#include <linux/hashtable.h>
-#include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/tracepoint.h>
 #include <linux/trace_events.h>
@@ -16,111 +14,7 @@
 
 #include <fmac.h>
 #include "tracepoint.h"
-
-#define SCOPE_HASH_BITS 6
-
-// no export
-struct scope_entry {
-	uid_t uid;
-	u32 flags;
-	struct hlist_node node;
-};
-
-static DEFINE_HASHTABLE(scope_table, SCOPE_HASH_BITS);
-static DEFINE_SPINLOCK(scope_lock);
-
-u32 scope_lookup(uid_t uid)
-{
-	struct scope_entry *e;
-	u32 flags = 0;
-	unsigned long irqf;
-
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_possible(scope_table, e, node, uid) {
-		if (e->uid == uid) {
-			flags = e->flags;
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&scope_lock, irqf);
-	return flags;
-}
-
-int fmac_scope_set(uid_t uid, u32 flags)
-{
-	struct scope_entry *e, *found = NULL;
-	unsigned long irqf;
-
-	if (!flags) {
-		fmac_scope_clear(uid);
-		return 0;
-	}
-
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_possible(scope_table, e, node, uid) {
-		if (e->uid == uid) {
-			found = e;
-			break;
-		}
-	}
-	if (found) {
-		found->flags = flags;
-		spin_unlock_irqrestore(&scope_lock, irqf);
-		return 0;
-	}
-	spin_unlock_irqrestore(&scope_lock, irqf);
-
-	e = kmalloc(sizeof(*e), GFP_KERNEL);
-	if (!e)
-		return -ENOMEM;
-	e->uid = uid;
-	e->flags = flags;
-
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_possible(scope_table, found, node, uid) {
-		if (found->uid == uid) {
-			found->flags = flags;
-			spin_unlock_irqrestore(&scope_lock, irqf);
-			kfree(e);
-			return 0;
-		}
-	}
-	hash_add(scope_table, &e->node, uid);
-	spin_unlock_irqrestore(&scope_lock, irqf);
-	return 0;
-}
-
-void fmac_scope_clear(uid_t uid)
-{
-	struct scope_entry *e;
-	struct hlist_node *tmp;
-	unsigned long irqf;
-
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_possible_safe(scope_table, e, tmp, node, uid) {
-		if (e->uid == uid) {
-			hash_del(&e->node);
-			kfree(e);
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&scope_lock, irqf);
-}
-
-void fmac_scope_clear_all(void)
-{
-	struct scope_entry *e;
-	struct hlist_node *tmp;
-	unsigned long irqf;
-	unsigned int bkt;
-
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_safe(scope_table, bkt, tmp, e, node) {
-		hash_del(&e->node);
-		kfree(e);
-	}
-	spin_unlock_irqrestore(&scope_lock, irqf);
-}
+#include "scope.h"
 
 static inline u32 current_scope(void)
 {
@@ -144,9 +38,8 @@ void mark_threads_by_uid(uid_t uid)
 	struct task_struct *g, *p;
 	rcu_read_lock();
 	for_each_process_thread(g, p) {
-		if (__kuid_val(task_uid(p)) == uid) {
+		if (__kuid_val(task_uid(p)) == uid)
 			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-		}
 	}
 	rcu_read_unlock();
 }
@@ -161,9 +54,8 @@ void mark_threads_by_pid(pid_t pid)
 	if (!task)
 		goto out;
 
-	for_each_thread(task, t) {
+	for_each_thread(task, t)
 		set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
-	}
 
 	set_tsk_thread_flag(task, TIF_SYSCALL_TRACEPOINT);
 
@@ -199,9 +91,9 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	if (id == __NR_setuid || id == __NR_setresuid || id == __NR_setreuid
 	    || id == __NR_setfsuid) {
 #if defined(__aarch64__)
-		target_uid = (uid_t) regs->regs[0];
+		target_uid = (uid_t)regs->regs[0];
 #elif defined(__x86_64__)
-		target_uid = (uid_t) regs->di;
+		target_uid = (uid_t)regs->di;
 #endif
 		if (scope_lookup(target_uid)) {
 			mark_threads_by_uid(target_uid);
@@ -230,19 +122,16 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 #endif
 		switch (option) {
 		case 201:
-			if (is_manager()) {
+			if (is_manager())
 				fmac_anonfd_get();
-			}
 			return;
 		case 202:
-			if (is_manager()) {
+			if (is_manager())
 				elevate_to_root();
-			}
 			return;
 		case 203:
-			if (is_manager()) {
+			if (is_manager())
 				fmac_ctlfd_get();
-			}
 			return;
 		default:
 			break;
@@ -262,8 +151,7 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	if (!path_is_su(kpath))
 		return;
 
-	sp = (unsigned long)current->mm ? user_stack_pointer(regs)
-	    : 0;
+	sp = current->mm ? user_stack_pointer(regs) : 0;
 	if (!sp)
 		return;
 
@@ -312,7 +200,6 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	}
 }
 
-// no export
 struct tp_find_ctx {
 	const char *name;
 	struct tracepoint **out;
@@ -331,9 +218,9 @@ static void tp_find_cb(struct tracepoint *tp, void *priv)
 static struct tracepoint *find_tracepoint(const char *name)
 {
 	struct tracepoint *result = NULL;
-	struct tp_find_ctx ctx2 = {.name = name,.out = &result };
+	struct tp_find_ctx ctx = { .name = name, .out = &result };
 
-	for_each_kernel_tracepoint(tp_find_cb, &ctx2);
+	for_each_kernel_tracepoint(tp_find_cb, &ctx);
 	return result;
 }
 
@@ -374,8 +261,7 @@ int load_tracepoint_hook(void)
 	ret = tracepoint_probe_register(tp_sched_fork, probe_sched_fork, NULL);
 	if (ret) {
 		pr_err("register sched_process_fork probe failed: %d\n", ret);
-		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter,
-					    NULL);
+		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter, NULL);
 		return ret;
 	}
 
@@ -386,11 +272,9 @@ int load_tracepoint_hook(void)
 void unload_tracepoint_hook(void)
 {
 	if (tp_sys_enter)
-		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter,
-					    NULL);
+		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter, NULL);
 	if (tp_sched_fork)
-		tracepoint_probe_unregister(tp_sched_fork, probe_sched_fork,
-					    NULL);
+		tracepoint_probe_unregister(tp_sched_fork, probe_sched_fork, NULL);
 
 	tracepoint_synchronize_unregister();
 
