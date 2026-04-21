@@ -57,67 +57,54 @@ void nksu_unregister_handler(u32 nr)
         WRITE_ONCE(virt_table[nr], NULL);
 }
 
-static __always_inline long
-nksu_dispatch_fast(const struct pt_regs *regs)
+static long nksu_dispatch_fast(const struct pt_regs *regs)
 {
-    register const struct pt_regs *r0 asm("x0") = regs;
-    register long ret asm("x0") = 0;
+    register long ret asm("x0") = (long)regs;
 
     asm volatile(
-        /* nr = regs->syscallno */
-        "ldr w1, [%x0, %[off_nr]]\n"
+        "ldr w8, [%0, %[off_nr]]\n"
 
-        /* nr < 0 */
-        "cmp w1, #0\n"
+        "cmp w8, #0\n"
         "b.lt 1f\n"
-
-        /* nr >= __NR_syscalls */
-        "cmp w1, %w[nr_max]\n"
+        "cmp w8, %w[nr_max]\n"
         "b.hs 1f\n"
 
-        "mov w8, w1\n"
-
-        /* fn = virt_table[nr] */
         "adrp x2, virt_table\n"
         "add  x2, x2, :lo12:virt_table\n"
-        "ldr  x3, [x2, x1, lsl #3]\n"
-        "cbz  x3, 1f\n"
+        "ldr  x3, [x2, x8, lsl #3]\n"
+        "cbz  x3, 2f\n" 
 
-        /* call handler(regs) */
-        "mov x0, %x[regs]\n"
-        "blr x3\n"
+        "stp  x0, x8, [sp, #-16]!\n"
+        "blr  x3\n"
+        "ldp  x1, x8, [sp], #16\n"
 
-        /* if (ret != 0) return */
-        "cbnz x0, 2f\n"
-
-        /* fallback */
-        "1:\n"
+        "cbnz x0, 3f\n"
+        "mov  x0, x1\n"
+    "2:\n" 
         "adrp x2, nksu_orig_table\n"
         "add  x2, x2, :lo12:nksu_orig_table\n"
         "ldr  x3, [x2, x8, lsl #3]\n"
-        "cbz  x3, 9f\n"
+        "cbz  x3, 1f\n"
 
-        "mov x0, %x[regs]\n"
-        "blr x3\n"
-        "b 3f\n"
+        "blr  x3\n"
+        "b    3f\n"
 
-        /* no syscall */
-        "9:\n"
-        "mov x0, #-38\n"
+    "1:\n"
+        "mov x0, #-38\n" /* -ENOSYS */
 
-        "2:\n"
-        "3:\n"
+    "3:\n"
 
         : "+r"(ret)
-        : "r"(r0),
-          [regs]"r"(r0),
-          [nr_max]"i"(__NR_syscalls),
+        : [nr_max]"i"(__NR_syscalls),
           [off_nr]"i"(PT_REGS_SYSCALLNO)
-        : "x1","x2","x3","x8","memory","cc"
+        : "x1", "x2", "x3", "x4", "x5", "x6", "x7",
+          "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15",
+          "x16", "x17", "x18", "lr", "memory", "cc"
     );
 
     return ret;
 }
+
 
 int nksu_redirect_syscall(int real_nr)
 {
