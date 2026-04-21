@@ -46,9 +46,9 @@ u32 scope_lookup(uid_t uid)
 	u32 flags = 0;
 
 	preempt_disable();
-	
 	pc = this_cpu_ptr(&scope_cpu_l0);
-	current_version = atomic64_read(&scope_version);
+	
+	current_version = atomic64_read_acquire(&scope_version);
 
 	if (likely(pc->version == current_version && pc->uid == uid)) {
 		flags = pc->flags;
@@ -80,10 +80,9 @@ static int scope_update(uid_t uid, u32 flags)
 {
 	struct scope_node *node, *new_node = NULL;
 	u32 bkt = hash_32(uid, SCOPE_HASH_BITS);
-	int found = 0;
-
+	
 	if (flags != 0) {
-		new_node = kmalloc(sizeof(*new_node), GFP_KERNEL);
+		new_node = kmalloc(sizeof(*new_node), GFP_ATOMIC);
 		if (!new_node)
 			return -ENOMEM;
 		new_node->uid = uid;
@@ -92,35 +91,33 @@ static int scope_update(uid_t uid, u32 flags)
 
 	spin_lock(&g_bucket_locks[bkt]);
 
-	hash_for_each_possible_rcu(g_scope_table, node, hnode, uid) {
-		if (node->uid == uid) {
-			if (new_node) {
-				hlist_replace_rcu(&node->hnode, &new_node->hnode);
-			} else {
-				hash_del_rcu(&node->hnode);
+	node = NULL;
+	{
+		struct scope_node *pos;
+		hash_for_each_possible_rcu(g_scope_table, pos, hnode, uid) {
+			if (pos->uid == uid) {
+				node = pos;
+				break;
 			}
-			call_rcu(&node->rcu, scope_node_free_rcu);
-			found = 1;
-			break;
 		}
 	}
 
-	if (!found && new_node) {
+	if (node) {
+		if (new_node) {
+			hlist_replace_rcu(&node->hnode, &new_node->hnode);
+		} else {
+			hash_del_rcu(&node->hnode);
+		}
+		call_rcu(&node->rcu, scope_node_free_rcu);
+	} else if (new_node) {
 		hash_add_rcu(g_scope_table, &new_node->hnode, uid);
-	} else if (!found && !new_node) {
-		/* nothing todo */
 	}
-
-	atomic64_inc(&scope_version);
+	atomic64_inc_return_release(&scope_version);
 	
 	spin_unlock(&g_bucket_locks[bkt]);
-
-	if (!found && !new_node && new_node) {
-	    kfree(new_node); 
-	}
-
 	return 0;
 }
+
 
 int fmac_scope_set(uid_t uid, u32 flags)
 {
