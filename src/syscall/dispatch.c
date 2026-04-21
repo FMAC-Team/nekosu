@@ -58,9 +58,6 @@ asmlinkage long nksu_dispatch_fast(const struct pt_regs *regs)
     unsigned int nr = regs->regs[8];
     struct task_struct *p = current;
 
-    if (unlikely(nr >= __NR_syscalls))
-        return -ENOSYS;
-
     bool is_marked = nksu_task_check_mark_inline(p, NKSU_MARK_AUTHORIZED);
     nksu_handler_t handler = READ_ONCE(virt_table[nr]);
 

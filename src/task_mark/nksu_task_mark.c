@@ -4,126 +4,174 @@
 #include <linux/rcupdate.h>
 #include <linux/android_kabi.h>
 #include <linux/version.h>
+#include <linux/slab.h>
+#include <linux/hashtable.h>
+#include <linux/uidgid.h>
+#include <linux/spinlock.h>
 #include <trace/events/sched.h>
 
 #include <fmac.h>
 
-#define NKSU_KABI_MAGIC      ((u32)0xFAC0FAC0U)
-#define NKSU_SAMPLE_COUNT    16
-#define NKSU_NONZERO_THRESH  4
-#define NKSU_SAMPLE_PID_MIN  100
+#define NKSU_UID_HASH_BITS 6
 
-#define NKSU_FORK_CLEAR_MASK \
-	(NKSU_MARK_AUTHORIZED | NKSU_MARK_ROOT | NKSU_MARK_SU)
+struct nksu_uid_entry {
+    uid_t uid;
+    u32 mark;
+    struct hlist_node node;
+};
 
-static bool nksu_kabi_offset_check(void)
+static DEFINE_HASHTABLE(nksu_uid_table, NKSU_UID_HASH_BITS);
+static DEFINE_SPINLOCK(nksu_uid_lock);
+
+static __always_inline u32 nksu_uid_get_mark(uid_t uid)
 {
-	u64 dummy = 0;
-	u32 *ptr = (u32 *)&dummy;
+    struct nksu_uid_entry *e;
+    u32 mark = 0;
 
-	WRITE_ONCE(*ptr, NKSU_KABI_MAGIC);
-	return READ_ONCE(*ptr) == NKSU_KABI_MAGIC;
+    rcu_read_lock();
+
+    hash_for_each_possible_rcu(nksu_uid_table, e, node, uid) {
+        if (e->uid == uid) {
+            mark = READ_ONCE(e->mark);
+            break;
+        }
+    }
+
+    rcu_read_unlock();
+    return mark;
 }
 
-static int nksu_kabi_sample_nonzero(void)
+static __always_inline void nksu_uid_set_mark(uid_t uid, u32 mask)
 {
-	struct task_struct *task;
-	int nonzero = 0, total = 0;
+    struct nksu_uid_entry *e;
+    bool found = false;
 
-	rcu_read_lock();
-	for_each_process(task) {
-		if (task->pid < NKSU_SAMPLE_PID_MIN)
-			continue;
-		if (READ_ONCE(*nksu_mark_ptr(task)) != 0)
-			nonzero++;
-		if (++total >= NKSU_SAMPLE_COUNT)
-			break;
-	}
-	rcu_read_unlock();
+    spin_lock(&nksu_uid_lock);
 
-	return nonzero;
+    hash_for_each_possible(nksu_uid_table, e, node, uid) {
+        if (e->uid == uid) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        e = kmalloc(sizeof(*e), GFP_ATOMIC);
+        if (!e) {
+            spin_unlock(&nksu_uid_lock);
+            return;
+        }
+
+        e->uid = uid;
+        e->mark = 0;
+        hash_add_rcu(nksu_uid_table, &e->node, uid);
+    }
+
+    WRITE_ONCE(e->mark, READ_ONCE(e->mark) | mask);
+
+    spin_unlock(&nksu_uid_lock);
 }
 
-int nksu_kabi_field_check(void)
+static __always_inline void nksu_uid_clear_mark(uid_t uid, u32 mask)
 {
-	int nonzero;
+    struct nksu_uid_entry *e;
 
-	if (!nksu_kabi_offset_check()) {
-		pr_err("nksu: kabi field offset check failed\n");
-		return -EBUSY;
-	}
+    rcu_read_lock();
 
-	nonzero = nksu_kabi_sample_nonzero();
-	if (nonzero > NKSU_NONZERO_THRESH) {
-		pr_err("nksu: android_kabi_reserved1 may be in use "
-		       "(%d/%d sampled tasks non-zero)\n",
-		       nonzero, NKSU_SAMPLE_COUNT);
-		return -EBUSY;
-	}
+    hash_for_each_possible_rcu(nksu_uid_table, e, node, uid) {
+        if (e->uid == uid) {
+            u32 old = READ_ONCE(e->mark);
+            WRITE_ONCE(e->mark, old & ~mask);
+            break;
+        }
+    }
 
-	pr_info("nksu: android_kabi_reserved1 available "
-		"(%d/%d sampled tasks non-zero)\n",
-		nonzero, NKSU_SAMPLE_COUNT);
-	return 0;
+    rcu_read_unlock();
 }
 
 u32 nksu_task_get_mark(struct task_struct *task)
 {
-	return READ_ONCE(*nksu_mark_ptr(task));
+    u32 v = READ_ONCE(*nksu_mark_ptr(task));
+
+    if (likely(v))
+        return v;
+
+    return nksu_uid_get_mark(task_uid(task).val);
 }
 
 bool nksu_task_check_mark(struct task_struct *task, u32 mark)
 {
-	return (READ_ONCE(*nksu_mark_ptr(task)) & mark) == mark;
+    u32 v = READ_ONCE(*nksu_mark_ptr(task));
+
+    if (likely(v))
+        return (v & mark) == mark;
+
+    return (nksu_uid_get_mark(task_uid(task).val) & mark) == mark;
 }
 
 void nksu_task_set_mark(struct task_struct *task, u32 mark)
 {
-	u32 *ptr = nksu_mark_ptr(task);
-	u32 old, new;
+    u32 *ptr = nksu_mark_ptr(task);
+    u32 old, new;
 
-	do {
-		old = READ_ONCE(*ptr);
-		new = old | mark;
-	} while (cmpxchg(ptr, old, new) != old);
+    do {
+        old = READ_ONCE(*ptr);
+        new = old | mark;
+    } while (cmpxchg(ptr, old, new) != old);
+
+    nksu_uid_set_mark(task_uid(task).val, mark);
 }
 
 void nksu_task_clear_mark(struct task_struct *task, u32 mark)
 {
-	u32 *ptr = nksu_mark_ptr(task);
-	u32 old, new;
+    u32 *ptr = nksu_mark_ptr(task);
+    u32 old, new;
 
-	do {
-		old = READ_ONCE(*ptr);
-		new = old & ~mark;
-	} while (cmpxchg(ptr, old, new) != old);
+    do {
+        old = READ_ONCE(*ptr);
+        new = old & ~mark;
+    } while (cmpxchg(ptr, old, new) != old);
+
+    nksu_uid_clear_mark(task_uid(task).val, mark);
 }
 
-static void nksu_on_fork(void *data, struct task_struct *parent,
-			 struct task_struct *child)
+static void nksu_on_fork(void *data,
+                          struct task_struct *parent,
+                          struct task_struct *child)
 {
-	u32 cur = READ_ONCE(*nksu_mark_ptr(child));
+    uid_t uid = task_uid(child).val;
+    u32 mark = nksu_uid_get_mark(uid);
 
-	if (cur & NKSU_FORK_CLEAR_MASK)
-		WRITE_ONCE(*nksu_mark_ptr(child), cur & ~NKSU_FORK_CLEAR_MASK);
+    WRITE_ONCE(*nksu_mark_ptr(child), mark);
+}
+
+static void nksu_on_exec(void *data,
+                         struct task_struct *p,
+                         pid_t pid,
+                         const char *filename)
+{
+    uid_t uid = task_uid(p).val;
+    u32 mark = nksu_uid_get_mark(uid);
+
+    WRITE_ONCE(*nksu_mark_ptr(p), mark);
 }
 
 int nksu_task_mark_init(void)
 {
-	int ret;
+    int ret;
 
-	ret = nksu_kabi_field_check();
-	if (ret)
-		return ret;
+    ret = register_trace_sched_process_fork(nksu_on_fork, NULL);
+    if (ret)
+        return ret;
 
-	ret = register_trace_sched_process_fork(nksu_on_fork, NULL);
-	if (ret)
-		pr_err("nksu: register sched_process_fork failed: %d\n", ret);
+    register_trace_sched_process_exec(nksu_on_exec, NULL);
 
-	return ret;
+    pr_info("nksu: UID-based task mark system initialized\n");
+    return 0;
 }
 
 void nksu_task_mark_exit(void)
 {
-	unregister_trace_sched_process_fork(nksu_on_fork, NULL);
+    unregister_trace_sched_process_fork(nksu_on_fork, NULL);
+    unregister_trace_sched_process_exec(nksu_on_exec, NULL);
 }
