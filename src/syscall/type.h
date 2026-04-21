@@ -2,6 +2,7 @@
 #include <linux/types.h>
 
 struct nksu_args {
+    struct pt_regs *regs;
     __u32 cmd;
     __u32 nr;
     __u64 arg0;
