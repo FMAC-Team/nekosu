@@ -191,7 +191,7 @@ static long nksu_dispatch(const struct pt_regs *regs)
 
     args.cmd  = NKSU_CMD_SYSCALL_CALL;
     args.nr   = (u32)nr;
-    args.regs = &regs;
+    args.regs = regs;
     args.arg0 = regs->regs[0];
     args.arg1 = regs->regs[1];
     args.arg2 = regs->regs[2];
