@@ -6,7 +6,7 @@ int hook_faccess(struct nksu_args *args)
 	if (!current->mm)
 		return 0;
 
-	unsigned long sp = user_stack_pointer(regs);
+	unsigned long sp = user_stack_pointer(args->regs);
 	if (!sp)
 		return 0;
 
@@ -21,7 +21,7 @@ int hook_faccess(struct nksu_args *args)
 	unsigned long new_sp = PUSH_STR(sp, SH_PATH, SH_PATH_LEN);
 
 	if (new_sp) {
-		&args->arg1 = new_sp;
+		args->regs->regs[1] = new_sp;
 	}
 	return 0;
 }
