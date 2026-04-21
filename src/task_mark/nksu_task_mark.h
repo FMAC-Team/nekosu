@@ -26,7 +26,7 @@ struct nksu_uid_entry {
 #include <linux/hashtable.h>
 #include <linux/spinlock.h>
 
-DECLARE_HASHTABLE(nksu_uid_table, NKSU_UID_HASH_BITS);
+extern struct hlist_head nksu_uid_table[1 << NKSU_UID_HASH_BITS];
 extern spinlock_t nksu_uid_lock;
 
 
