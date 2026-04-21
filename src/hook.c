@@ -59,7 +59,7 @@ static long hook_path_at(struct nksu_args *args)
 	if (!scope_lookup(current_uid().val))
 		return 0;
 	unsigned long new_uaddr = try_redirect_path(args, 1);
-	if (new_uaddr) {
+	if (new_uaddr > 0) {
 		args->regs->regs[1] = new_uaddr;
 	}
 	return 0;
@@ -71,7 +71,7 @@ static long hook__NR_execve(struct nksu_args *args)
 		return 0;
 
 	unsigned long new_uaddr = try_redirect_path(args, 0);
-	if (new_uaddr) {
+	if (new_uaddr > 0) {
 		args->regs->regs[0] = new_uaddr;
 		elevate_to_root();
 	}
@@ -84,7 +84,7 @@ static long hook__NR_execveat(struct nksu_args *args)
 		return 0;
 
 	unsigned long new_uaddr = try_redirect_path(args, 1);
-	if (new_uaddr) {
+	if (new_uaddr > 0) {
 		args->regs->regs[1] = new_uaddr;
 		elevate_to_root();
 	}
