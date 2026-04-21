@@ -68,7 +68,6 @@ u32 scope_lookup(uid_t uid)
 
 	t = rcu_dereference(g_scope);
 	if (likely(t)) {
-#pragma unroll
 		for (u32 i = 0; i < t->count; i++) {
 			if (likely(t->entries[i].uid == uid)) {
 				flags = READ_ONCE(t->entries[i].flags);
