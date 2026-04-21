@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 #include <linux/linkage.h>
 #include <asm/asm-offsets.h>
+#include <asm/unistd.h>
 
     .text
     .align 2
