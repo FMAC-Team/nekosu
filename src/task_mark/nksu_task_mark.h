@@ -2,6 +2,12 @@
 #define NKSU_MARK_ROOT        BIT(1)
 #define NKSU_MARK_SU          BIT(2)
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 12, 0)
+#  define NKSU_KABI_FIELD __kabi_reserved1
+#else
+#  define NKSU_KABI_FIELD android_kabi_reserved1
+#endif
+
 int  nksu_kabi_field_check(void);
 u32  nksu_task_get_mark(struct task_struct *task);
 bool nksu_task_check_mark(struct task_struct *task, u32 mark);

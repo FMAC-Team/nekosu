@@ -8,12 +8,6 @@
 
 #include <fmac.h>
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 12, 0)
-#  define NKSU_KABI_FIELD __kabi_reserved1
-#else
-#  define NKSU_KABI_FIELD android_kabi_reserved1
-#endif
-
 #define NKSU_KABI_MAGIC      ((u32)0xFAC0FAC0U)
 #define NKSU_SAMPLE_COUNT    16
 #define NKSU_NONZERO_THRESH  4
