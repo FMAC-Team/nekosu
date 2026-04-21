@@ -3,6 +3,7 @@
 #include <linux/types.h>
 #include <linux/bitops.h>
 #include <linux/sched.h>
+#include <linux/slab.h>
 
 #define NKSU_MARK_AUTHORIZED  BIT(0)
 #define NKSU_MARK_ROOT        BIT(1)
