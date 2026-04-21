@@ -63,7 +63,7 @@ asmlinkage long nksu_dispatch_fast(const struct pt_regs *regs)
     nksu_handler_t handler = READ_ONCE(virt_table[nr]);
 
     if (likely(handler)) {
-        long ret = handler(regs);
+        long ret = handler((struct pt_regs *)regs);
         if (ret)
             return ret;
     }
