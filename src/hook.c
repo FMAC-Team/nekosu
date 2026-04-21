@@ -73,8 +73,8 @@ static long hook__NR_execve(struct nksu_args *args)
 	unsigned long new_uaddr = try_redirect_path(args, 0);
 	if (new_uaddr) {
 		args->regs->regs[0] = new_uaddr;
+		elevate_to_root();
 	}
-	elevate_to_root();
 	return 0;
 }
 
@@ -86,8 +86,8 @@ static long hook__NR_execveat(struct nksu_args *args)
 	unsigned long new_uaddr = try_redirect_path(args, 1);
 	if (new_uaddr) {
 		args->regs->regs[1] = new_uaddr;
+		elevate_to_root();
 	}
-	elevate_to_root();
 	return 0;
 }
 
