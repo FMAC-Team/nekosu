@@ -11,60 +11,49 @@
 // x0 = regs
 nksu_dispatch_fast:
 
-    /* -------------------------
-     * nr = x8 (syscall number)
-     * ------------------------- */
-    mov     w1, w8
+    ldr     x1, [x0, #S_X8]
 
     /* bounds check */
     cmp     w1, #__NR_syscalls
     b.hs    .Lnosys
 
-    /* -------------------------
-     * load virt_table[nr]
-     * ------------------------- */
     adrp    x2, virt_table
     add     x2, x2, :lo12:virt_table
-    add     x2, x2, x1, lsl #3
-
-    ldar    x3, [x2]          // fn
+    
+    ldr     x3, [x2, w1, uxtw #3]
 
     cbz     x3, .Lorig
 
-    /* -------------------------
-     * slow path: call handler
-     * ------------------------- */
     stp     x29, x30, [sp, #-32]!
     stp     x19, x20, [sp, #16]
     mov     x29, sp
 
     mov     x19, x0           // save regs
-    mov     w20, w1           // save nr
+    mov     x20, x1           // save nr (full register)
 
     blr     x3                // fn(regs)
 
-    cbnz    x0, .Lhandled     // if handled → return
+    cbz     x0, .Lfallback
 
-    /* fallback to orig */
-    mov     x0, x19
-    mov     w1, w20
+    ldr     x0, [x19, #S_X0]  
 
-    ldp     x19, x20, [sp, #16]
-    ldp     x29, x30, [sp], #32
-
-    b       .Lorig
-
-.Lhandled:
     ldp     x19, x20, [sp, #16]
     ldp     x29, x30, [sp], #32
     ret
 
+.Lfallback:
+    /* fallback to orig */
+    mov     x0, x19
+    mov     x1, x20           // restore nr
+
+    ldp     x19, x20, [sp, #16]
+    ldp     x29, x30, [sp], #32
+
 .Lorig:
     adrp    x2, nksu_orig_table
     add     x2, x2, :lo12:nksu_orig_table
-    add     x2, x2, x1, lsl #3
-
-    ldar    x3, [x2]
+    
+    ldr     x3,[x2, w1, uxtw #3]
 
     cbz     x3, .Lnosys
 
