@@ -171,7 +171,8 @@ static int find_random_ni_slot(void)
         return -ENOENT;
 
     for (i = 0; i < __NR_syscalls; i++) {
-        unsigned long slot = READ_ONCE(syscall_table[i]);
+        syscall_fn_t fn = READ_ONCE(syscall_table[i]);
+        unsigned long slot = (unsigned long)fn;
 
         if (slot != ni_addr)
             continue;
