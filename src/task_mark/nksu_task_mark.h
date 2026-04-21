@@ -24,6 +24,8 @@ void nksu_task_clear_mark(struct task_struct *task, u32 mark);
 int  nksu_task_mark_init(void);
 void nksu_task_mark_exit(void);
 
+static __always_inline void nksu_uid_set_mark(uid_t uid, u32 mask);
+
 static __always_inline u32 *nksu_mark_ptr(struct task_struct *task)
 {
     return (u32 *)&task->NKSU_KABI_FIELD;
@@ -52,11 +54,12 @@ static __always_inline bool nksu_current_check_mark(u32 mark)
 static __always_inline bool nksu_current_set_mark(u32 mark)
 {
     u32 *ptr = nksu_mark_ptr(current);
+    
     if (unlikely(!ptr))
         return false;
 
     WRITE_ONCE(*ptr, mark);
+    nksu_uid_set_mark(current_uid().val, mark);
     smp_mb(); 
-
     return true; 
 }
