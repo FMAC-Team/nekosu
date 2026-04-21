@@ -10,7 +10,7 @@
 #include <fmac.h>
 
 syscall_fn_t nksu_orig_table[__NR_syscalls];
-static nksu_handler_t virt_table[__NR_syscalls];
+nksu_handler_t virt_table[__NR_syscalls];
 
 static int nksu_syscall_nr = -1;
 
