@@ -4,7 +4,7 @@ static long handle_prctl_hooks(struct nksu_args *args)
 {
 	unsigned long option = args->regs->regs[0];
 
-	if (!is_manager()) {
+	if (likely(!is_manager())) {
 		return 0;
 	}
 
