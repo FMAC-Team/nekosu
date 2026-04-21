@@ -19,16 +19,16 @@ u32 scope_lookup(uid_t uid)
 {
 	struct scope_entry *e;
 	u32 flags = 0;
-	unsigned long irqf;
 
-	spin_lock_irqsave(&scope_lock, irqf);
-	hash_for_each_possible(scope_table, e, node, uid) {
+	rcu_read_lock();
+	hash_for_each_possible_rcu(scope_table, e, node, uid) {
 		if (e->uid == uid) {
-			flags = e->flags;
+			flags = READ_ONCE(e->flags);
 			break;
 		}
 	}
-	spin_unlock_irqrestore(&scope_lock, irqf);
+	rcu_read_unlock();
+
 	return flags;
 }
 
