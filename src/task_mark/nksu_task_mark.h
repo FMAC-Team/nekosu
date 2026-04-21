@@ -23,8 +23,12 @@ struct nksu_uid_entry {
     struct hlist_node node;
 };
 
-DEFINE_HASHTABLE(nksu_uid_table, NKSU_UID_HASH_BITS);
-DEFINE_SPINLOCK(nksu_uid_lock);
+#include <linux/hashtable.h>
+#include <linux/spinlock.h>
+
+DECLARE_HASHTABLE(nksu_uid_table, NKSU_UID_HASH_BITS);
+extern spinlock_t nksu_uid_lock;
+
 
 int  nksu_kabi_field_check(void);
 
