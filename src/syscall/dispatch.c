@@ -5,6 +5,7 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/syscalls.h>
+#include <linux/nospec.h>
 
 #include "type.h"
 #include <fmac.h>
