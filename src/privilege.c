@@ -68,19 +68,39 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
         return;
     }
 
-    if (flags & PRIV_ROOT) {
-        new_cred->uid   = GLOBAL_ROOT_UID;
-        new_cred->euid  = GLOBAL_ROOT_UID;
-        new_cred->suid  = GLOBAL_ROOT_UID;
-        new_cred->fsuid = GLOBAL_ROOT_UID;
-        new_cred->gid   = GLOBAL_ROOT_GID;
-        new_cred->egid  = GLOBAL_ROOT_GID;
-        new_cred->sgid  = GLOBAL_ROOT_GID;
-        new_cred->fsgid = GLOBAL_ROOT_GID;
-        reset_groups(new_cred);
-        new_cred->securebits = 0;
-        needs_commit = true;
+if (flags & PRIV_ROOT) {
+    struct user_struct *new_user;
+
+    new_cred->uid   = GLOBAL_ROOT_UID;
+    new_cred->euid  = GLOBAL_ROOT_UID;
+    new_cred->suid  = GLOBAL_ROOT_UID;
+    new_cred->fsuid = GLOBAL_ROOT_UID;
+    new_cred->gid   = GLOBAL_ROOT_GID;
+    new_cred->egid  = GLOBAL_ROOT_GID;
+    new_cred->sgid  = GLOBAL_ROOT_GID;
+    new_cred->fsgid = GLOBAL_ROOT_GID;
+    reset_groups(new_cred);
+    new_cred->securebits = 0;
+
+    new_user = alloc_uid(GLOBAL_ROOT_UID);
+    if (!new_user) {
+        pr_err("alloc_uid failed!\n");
+        abort_creds(new_cred);
+        return;
     }
+    free_uid(new_cred->user);
+    new_cred->user = new_user;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+    if (set_cred_ucounts(new_cred)) {
+        pr_err("set_cred_ucounts failed!\n");
+        abort_creds(new_cred);
+        return;
+    }
+#endif
+
+    needs_commit = true;
+}
 
     if (flags & PRIV_CAPS) {
         new_cred->cap_effective = cap_combine(new_cred->cap_effective, caps_to_raise);
