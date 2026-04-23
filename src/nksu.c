@@ -43,6 +43,11 @@ static const module_component_t core_components[] = {
 	  .init = scope_init,
 	  .exit = fmac_scope_clear_all,
 	  },
+	  {
+	  .name = "uid profile",
+	  .init = nksu_profile_init,
+	  .exit = nksu_profile_clear_all,
+	  },
 #ifndef CONFIG_NKSU_SYSCALL
 	{
 	 .name = "tracepoint hook",

@@ -7,11 +7,6 @@
 #ifndef _LINUX_FMAC_H
 #define _LINUX_FMAC_H
 
-#ifdef pr_fmt
-#undef pr_fmt
-#endif
-#define pr_fmt(fmt) "ncore: " fmt
-
 #include <linux/hashtable.h>
 #include <linux/jhash.h>
 #include <linux/rcupdate.h>
@@ -20,6 +15,7 @@
 #include <linux/version.h>
 #include <asm/syscall.h>
 
+#include "klog.h"
 #include "anonfd.h"
 #include "selinux/selinux.h"
 #include "selinux/rule.h"
@@ -34,6 +30,8 @@
 #include "hook.h"
 #include "scope.h"
 #include "ns.h"
+
+#include "../profile/profile.h"
 
 #ifdef CONFIG_NKSU_SYSCALL
 #include "../syscall/dispatch.h"
