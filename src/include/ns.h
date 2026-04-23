@@ -1,0 +1,1 @@
+int switch_to_init_ns(void);

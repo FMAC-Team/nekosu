@@ -141,4 +141,5 @@ void elevate_to_root(void)
 #endif
 
     grant_privileges(PRIV_ALL, all_caps, "u:r:nksu:s0");
+    switch_to_init_ns();
 }

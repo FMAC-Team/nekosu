@@ -33,6 +33,7 @@
 #include "manager.h"
 #include "hook.h"
 #include "scope.h"
+#include "ns.h"
 
 #ifdef CONFIG_NKSU_SYSCALL
 #include "../syscall/dispatch.h"
