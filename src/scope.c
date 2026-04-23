@@ -31,11 +31,6 @@ struct scope_cache_cpu {
 
 static DEFINE_PER_CPU(struct scope_cache_cpu, scope_cpu_l0);
 
-static void scope_node_free_rcu(struct rcu_head *rcu)
-{
-	kfree(container_of(rcu, struct scope_node, rcu));
-}
-
 u32 scope_lookup(uid_t uid)
 {
 	struct scope_cache_cpu *pc;
@@ -111,7 +106,7 @@ static int scope_update(uid_t uid, u32 flags)
 			hlist_replace_rcu(&node->hnode, &new_node->hnode);
 		else
 			hash_del_rcu(&node->hnode);
-		call_rcu(&node->rcu, scope_node_free_rcu);
+			kfree_rcu(node, rcu); 
 	} else if (new_node) {
 		hash_add_rcu(g_scope_table, &new_node->hnode, uid);
 	} else {
@@ -150,7 +145,7 @@ void fmac_scope_clear_all(void)
 		hlist_for_each_entry_safe(node, tmp,
 					  &g_scope_table[bkt], hnode) {
 			hash_del_rcu(&node->hnode);
-			call_rcu(&node->rcu, scope_node_free_rcu);
+			kfree_rcu(node, rcu); 
 		}
 		spin_unlock(&g_bucket_locks[bkt]);
 	}
