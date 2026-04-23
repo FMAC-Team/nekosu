@@ -34,8 +34,6 @@
 #include "hook.h"
 #include "scope.h"
 
-#include "../task_mark/nksu_task_mark.h"
-
 #ifdef CONFIG_NKSU_SYSCALL
 #include "../syscall/dispatch.h"
 #include "../syscall/syscall.h"
