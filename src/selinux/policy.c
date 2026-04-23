@@ -66,7 +66,6 @@ static const struct sepolicy_rule ksu_rules[] = {
     ALLOW(DOMAIN, DOMAIN, "process", "setpgid"),
 
     /* service_manager: allow nksu to find system services */
-    ALLOW(DOMAIN, "package_native",  "service_manager", "find"),
     ALLOW(DOMAIN, "package_service", "service_manager", "find"),
 
     /* property access: servicemanager_prop (read by cmd/getprop) */
