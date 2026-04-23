@@ -61,16 +61,27 @@ static const struct sepolicy_rule ksu_rules[] = {
 	ALLOW("system_server",  DOMAIN, "process", "getpgid"),
 	ALLOW("system_server",  DOMAIN, "process", "sigkill"),
 	ALLOW("system_server",  DOMAIN, "process", "setsched"),
-	/* process self-ops: sh/cmd forking under nksu domain */
     ALLOW(DOMAIN, DOMAIN, "process", "fork"),
     ALLOW(DOMAIN, DOMAIN, "process", "setpgid"),
-
-    /* service_manager: allow nksu to find system services */
     ALLOW(DOMAIN, "package_service", "service_manager", "find"),
-
-    /* property access: servicemanager_prop (read by cmd/getprop) */
     ALLOW(DOMAIN, "servicemanager_prop", "file", "read"),
     ALLOW(DOMAIN, "servicemanager_prop", "file", "open"),
+    ALLOW(DOMAIN, "system_file",   "file", "getattr"),
+    ALLOW(DOMAIN, "system_file",   "file", "execute"),
+    ALLOW(DOMAIN, "toolbox_exec",  "file", "getattr"),
+    ALLOW(DOMAIN, "toolbox_exec",  "file", "execute"),
+    ALLOW(DOMAIN, "toolbox_exec",  "file", "read"),
+    ALLOW(DOMAIN, "toolbox_exec",  "file", "open"),
+    ALLOW(DOMAIN, "untrusted_app_27",        "fd",       "use"),
+    ALLOW(DOMAIN, "untrusted_app_all_devpts","chr_file", "read"),
+    ALLOW(DOMAIN, "untrusted_app_all_devpts","chr_file", "write"),
+    ALLOW(DOMAIN, "untrusted_app_all_devpts","chr_file", "getattr"),
+    ALLOW(DOMAIN, "untrusted_app_all_devpts","chr_file", "ioctl"),
+    ALLOW(DOMAIN, "devpts",        "chr_file", "read"),
+    ALLOW(DOMAIN, "devpts",        "chr_file", "write"),
+    ALLOW(DOMAIN, "devpts",        "chr_file", "getattr"),
+    ALLOW(DOMAIN, "devpts",        "chr_file", "ioctl"),
+
 };
 
 
@@ -126,6 +137,7 @@ int load_policy(void)
 	pr_info("[selinux]: loading policy for domain '%s'\n", DOMAIN);
 
 	sepolicy_add_typeattribute(DOMAIN, "mlstrustedsubject");
+	sepolicy_add_typeattribute(DOMAIN, "unconfineddomain");
 	sepolicy_add_typeattribute(DOMAIN, "netdomain");
 	sepolicy_add_typeattribute(DOMAIN, "bluetoothdomain");
 
