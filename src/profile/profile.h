@@ -22,6 +22,8 @@ int nksu_profile_set_caps(uid_t uid, kernel_cap_t caps);
 
 int nksu_profile_set_domain(uid_t uid, const char *domain);
 
+bool nksu_profile_has_uid(uid_t uid);
+
 void nksu_profile_clear(uid_t uid);
 
 void nksu_profile_clear_all(void);

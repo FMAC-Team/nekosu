@@ -105,6 +105,10 @@ int nksu_profile_get_dup(uid_t uid, struct profile *out_buf)
     return ret;
 }
 
+bool nksu_profile_has_uid(uid_t uid)
+{
+		return test_bit(uid, nksu_profile_bitmap);
+}
 
 int nksu_profile_set_ext(uid_t uid, kernel_cap_t caps, const char *domain, u32 flags)
 {
