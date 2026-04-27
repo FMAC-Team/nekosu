@@ -10,6 +10,7 @@
 struct profile {
 	kernel_cap_t caps;
 	char selinux_domain[64];
+	int namespace;
 };
 
 int nksu_profile_init(void);
@@ -21,6 +22,8 @@ int nksu_profile_set(uid_t uid, kernel_cap_t caps, const char *domain);
 int nksu_profile_set_caps(uid_t uid, kernel_cap_t caps);
 
 int nksu_profile_set_domain(uid_t uid, const char *domain);
+
+int nksu_profile_set_ns(uid_t uid, int ns);
 
 bool nksu_profile_has_uid(uid_t uid);
 

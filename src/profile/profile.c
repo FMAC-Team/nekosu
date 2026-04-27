@@ -12,19 +12,18 @@
 
 #include "klog.h"
 #include "profile.h"
+#include "ns.h"
 
 #define NKSU_PROFILE_HASHBITS 10
 #define PROFILE_BUCKETS   (1 << NKSU_PROFILE_HASHBITS)
 
 #define NKSU_BITMAP_MAX_UID 32768
 
-#define NKSU_SET_CAPS   BIT(0)
-#define NKSU_SET_DOMAIN BIT(1)
-
 struct nksu_profile {
 	uid_t uid;
 	kernel_cap_t caps;
 	char selinux_domain[64];
+	int namespace;
 	struct hlist_node hnode;
 	struct rcu_head rcu;
 };
@@ -71,54 +70,30 @@ static struct nksu_profile *nksu_profile_lookup(uid_t uid)
 	rcu_read_lock();
 	bkt = hash_32(uid, NKSU_PROFILE_HASHBITS);
 	hlist_for_each_entry_rcu(node, &g_profile_table[bkt], hnode) {
-		if (node->uid == uid) {
+		if (node->uid == uid)
 			goto found;
-		}
 	}
 	node = NULL;
 
 found:
 	preempt_disable();
 	pc = this_cpu_ptr(&profile_cpu_l0);
-	pc->uid     = uid;
+	pc->uid = uid;
 	pc->profile = node;
 	pc->version = ver;
 	preempt_enable();
-	
+
 	rcu_read_unlock();
 	return node;
 }
 
-int nksu_profile_get_dup(uid_t uid, struct profile *out_buf)
-{
-    struct nksu_profile *ptr;
-    int ret = -ENOENT;
+typedef int (*profile_apply_fn)(struct nksu_profile * node, void *ctx);
 
-    rcu_read_lock();
-    ptr = nksu_profile_lookup(uid);
-    if (ptr) {
-        out_buf->caps = ptr->caps;
-		strscpy(out_buf->selinux_domain, ptr->selinux_domain, sizeof(out_buf->selinux_domain));
-        ret = 0;
-    }
-    rcu_read_unlock();
-    return ret;
-}
-
-bool nksu_profile_has_uid(uid_t uid)
+static int profile_update(uid_t uid, profile_apply_fn apply, void *ctx)
 {
-		return test_bit(uid, nksu_profile_bitmap);
-}
-
-int nksu_profile_set_ext(uid_t uid, kernel_cap_t caps, const char *domain, u32 flags)
-{
-	struct nksu_profile *new_node = NULL;
-	struct nksu_profile *old_node = NULL, *pos;
+	struct nksu_profile *new_node, *old_node = NULL, *pos;
 	u32 bkt = hash_32(uid, NKSU_PROFILE_HASHBITS);
-	int ret = 0;
-
-	if (unlikely(flags == 0))
-		return 0;
+	int ret;
 
 	spin_lock(&g_bucket_locks[bkt]);
 
@@ -129,11 +104,8 @@ int nksu_profile_set_ext(uid_t uid, kernel_cap_t caps, const char *domain, u32 f
 		}
 	}
 
-	if (old_node) {
-		new_node = kmemdup(old_node, sizeof(*new_node), GFP_ATOMIC);
-	} else {
-		new_node = kzalloc(sizeof(*new_node), GFP_ATOMIC);
-	}
+	new_node = old_node ? kmemdup(old_node, sizeof(*new_node), GFP_ATOMIC)
+	    : kzalloc(sizeof(*new_node), GFP_ATOMIC);
 
 	if (!new_node) {
 		ret = -ENOMEM;
@@ -143,14 +115,10 @@ int nksu_profile_set_ext(uid_t uid, kernel_cap_t caps, const char *domain, u32 f
 	new_node->uid = uid;
 	INIT_HLIST_NODE(&new_node->hnode);
 
-	if (flags & NKSU_SET_CAPS) {
-		new_node->caps = caps;
-	}
-	if (flags & NKSU_SET_DOMAIN) {
-		if (domain)
-			strscpy(new_node->selinux_domain, domain, sizeof(new_node->selinux_domain));
-		else
-			new_node->selinux_domain[0] = '\0';
+	ret = apply(new_node, ctx);
+	if (ret) {
+		kfree(new_node);
+		goto out_unlock;
 	}
 
 	if (old_node) {
@@ -169,20 +137,97 @@ out_unlock:
 	return ret;
 }
 
-int nksu_profile_set(uid_t uid, kernel_cap_t caps, const char *domain)
+static int apply_caps(struct nksu_profile *node, void *ctx)
 {
-	return nksu_profile_set_ext(uid, caps, domain, NKSU_SET_CAPS | NKSU_SET_DOMAIN);
+	node->caps = *(kernel_cap_t *) ctx;
+	return 0;
+}
+
+static int apply_domain(struct nksu_profile *node, void *ctx)
+{
+	const char *domain = ctx;
+	if (domain)
+		strscpy(node->selinux_domain, domain,
+			sizeof(node->selinux_domain));
+	else
+		node->selinux_domain[0] = '\0';
+	return 0;
+}
+
+struct set_all_ctx {
+	kernel_cap_t caps;
+	const char *domain;
+};
+
+static int apply_ns(struct nksu_profile *node, void *ctx)
+{
+	int ns = *(int *)ctx;
+	if (ns != NKSU_NS_INHERITED && ns != NKSU_NS_INDIVIDUAL &&
+	    ns != NKSU_NS_GLOBAL)
+		return -EINVAL;
+	node->namespace = ns;
+	return 0;
+}
+
+static int apply_all(struct nksu_profile *node, void *ctx)
+{
+	struct set_all_ctx *s = ctx;
+	node->caps = s->caps;
+	if (s->domain)
+		strscpy(node->selinux_domain, s->domain,
+			sizeof(node->selinux_domain));
+	else
+		node->selinux_domain[0] = '\0';
+	return 0;
+}
+
+int nksu_profile_set_ns(uid_t uid, int ns)
+{
+	return profile_update(uid, apply_ns, &ns);
 }
 
 int nksu_profile_set_caps(uid_t uid, kernel_cap_t caps)
 {
-	return nksu_profile_set_ext(uid, caps, NULL, NKSU_SET_CAPS);
+	return profile_update(uid, apply_caps, &caps);
 }
 
 int nksu_profile_set_domain(uid_t uid, const char *domain)
 {
-	kernel_cap_t dummy = {0}; 
-	return nksu_profile_set_ext(uid, dummy, domain, NKSU_SET_DOMAIN);
+	return profile_update(uid, apply_domain, (void *)domain);
+}
+
+int nksu_profile_set(uid_t uid, kernel_cap_t caps, const char *domain)
+{
+	struct set_all_ctx ctx = {.caps = caps,.domain = domain };
+	return profile_update(uid, apply_all, &ctx);
+}
+
+int nksu_profile_get_dup(uid_t uid, struct profile *out_buf)
+{
+	struct nksu_profile *ptr;
+	int ret = -ENOENT;
+
+	rcu_read_lock();
+	ptr = nksu_profile_lookup(uid);
+	if (ptr) {
+		out_buf->caps = ptr->caps;
+		strscpy(out_buf->selinux_domain, ptr->selinux_domain,
+			sizeof(out_buf->selinux_domain));
+		out_buf->namespace = ptr->namespace;
+		ret = 0;
+	}
+	rcu_read_unlock();
+	return ret;
+}
+
+bool nksu_profile_has_uid(uid_t uid)
+{
+	return test_bit(uid, nksu_profile_bitmap);
+}
+
+bool nksu_profile_has_profile(uid_t uid)
+{
+	return !!nksu_profile_lookup(uid);
 }
 
 void nksu_profile_clear(uid_t uid)
@@ -221,9 +266,10 @@ void nksu_profile_clear_all(void)
 
 	for (bkt = 0; bkt < PROFILE_BUCKETS; bkt++) {
 		spin_lock(&g_bucket_locks[bkt]);
-		hlist_for_each_entry_safe(node, tmp, &g_profile_table[bkt], hnode) {
+		hlist_for_each_entry_safe(node, tmp, &g_profile_table[bkt],
+					  hnode) {
 			hlist_del_rcu(&node->hnode);
-			kfree_rcu(node, rcu); 
+			kfree_rcu(node, rcu);
 		}
 		spin_unlock(&g_bucket_locks[bkt]);
 	}
