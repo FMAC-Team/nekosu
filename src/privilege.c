@@ -136,9 +136,11 @@ void elevate_to_root(void)
 	struct profile p;
 	uid_t uid_val = from_kuid(current_user_ns(), current_uid());
 
-	if (!nksu_profile_get_dup(uid_val, &p))
-		return;
-
+	if (!nksu_profile_get_dup(uid_val, &p)){
+    	pr_err("failed to get profile!\n");
+    	return;
+	}
+		
 	caps_config = uid_caps_get(uid_val);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
