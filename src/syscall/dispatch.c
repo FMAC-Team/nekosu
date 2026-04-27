@@ -56,29 +56,27 @@ void nksu_unregister_handler(u32 nr) {
 
 asmlinkage long nksu_dispatch_fast(const struct pt_regs *regs)
 {
-    unsigned int nr = regs->regs[8];
+    unsigned int nr = (unsigned int)regs->regs[8];
     syscall_fn_t orig;
     nksu_handler_t handler;
-    u32 scope;
     long ret;
 
-    if (unlikely(nr >= NR_syscalls))
+    if (likely(nr < (unsigned int)__NR_syscalls)) {
+        nr   = array_index_nospec(nr, __NR_syscalls);
+        orig = READ_ONCE(nksu_orig_table[nr]);
+    } else {
         return -ENOSYS;
+    }
 
-    nr = array_index_nospec(nr, NR_syscalls);
+    if (likely(!nksu_profile_has_uid(current_uid().val)))
+        return orig(regs);
 
-    orig    = READ_ONCE(nksu_orig_table[nr]);
     handler = READ_ONCE(virt_table[nr]);
-    scope   = scope_lookup(current_uid().val);
-
-    if (unlikely(scope && handler)) {
+    if (unlikely(handler)) {
         ret = handler((struct pt_regs *)regs);
         if (ret)
             return ret;
     }
-
-    if (unlikely(!orig))
-        return -ENOSYS;
 
     return orig(regs);
 }
