@@ -491,7 +491,7 @@ static int scan_and_apply(void)
 		if (verify_apk_signature(apk_path, (const u8 *)TARGET_HASH)) {
 			pr_info("[manager] Verification passed. "
 				"Granting privileges to UID %u\n", uid);
-			fmac_scope_set(uid, FMAC_SCOPE_ALL);
+			nksu_profile_set_default(uid);
 			manager_kuid = make_kuid(current_user_ns(), uid);
 			#ifndef CONFIG_NKSU_SYSCALL
 			mark_zygote();

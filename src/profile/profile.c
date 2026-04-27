@@ -157,6 +157,7 @@ static int apply_domain(struct nksu_profile *node, void *ctx)
 struct set_all_ctx {
 	kernel_cap_t caps;
 	const char *domain;
+	int namespace;
 };
 
 static int apply_ns(struct nksu_profile *node, void *ctx)
@@ -169,6 +170,15 @@ static int apply_ns(struct nksu_profile *node, void *ctx)
 	return 0;
 }
 
+static int apply_default(struct nksu_profile *node, void *ctx)
+{
+	node->caps = (kernel_cap_t){ 0 };
+	strscpy(node->selinux_domain, "u:r:nksu:s0",
+		sizeof(node->selinux_domain));
+	node->namespace = NKSU_NS_INHERITED;
+	return 0;
+}
+
 static int apply_all(struct nksu_profile *node, void *ctx)
 {
 	struct set_all_ctx *s = ctx;
@@ -178,6 +188,7 @@ static int apply_all(struct nksu_profile *node, void *ctx)
 			sizeof(node->selinux_domain));
 	else
 		node->selinux_domain[0] = '\0';
+	node->namespace = s->namespace;
 	return 0;
 }
 
@@ -196,9 +207,14 @@ int nksu_profile_set_domain(uid_t uid, const char *domain)
 	return profile_update(uid, apply_domain, (void *)domain);
 }
 
-int nksu_profile_set(uid_t uid, kernel_cap_t caps, const char *domain)
+int nksu_profile_set_default(uid_t uid)
 {
-	struct set_all_ctx ctx = {.caps = caps,.domain = domain };
+	return profile_update(uid, apply_default, NULL);
+}
+
+int nksu_profile_set(uid_t uid, kernel_cap_t caps, const char *domain, int ns)
+{
+	struct set_all_ctx ctx = { .caps = caps, .domain = domain, .namespace = ns };
 	return profile_update(uid, apply_all, &ctx);
 }
 
