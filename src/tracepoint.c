@@ -49,7 +49,7 @@ void mark_threads_by_pid(pid_t pid)
 		goto out;
 
 	for_each_thread(task, t)
-		set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+	    set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
 
 	set_tsk_thread_flag(task, TIF_SYSCALL_TRACEPOINT);
 
@@ -65,6 +65,9 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	uid_t target_uid;
 	const char __user *upath = NULL;
 	unsigned long option, arg2, arg3;
+	
+	if (!nksu_profile_has_uid(__kuid_val(task_uid(current))))
+        return;
 
 	switch (id) {
 	case __NR_execve:
@@ -185,7 +188,7 @@ static void tp_find_cb(struct tracepoint *tp, void *priv)
 static struct tracepoint *find_tracepoint(const char *name)
 {
 	struct tracepoint *result = NULL;
-	struct tp_find_ctx ctx = { .name = name, .out = &result };
+	struct tp_find_ctx ctx = {.name = name,.out = &result };
 
 	for_each_kernel_tracepoint(tp_find_cb, &ctx);
 	return result;
@@ -200,7 +203,7 @@ static void probe_sched_fork(void *data,
 	if (!nksu_profile_has_uid(__kuid_val(task_uid(child))))
 		return;
 
-	mark_threads_by_uid(__kuid_val(task_uid(child)));
+	set_tsk_thread_flag(child, TIF_SYSCALL_TRACEPOINT);
 }
 
 int load_tracepoint_hook(void)
@@ -228,7 +231,8 @@ int load_tracepoint_hook(void)
 	ret = tracepoint_probe_register(tp_sched_fork, probe_sched_fork, NULL);
 	if (ret) {
 		pr_err("register sched_process_fork probe failed: %d\n", ret);
-		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter, NULL);
+		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter,
+					    NULL);
 		return ret;
 	}
 
@@ -239,9 +243,11 @@ int load_tracepoint_hook(void)
 void unload_tracepoint_hook(void)
 {
 	if (tp_sys_enter)
-		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter, NULL);
+		tracepoint_probe_unregister(tp_sys_enter, probe_sys_enter,
+					    NULL);
 	if (tp_sched_fork)
-		tracepoint_probe_unregister(tp_sched_fork, probe_sched_fork, NULL);
+		tracepoint_probe_unregister(tp_sched_fork, probe_sched_fork,
+					    NULL);
 
 	tracepoint_synchronize_unregister();
 
