@@ -203,7 +203,7 @@ static void probe_sched_fork(void *data,
 	if (!nksu_profile_has_uid(__kuid_val(task_uid(child))))
 		return;
 
-	set_tsk_thread_flag(child, TIF_SYSCALL_TRACEPOINT);
+	mark_threads_by_uid(__kuid_val(task_uid(child)));
 }
 
 int load_tracepoint_hook(void)
