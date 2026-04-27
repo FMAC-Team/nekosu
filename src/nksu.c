@@ -39,11 +39,6 @@ static const module_component_t core_components[] = {
 	 .exit = uid_caps_exit,
 	  },
 	  {
-	  .name = "nksu scope",
-	  .init = scope_init,
-	  .exit = fmac_scope_clear_all,
-	  },
-	  {
 	  .name = "uid profile",
 	  .init = nksu_profile_init,
 	  .exit = nksu_profile_clear_all,

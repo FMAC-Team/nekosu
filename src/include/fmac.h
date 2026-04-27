@@ -28,7 +28,6 @@
 #include "uid_caps.h"
 #include "manager.h"
 #include "hook.h"
-#include "scope.h"
 #include "ns.h"
 
 #include "../profile/profile.h"
@@ -41,13 +40,5 @@
 extern struct proc_dir_entry *fmac_proc_dir;
 
 #define MAX_PATH_LEN 1024
-
-#include <linux/types.h>
-
-#define FMAC_SCOPE_EXEC      BIT(0)
-#define FMAC_SCOPE_STAT      BIT(1)
-#define FMAC_SCOPE_ACCESS    BIT(2)
-#define FMAC_SCOPE_ALL       (FMAC_SCOPE_EXEC | FMAC_SCOPE_STAT | FMAC_SCOPE_ACCESS)
-
 
 #endif /* _LINUX_FMAC_H */

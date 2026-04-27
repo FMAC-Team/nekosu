@@ -40,8 +40,7 @@ static long ioc_add_uid(unsigned long arg)
 	unsigned int id;
 	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
 		return -EFAULT;
-	fmac_scope_set((uid_t)id, FMAC_SCOPE_ALL);
-	return 0;
+	return nksu_profile_set_default((uid_t)id) ? -ENOMEM : 0;
 }
 
 static long ioc_del_uid(unsigned long arg)
@@ -49,8 +48,7 @@ static long ioc_del_uid(unsigned long arg)
 	unsigned int id;
 	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
 		return -EFAULT;
-	fmac_scope_clear((uid_t)id);
-	return 0;
+	return nksu_profile_clear((uid_t)id) ? -ENOENT : 0;
 }
 
 static long ioc_has_uid(unsigned long arg)
@@ -58,7 +56,7 @@ static long ioc_has_uid(unsigned long arg)
 	unsigned int id;
 	if (copy_from_user(&id, (void __user *)arg, sizeof(id)))
 		return -EFAULT;
-	id = !!scope_lookup((uid_t)id);
+	id = nksu_profile_has_uid((uid_t)id) ? 1 : 0;
 	if (copy_to_user((void __user *)arg, &id, sizeof(id)))
 		return -EFAULT;
 	return 0;

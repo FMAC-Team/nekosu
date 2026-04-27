@@ -2,7 +2,6 @@ nksu-y += src/anonfd.o src/nksu.o src/privilege.o src/ioctl.o src/uid_cap.o src/
 
 nksu-y += src/selinux/rule.o src/selinux/selinux.o src/selinux/policy.o src/selinux/domain.o src/selinux/dup.o 
 
-nksu-y += src/scope.o
 nksu-y += src/profile/profile.o
 nksu-y += src/ns.o
 

@@ -56,7 +56,7 @@ static inline unsigned long try_redirect_path(struct pt_regs *regs,
 
 static long hook_path_at(struct pt_regs *regs)
 {
-	if (!scope_lookup(current_uid().val))
+	if (!nksu_profile_has_uid(current_uid().val))
 		return 0;
 	unsigned long new_uaddr = try_redirect_path(regs, 1);
 	if (new_uaddr > 0) {
@@ -67,7 +67,7 @@ static long hook_path_at(struct pt_regs *regs)
 
 static long hook__NR_execve(struct pt_regs *regs)
 {
-	if (!scope_lookup(current_uid().val))
+	if (!nksu_profile_has_uid(current_uid().val))
 		return 0;
 
 	unsigned long new_uaddr = try_redirect_path(regs, 0);
@@ -80,7 +80,7 @@ static long hook__NR_execve(struct pt_regs *regs)
 
 static long hook__NR_execveat(struct pt_regs *regs)
 {
-	if (!scope_lookup(current_uid().val))
+	if (!nksu_profile_has_uid(current_uid().val))
 		return 0;
 
 	unsigned long new_uaddr = try_redirect_path(regs, 1);
