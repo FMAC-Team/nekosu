@@ -136,7 +136,7 @@ void elevate_to_root(void)
 	struct profile p;
 	uid_t uid_val = from_kuid(current_user_ns(), current_uid());
 
-	if (!nksu_profile_get_dup(uid_val, &p)){
+	if (nksu_profile_get_dup(uid_val, &p) < 0){
     	pr_err("failed to get profile!\n");
     	return;
 	}
