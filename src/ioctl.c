@@ -48,7 +48,8 @@ static long ioc_del_uid(unsigned long arg)
 	unsigned int id;
 	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
 		return -EFAULT;
-	return nksu_profile_clear((uid_t)id) ? -ENOENT : 0;
+	nksu_profile_clear((uid_t)id);
+	return 0;
 }
 
 static long ioc_has_uid(unsigned long arg)
