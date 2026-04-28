@@ -32,8 +32,6 @@ import "C"
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"time"
 	"unsafe"
 
 	"nekosu/libncore/ctl"
