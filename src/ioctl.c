@@ -15,6 +15,13 @@ struct fmac_uid_cap {
 	uint64_t caps;
 };
 
+struct nksu_profile_data {
+	unsigned int uid;
+	uint64_t caps;
+	char selinux_domain[64];
+	int namespace;
+};
+
 struct fmac_sepolicy_rule {
 	char src[64];
 	char tgt[64];
@@ -35,27 +42,28 @@ struct fmac_sepolicy_rule {
 #define IOC_GET_CAP       _IOWR(IOC_MAGIC,  7, struct fmac_uid_cap)
 #define IOC_DEL_CAP       _IOW(IOC_MAGIC,   8, struct fmac_uid_cap)
 #define IOC_SEL_ADD_RULE  _IOW(IOC_MAGIC,   9, struct fmac_sepolicy_rule)
+#define IOC_SET_PROFILE  _IOW(IOC_MAGIC, 10, struct nksu_profile_data)
 
 static inline kernel_cap_t u64_to_cap(u64 v)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
-    kernel_cap_t res;
-    res.val = v;
-    return res;
+	kernel_cap_t res;
+	res.val = v;
+	return res;
 #else
-    kernel_cap_t cap;
-    cap.cap[0] = (u32)v;
-    cap.cap[1] = (u32)(v >> 32);
-    return cap;
+	kernel_cap_t cap;
+	cap.cap[0] = (u32) v;
+	cap.cap[1] = (u32) (v >> 32);
+	return cap;
 #endif
 }
 
 static inline u64 cap_to_u64(kernel_cap_t cap)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
-    return cap.val;
+	return cap.val;
 #else
-    return ((u64)cap.cap[1] << 32) | cap.cap[0];
+	return ((u64) cap.cap[1] << 32) | cap.cap[0];
 #endif
 }
 
@@ -64,7 +72,7 @@ static long ioc_add_uid(unsigned long arg)
 	unsigned int id;
 	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
 		return -EFAULT;
-	return nksu_profile_set_default((uid_t)id) ? -ENOMEM : 0;
+	return nksu_profile_set_default((uid_t) id) ? -ENOMEM : 0;
 }
 
 static long ioc_del_uid(unsigned long arg)
@@ -72,7 +80,7 @@ static long ioc_del_uid(unsigned long arg)
 	unsigned int id;
 	if (copy_from_user(&id, (unsigned int __user *)arg, sizeof(id)))
 		return -EFAULT;
-	nksu_profile_clear((uid_t)id);
+	nksu_profile_clear((uid_t) id);
 	return 0;
 }
 
@@ -81,7 +89,7 @@ static long ioc_has_uid(unsigned long arg)
 	unsigned int id;
 	if (copy_from_user(&id, (void __user *)arg, sizeof(id)))
 		return -EFAULT;
-	id = nksu_profile_has_uid((uid_t)id) ? 1 : 0;
+	id = nksu_profile_has_uid((uid_t) id) ? 1 : 0;
 	if (copy_to_user((void __user *)arg, &id, sizeof(id)))
 		return -EFAULT;
 	return 0;
@@ -97,7 +105,7 @@ static long ioc_set_cap(unsigned long arg)
 
 	caps = u64_to_cap(uc.caps);
 
-	return nksu_profile_set_caps((uid_t)uc.uid, caps);
+	return nksu_profile_set_caps((uid_t) uc.uid, caps);
 }
 
 static long ioc_get_cap(unsigned long arg)
@@ -108,13 +116,13 @@ static long ioc_get_cap(unsigned long arg)
 	if (copy_from_user(&uc, (void __user *)arg, sizeof(uc)))
 		return -EFAULT;
 
-	if (nksu_profile_get_dup((uid_t)uc.uid, &p))
+	if (nksu_profile_get_dup((uid_t) uc.uid, &p))
 		return -ENOENT;
 
 	uc.caps = cap_to_u64(p.caps);
 
 	return copy_to_user((void __user *)arg, &uc, sizeof(uc))
-		? -EFAULT : 0;
+	    ? -EFAULT : 0;
 }
 
 static long ioc_del_cap(unsigned long arg)
@@ -125,7 +133,7 @@ static long ioc_del_cap(unsigned long arg)
 	if (copy_from_user(&uc, (void __user *)arg, sizeof(uc)))
 		return -EFAULT;
 
-	return nksu_profile_set_caps((uid_t)uc.uid, empty);
+	return nksu_profile_set_caps((uid_t) uc.uid, empty);
 }
 
 static long ioc_sel_add_rule(unsigned long arg)
@@ -144,6 +152,20 @@ static long ioc_sel_add_rule(unsigned long arg)
 				 r.effect, (bool)r.invert);
 }
 
+static long ioc_set_profile(unsigned long arg)
+{
+	struct nksu_profile_data pd;
+	kernel_cap_t caps;
+
+	if (copy_from_user(&pd, (void __user *)arg, sizeof(pd)))
+		return -EFAULT;
+
+	caps = u64_to_cap(pd.caps);
+
+	return nksu_profile_set((uid_t) pd.uid, caps, pd.selinux_domain,
+				pd.namespace);
+}
+
 static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
@@ -153,20 +175,22 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = fmac_anonfd_get();
 		break;
 
-	case IOC_BIND_EVT: {
-		int efd;
-		if (copy_from_user(&efd, (int __user *)arg, sizeof(efd)))
-			return -EFAULT;
-		ret = bind_eventfd(efd);
-		break;
-	}
+	case IOC_BIND_EVT:{
+			int efd;
+			if (copy_from_user
+			    (&efd, (int __user *)arg, sizeof(efd)))
+				return -EFAULT;
+			ret = bind_eventfd(efd);
+			break;
+		}
 
-	case IOC_CHK_WRITE: {
-		int changed = check_mmap_write() ? 1 : 0;
-		if (copy_to_user((int __user *)arg, &changed, sizeof(changed)))
-			return -EFAULT;
-		break;
-	}
+	case IOC_CHK_WRITE:{
+			int changed = check_mmap_write()? 1 : 0;
+			if (copy_to_user
+			    ((int __user *)arg, &changed, sizeof(changed)))
+				return -EFAULT;
+			break;
+		}
 
 	case IOC_ADD_UID:
 		return ioc_add_uid(arg);
@@ -182,6 +206,8 @@ static long fmac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return ioc_del_cap(arg);
 	case IOC_SEL_ADD_RULE:
 		return ioc_sel_add_rule(arg);
+	case IOC_SET_PROFILE:
+		return ioc_set_profile(arg);
 	default:
 		return -ENOTTY;
 	}
