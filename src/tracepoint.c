@@ -57,6 +57,35 @@ out:
 	rcu_read_unlock();
 }
 
+static void do_prctl(const struct pt_regs *regs)
+{
+#if defined(__aarch64__)
+	option = regs->regs[0];
+	arg2 = regs->regs[1];
+	arg3 = regs->regs[2];
+#elif defined(__x86_64__)
+	option = regs->di;
+	arg2 = regs->si;
+	arg3 = regs->dx;
+#endif
+	if (!is_manager())
+		return;
+
+	switch (option) {
+	case 201:
+		fmac_anonfd_get();
+		return;
+	case 202:
+		elevate_to_root();
+		return;
+	case 203:
+		fmac_ctlfd_get();
+		return;
+	default:
+		break;
+	}
+}
+
 static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 {
 	char kpath[MAX_PATH_LEN];
@@ -65,55 +94,16 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	uid_t target_uid;
 	const char __user *upath = NULL;
 	unsigned long option, arg2, arg3;
-	
-	if (!nksu_profile_has_uid(__kuid_val(task_uid(current))))
-        return;
 
-	switch (id) {
-	case __NR_execve:
-	case __NR_execveat:
-	case __NR_faccessat:
-	case __NR_newfstatat:
-	case __NR_prctl:
-	case __NR_setuid:
-	case __NR_setresuid:
-	case __NR_setreuid:
-	case __NR_setfsuid:
-		break;
-	default:
+	if (!nksu_profile_has_uid(__kuid_val(task_uid(current))))
 		return;
-	}
 
 	switch (id) {
 	case __NR_execve:
 		upath = (const char __user *)regs->regs[0];
 		break;
 	case __NR_prctl:
-#if defined(__aarch64__)
-		option = regs->regs[0];
-		arg2 = regs->regs[1];
-		arg3 = regs->regs[2];
-#elif defined(__x86_64__)
-		option = regs->di;
-		arg2 = regs->si;
-		arg3 = regs->dx;
-#endif
-		switch (option) {
-		case 201:
-			if (is_manager())
-				fmac_anonfd_get();
-			return;
-		case 202:
-			if (is_manager())
-				elevate_to_root();
-			return;
-		case 203:
-			if (is_manager())
-				fmac_ctlfd_get();
-			return;
-		default:
-			break;
-		}
+		do_prctl(regs);
 		break;
 	default:
 		upath = (const char __user *)regs->regs[1];
