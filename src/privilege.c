@@ -141,7 +141,7 @@ void elevate_to_root(void)
     	return;
 	}
 		
-	caps_config = uid_caps_get(uid_val);
+	caps_config = p.caps;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
 	all_caps = (kernel_cap_t) {
