@@ -95,7 +95,7 @@ static long ioc_set_cap(unsigned long arg)
 	if (copy_from_user(&uc, (void __user *)arg, sizeof(uc)))
 		return -EFAULT;
 
-	caps = u64_to_kernel_cap(uc.caps);
+	caps = u64_to_cap(uc.caps);
 
 	return nksu_profile_set_caps((uid_t)uc.uid, caps);
 }
@@ -111,7 +111,7 @@ static long ioc_get_cap(unsigned long arg)
 	if (nksu_profile_get_dup((uid_t)uc.uid, &p))
 		return -ENOENT;
 
-	uc.caps = kernel_cap_to_u64(p.caps);
+	uc.caps = cap_to_u64(p.caps);
 
 	return copy_to_user((void __user *)arg, &uc, sizeof(uc))
 		? -EFAULT : 0;
