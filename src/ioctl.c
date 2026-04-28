@@ -66,31 +66,42 @@ static long ioc_has_uid(unsigned long arg)
 static long ioc_set_cap(unsigned long arg)
 {
 	struct fmac_uid_cap uc;
-	if (copy_from_user(&uc, (struct fmac_uid_cap __user *)arg, sizeof(uc)))
+	kernel_cap_t caps;
+
+	if (copy_from_user(&uc, (void __user *)arg, sizeof(uc)))
 		return -EFAULT;
-	if (uid_caps_has_uid(uc.uid))
-		return uid_caps_update(uc.uid, uc.caps) ? -EINVAL : 0;
-	return uid_caps_add(uc.uid, uc.caps) ? -EINVAL : 0;
+
+	caps = cap_from_u64(uc.caps);
+
+	return nksu_profile_set_caps((uid_t)uc.uid, caps);
 }
 
 static long ioc_get_cap(unsigned long arg)
 {
 	struct fmac_uid_cap uc;
-	if (copy_from_user(&uc, (struct fmac_uid_cap __user *)arg, sizeof(uc)))
+	struct profile p;
+
+	if (copy_from_user(&uc, (void __user *)arg, sizeof(uc)))
 		return -EFAULT;
-	if (!uid_caps_has_uid(uc.uid))
+
+	if (nksu_profile_get_dup((uid_t)uc.uid, &p))
 		return -ENOENT;
-	uc.caps = uid_caps_get(uc.uid);
-	return copy_to_user((struct fmac_uid_cap __user *)arg, &uc, sizeof(uc))
+
+	uc.caps = cap_to_u64(p.caps);
+
+	return copy_to_user((void __user *)arg, &uc, sizeof(uc))
 		? -EFAULT : 0;
 }
 
 static long ioc_del_cap(unsigned long arg)
 {
 	struct fmac_uid_cap uc;
-	if (copy_from_user(&uc, (struct fmac_uid_cap __user *)arg, sizeof(uc)))
+	kernel_cap_t empty = CAP_EMPTY_SET;
+
+	if (copy_from_user(&uc, (void __user *)arg, sizeof(uc)))
 		return -EFAULT;
-	return uid_caps_remove(uc.uid) ? -ENOENT : 0;
+
+	return nksu_profile_set_caps((uid_t)uc.uid, empty);
 }
 
 static long ioc_sel_add_rule(unsigned long arg)
