@@ -35,6 +35,19 @@ struct fmac_sepolicy_rule {
 #define IOC_DEL_CAP       _IOW(IOC_MAGIC,   8, struct fmac_uid_cap)
 #define IOC_SEL_ADD_RULE  _IOW(IOC_MAGIC,   9, struct fmac_sepolicy_rule)
 
+static inline kernel_cap_t cap_from_u64(u64 v)
+{
+	kernel_cap_t c;
+	c.cap[0] = (u32)v;
+	c.cap[1] = (u32)(v >> 32);
+	return c;
+}
+
+static inline u64 cap_to_u64(kernel_cap_t c)
+{
+	return ((u64)c.cap[1] << 32) | c.cap[0];
+}
+
 static long ioc_add_uid(unsigned long arg)
 {
 	unsigned int id;

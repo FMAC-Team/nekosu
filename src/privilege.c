@@ -132,7 +132,6 @@ void grant_privileges(unsigned int flags, kernel_cap_t caps_to_raise,
 void elevate_to_root(void)
 {
 	kernel_cap_t all_caps;
-	uint64_t caps_config;
 	struct profile p;
 	uid_t uid_val = from_kuid(current_user_ns(), current_uid());
 
@@ -141,16 +140,7 @@ void elevate_to_root(void)
     	return;
 	}
 		
-	caps_config = p.caps;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
-	all_caps = (kernel_cap_t) {
-	caps_config};
-#else
-	all_caps = (kernel_cap_t) { {
-	(u32) caps_config, (u32) (caps_config >> 32)}
-	};
-#endif
+	all_caps = p.caps;
 
 	grant_privileges(PRIV_ALL, all_caps, p.selinux_domain);
 	if (p.namespace == NKSU_NS_GLOBAL)
