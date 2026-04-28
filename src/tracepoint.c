@@ -59,6 +59,7 @@ out:
 
 static void do_prctl(const struct pt_regs *regs)
 {
+	unsigned long option, arg2, arg3;
 #if defined(__aarch64__)
 	option = regs->regs[0];
 	arg2 = regs->regs[1];
@@ -93,7 +94,6 @@ static void probe_sys_enter(void *data, struct pt_regs *regs, long id)
 	unsigned long sp;
 	uid_t target_uid;
 	const char __user *upath = NULL;
-	unsigned long option, arg2, arg3;
 
 	if (!nksu_profile_has_uid(__kuid_val(task_uid(current))))
 		return;
