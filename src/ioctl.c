@@ -2,7 +2,8 @@
 #include <linux/uaccess.h>
 #include <linux/anon_inodes.h>
 #include <fmac.h>
-#include "uid_caps.h"
+#include <linux/version.h>
+#include <linux/capability.h>
 
 struct fmac_rule {
 	char path[1024];
@@ -35,18 +36,20 @@ struct fmac_sepolicy_rule {
 #define IOC_DEL_CAP       _IOW(IOC_MAGIC,   8, struct fmac_uid_cap)
 #define IOC_SEL_ADD_RULE  _IOW(IOC_MAGIC,   9, struct fmac_sepolicy_rule)
 
-static inline kernel_cap_t cap_from_u64(u64 v)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
+static inline kernel_cap_t u64_to_kernel_cap(u64 val)
 {
-	kernel_cap_t c;
-	c.cap[0] = (u32)v;
-	c.cap[1] = (u32)(v >> 32);
-	return c;
+    kernel_cap_t cap;
+    cap.cap[0] = (u32)val;
+    cap.cap[1] = (u32)(val >> 32);
+    return cap;
 }
 
-static inline u64 cap_to_u64(kernel_cap_t c)
+static inline u64 kernel_cap_to_u64(kernel_cap_t cap)
 {
-	return ((u64)c.cap[1] << 32) | c.cap[0];
+    return ((u64)cap.cap[1] << 32) | cap.cap[0];
 }
+#endif
 
 static long ioc_add_uid(unsigned long arg)
 {
@@ -84,7 +87,7 @@ static long ioc_set_cap(unsigned long arg)
 	if (copy_from_user(&uc, (void __user *)arg, sizeof(uc)))
 		return -EFAULT;
 
-	caps = cap_from_u64(uc.caps);
+	caps = u64_to_kernel_cap(uc.caps);
 
 	return nksu_profile_set_caps((uid_t)uc.uid, caps);
 }
@@ -100,7 +103,7 @@ static long ioc_get_cap(unsigned long arg)
 	if (nksu_profile_get_dup((uid_t)uc.uid, &p))
 		return -ENOENT;
 
-	uc.caps = cap_to_u64(p.caps);
+	uc.caps = kernel_cap_to_u64(p.caps);
 
 	return copy_to_user((void __user *)arg, &uc, sizeof(uc))
 		? -EFAULT : 0;
