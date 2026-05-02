@@ -11,6 +11,19 @@ import (
 
 import "golang.org/x/sys/unix"
 
+/*
+#include <stdint.h>
+struct nksu_profile_data {
+    unsigned int uid;
+    uint64_t caps;
+    char selinux_domain[64];
+    int namespace;
+};
+*/
+import "C"
+
+type ProfileData C.struct_nksu_profile_data
+
 type Opcode uint32
 
 const (
@@ -52,6 +65,7 @@ var (
 	IOC_GET_CAP      = _IOWR(7, uint32(unsafe.Sizeof(fmacUidCap{})))
 	IOC_DEL_CAP      = _IOW(8, uint32(unsafe.Sizeof(fmacUidCap{})))
 	IOC_SEL_ADD_RULE = _IOW(9, uint32(unsafe.Sizeof(fmacSepolicyRule{})))
+	IOC_SET_PROFILE  = _IOW(10, uint32(unsafe.Sizeof(ProfileData{})))
 )
 
 func ioctl(fd int, cmd uint32, arg uintptr) error {
@@ -79,6 +93,31 @@ func Ctl(code Opcode) error {
 	default:
 		return fmt.Errorf("unknown opcode: %d", code)
 	}
+}
+
+func SetProfile(fd int, uid int, caps uint64, domain string, namespace int) error {
+	var data ProfileData
+
+	data.uid = C.uint(uint32(uid))
+	data.caps = C.uint64_t(caps)
+	copyStr := func(dst *[64]C.char, s string) {
+		for i := 0; i < 64; i++ {
+			if i < len(s) {
+				dst[i] = C.char(s[i])
+			} else {
+				dst[i] = 0
+				break
+			}
+		}
+		dst[63] = 0
+	}
+
+	cDomain := (*[64]C.char)(unsafe.Pointer(&data.selinux_domain))
+	copyStr(cDomain, domain)
+
+	data.namespace = C.int(int32(namespace))
+
+	return ioctl(fd, IOC_SET_PROFILE, uintptr(unsafe.Pointer(&data)))
 }
 
 func AddUid(fd int, uid int) error {

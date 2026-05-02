@@ -121,6 +121,38 @@ func Java_me_nekosu_aqnya_ncore_ctl(env *C.JNIEnv, thiz C.jobject, value C.jint)
 	return 0
 }
 
+//export Java_me_nekosu_aqnya_ncore_setProfile
+func Java_me_nekosu_aqnya_ncore_setProfile(
+	env *C.JNIEnv, thiz C.jobject,
+	uid C.jint, caps C.jlong, domainStr C.jstring, namespace C.jint,
+) C.jint {
+	_ = thiz
+
+	var domain string
+	if domainStr != C.jstring(0) {
+		p := C.bridge_GetStringUTFChars(env, domainStr)
+		if p != nil {
+			domain = C.GoString(p)
+			C.bridge_ReleaseStringUTFChars(env, domainStr, p)
+		}
+	}
+
+	err := ctl.SetProfile(
+		int(ctlfd),
+		int(uid),
+		uint64(caps),
+		domain,
+		int(namespace),
+	)
+
+	if err != nil {
+		logf(logERROR, "setProfile failed: %s", err.Error())
+		return -1
+	}
+
+	return 0
+}
+
 //export Java_me_nekosu_aqnya_ncore_adduid
 func Java_me_nekosu_aqnya_ncore_adduid(env *C.JNIEnv, thiz C.jobject, value C.jint) C.jint {
 	_ = thiz
