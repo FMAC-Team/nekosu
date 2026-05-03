@@ -33,11 +33,6 @@ static const module_component_t core_components[] = {
 	 .init = fmac_anonfd_init,
 	 .exit = fmac_anonfd_exit,
 	  },
-	{
-	 .name = "UID Capabilities",
-	 .init = uid_caps_init,
-	 .exit = uid_caps_exit,
-	  },
 	  {
 	  .name = "uid profile",
 	  .init = nksu_profile_init,
