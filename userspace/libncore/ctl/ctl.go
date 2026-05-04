@@ -31,8 +31,7 @@ struct fmac_sepolicy_rule {
 
 struct fmac_uid_cap {
     unsigned int uid;
-    unsigned int pad;
-    unsigned long long caps;
+    uint64_t caps;
 };
 
 #include <linux/ioctl.h>
