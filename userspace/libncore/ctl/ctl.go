@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"syscall"
 	"unsafe"
-)
 
-import "golang.org/x/sys/unix"
+	"golang.org/x/sys/unix"
+)
 
 /*
 #include <stdint.h>
@@ -19,10 +19,43 @@ struct nksu_profile_data {
     char selinux_domain[64];
     int namespace;
 };
+
+struct fmac_sepolicy_rule {
+    char src[64];
+    char tgt[64];
+    char cls[64];
+    char perm[64];
+    int effect;
+    int invert;
+};
+
+struct fmac_uid_cap {
+    unsigned int uid;
+    unsigned int pad;
+    unsigned long long caps;
+};
+
+#include <linux/ioctl.h>
+
+#define FMAC_MAGIC 'F'
+
+#define IOC_GET_SHM      _IO(FMAC_MAGIC, 0)
+#define IOC_BIND_EVT     _IOW(FMAC_MAGIC, 1, int)
+#define IOC_CHK_WRITE    _IOR(FMAC_MAGIC, 2, int)
+#define IOC_ADD_UID      _IOW(FMAC_MAGIC, 3, int)
+#define IOC_DEL_UID      _IOW(FMAC_MAGIC, 4, int)
+#define IOC_HAS_UID      _IOWR(FMAC_MAGIC, 5, int)
+
+#define IOC_SET_CAP  _IOW(FMAC_MAGIC, 6, struct fmac_uid_cap)
+#define IOC_GET_CAP  _IOWR(FMAC_MAGIC, 7, struct fmac_uid_cap)
+#define IOC_DEL_CAP  _IOW(FMAC_MAGIC, 8, struct fmac_uid_cap)
+
+#define IOC_SEL_ADD_RULE _IOW(FMAC_MAGIC, 9, struct fmac_sepolicy_rule)
+
+#define IOC_SET_PROFILE _IOW(FMAC_MAGIC, 10, struct nksu_profile_data)
+
 */
 import "C"
-
-type ProfileData C.struct_nksu_profile_data
 
 type Opcode uint32
 
@@ -32,40 +65,20 @@ const (
 	OpcodeIoctl        Opcode = 3
 )
 
-type fmacUidCap struct {
-	uid  uint32
-	_    [4]byte // padding to align caps to 8
-	caps uint64
-}
-
-type fmacSepolicyRule struct {
-	src    [64]byte
-	tgt    [64]byte
-	cls    [64]byte
-	perm   [64]byte
-	effect int32
-	invert int32
-}
-
-const magic = 'F'
-
-func _IO(nr uint32) uint32                { return (magic << 8) | nr }
-func _IOW(nr uint32, size uint32) uint32  { return 0x40000000 | (size << 16) | (magic << 8) | nr }
-func _IOR(nr uint32, size uint32) uint32  { return 0x80000000 | (size << 16) | (magic << 8) | nr }
-func _IOWR(nr uint32, size uint32) uint32 { return 0xC0000000 | (size << 16) | (magic << 8) | nr }
-
 var (
-	IOC_GET_SHM      = _IO(0)
-	IOC_BIND_EVT     = _IOW(1, 4)
-	IOC_CHK_WRITE    = _IOR(2, 4)
-	IOC_ADD_UID      = _IOW(3, 4)
-	IOC_DEL_UID      = _IOW(4, 4)
-	IOC_HAS_UID      = _IOWR(5, 4)
-	IOC_SET_CAP      = _IOW(6, uint32(unsafe.Sizeof(fmacUidCap{})))
-	IOC_GET_CAP      = _IOWR(7, uint32(unsafe.Sizeof(fmacUidCap{})))
-	IOC_DEL_CAP      = _IOW(8, uint32(unsafe.Sizeof(fmacUidCap{})))
-	IOC_SEL_ADD_RULE = _IOW(9, uint32(unsafe.Sizeof(fmacSepolicyRule{})))
-	IOC_SET_PROFILE  = _IOW(10, uint32(unsafe.Sizeof(ProfileData{})))
+	IOC_GET_SHM   = uint32(C.IOC_GET_SHM)
+	IOC_BIND_EVT  = uint32(C.IOC_BIND_EVT)
+	IOC_CHK_WRITE = uint32(C.IOC_CHK_WRITE)
+	IOC_ADD_UID   = uint32(C.IOC_ADD_UID)
+	IOC_DEL_UID   = uint32(C.IOC_DEL_UID)
+	IOC_HAS_UID   = uint32(C.IOC_HAS_UID)
+
+	IOC_SET_CAP = uint32(C.IOC_SET_CAP)
+	IOC_GET_CAP = uint32(C.IOC_GET_CAP)
+	IOC_DEL_CAP = uint32(C.IOC_DEL_CAP)
+
+	IOC_SEL_ADD_RULE = uint32(C.IOC_SEL_ADD_RULE)
+	IOC_SET_PROFILE  = uint32(C.IOC_SET_PROFILE)
 )
 
 func ioctl(fd int, cmd uint32, arg uintptr) error {
@@ -95,26 +108,24 @@ func Ctl(code Opcode) error {
 	}
 }
 
+func copyToCChar64(dst *[64]C.char, s string) {
+	for i := 0; i < 64; i++ {
+		if i < len(s) {
+			dst[i] = C.char(s[i])
+		} else {
+			dst[i] = 0
+			break
+		}
+	}
+	dst[63] = 0
+}
+
 func SetProfile(fd int, uid int, caps uint64, domain string, namespace int) error {
-	var data ProfileData
+	var data C.struct_nksu_profile_data
 
 	data.uid = C.uint(uint32(uid))
 	data.caps = C.uint64_t(caps)
-	copyStr := func(dst *[64]C.char, s string) {
-		for i := 0; i < 64; i++ {
-			if i < len(s) {
-				dst[i] = C.char(s[i])
-			} else {
-				dst[i] = 0
-				break
-			}
-		}
-		dst[63] = 0
-	}
-
-	cDomain := (*[64]C.char)(unsafe.Pointer(&data.selinux_domain))
-	copyStr(cDomain, domain)
-
+	copyToCChar64(&data.selinux_domain, domain)
 	data.namespace = C.int(int32(namespace))
 
 	return ioctl(fd, IOC_SET_PROFILE, uintptr(unsafe.Pointer(&data)))
@@ -148,38 +159,40 @@ func HasUid(fd int, uid int) (bool, error) {
 }
 
 func SetCap(fd int, uid int, caps uint64) error {
-	uc := fmacUidCap{uid: uint32(uid), caps: caps}
+	var uc C.struct_fmac_uid_cap
+	uc.uid = C.uint(uid)
+	uc.caps = C.ulonglong(caps)
 	return ioctl(fd, IOC_SET_CAP, uintptr(unsafe.Pointer(&uc)))
 }
 
 func GetCap(fd int, uid int) (uint64, error) {
-	uc := fmacUidCap{uid: uint32(uid)}
+	var uc C.struct_fmac_uid_cap
+	uc.uid = C.uint(uid)
 	if err := ioctl(fd, IOC_GET_CAP, uintptr(unsafe.Pointer(&uc))); err != nil {
 		return 0, err
 	}
-	return uc.caps, nil
+	return uint64(uc.caps), nil
 }
 
 func DelCap(fd int, uid int) error {
-	uc := fmacUidCap{uid: uint32(uid)}
+	var uc C.struct_fmac_uid_cap
+	uc.uid = C.uint(uid)
 	return ioctl(fd, IOC_DEL_CAP, uintptr(unsafe.Pointer(&uc)))
 }
 
 func AddSelinuxRule(fd int, src, tgt, cls, perm string, effect int, invert bool) error {
-	var r fmacSepolicyRule
-	copyStr := func(dst *[64]byte, s string) {
-		n := copy(dst[:], s)
-		if n < 64 {
-			dst[n] = 0
-		}
-	}
-	copyStr(&r.src, src)
-	copyStr(&r.tgt, tgt)
-	copyStr(&r.cls, cls)
-	copyStr(&r.perm, perm)
-	r.effect = int32(effect)
+	var r C.struct_fmac_sepolicy_rule
+
+	copyToCChar64(&r.src, src)
+	copyToCChar64(&r.tgt, tgt)
+	copyToCChar64(&r.cls, cls)
+	copyToCChar64(&r.perm, perm)
+
+	r.effect = C.int(effect)
 	if invert {
 		r.invert = 1
+	} else {
+		r.invert = 0
 	}
 	return ioctl(fd, IOC_SEL_ADD_RULE, uintptr(unsafe.Pointer(&r)))
 }
