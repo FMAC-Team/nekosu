@@ -160,7 +160,7 @@ func HasUid(fd int, uid int) (bool, error) {
 func SetCap(fd int, uid int, caps uint64) error {
 	var uc C.struct_fmac_uid_cap
 	uc.uid = C.uint(uid)
-	uc.caps = C.ulonglong(caps)
+	uc.caps = C.uint64_t(caps)
 	return ioctl(fd, IOC_SET_CAP, uintptr(unsafe.Pointer(&uc)))
 }
 
